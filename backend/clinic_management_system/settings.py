@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 
+from django.conf.global_settings import AUTH_USER_MODEL
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -38,7 +40,17 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'clinic_app.apps.ClinicAppConfig',
+    'rest_framework',
+    'ckeditor',
+    'ckeditor_uploader',
+    'drf_yasg',
+    'oauth2_provider',
+    'corsheaders'
 ]
+
+CKEDITOR_UPLOAD_PATH = "ckeditor/"
+
+AUTH_USER_MODEL = 'clinic_app.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
