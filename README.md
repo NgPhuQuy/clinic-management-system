@@ -7,90 +7,62 @@ Django REST Framework + SimpleJWT + OAuth2
 ## Cấu trúc project
 
 ```
-clinic_project/
-├── config/                  ← Django project config
-│   ├── settings.py
-│   ├── urls.py              (config_urls.py)
-│   └── wsgi.py
-├── clinic/                  ← App chính
-│   ├── models.py
-│   ├── serializers.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── permissions.py
-│   ├── admin.py
-│   ├── pipeline.py          ← OAuth2 pipeline
-│   └── management/
-│       └── commands/
-│           └── seed.py
-├── requirements.txt
-├── .env                     (copy từ .env.example)
-└── manage.py
+clinic-management-system/
+├── backend/
+│   ├── clinic_app/                  ← App chính
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── permissions.py
+│   │   └── admin.py
+│   ├── clinic_management_system/    ← Django project config
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   ├── .env.example
+│   ├── manage.py
+│   └── requirement.txt
+└── frontend/
+    └── clinic-app/                  ← React Native (Expo)
 ```
 
 ---
 
 ## Setup & Chạy
 
-### 1. Tạo project
+### 1. Cài dependencies
 
 ```bash
-# Tạo virtual environment
+cd backend
+
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 
-# Cài dependencies
-pip install -r requirements.txt
-
-# Tạo Django project
-django-admin startproject config .
-python manage.py startapp clinic
+pip install -r requirement.txt
 ```
 
-### 2. Copy files
-
-Sau khi tải các file về, copy vào đúng vị trí:
-
-```
-models.py       → clinic/models.py
-serializers.py  → clinic/serializers.py
-views.py        → clinic/views.py
-urls.py         → clinic/urls.py
-permissions.py  → clinic/permissions.py
-admin.py        → clinic/admin.py
-pipeline.py     → clinic/pipeline.py
-settings.py     → config/settings.py
-config_urls.py  → config/urls.py
-seed.py         → clinic/management/commands/seed.py
-```
-
-Tạo thư mục management:
-```bash
-mkdir -p clinic/management/commands
-touch clinic/management/__init__.py
-touch clinic/management/commands/__init__.py
-```
-
-### 3. Cấu hình .env
+### 2. Cấu hình .env
 
 ```bash
 cp .env.example .env
 # Sửa .env theo môi trường của bạn
 ```
 
-### 4. Migrate & Seed
+`.env` cần có các biến:
 
-```bash
-python manage.py makemigrations clinic
-python manage.py migrate
-
-# Tạo dữ liệu mẫu
-python manage.py seed
+```env
+DB_NAME=clinic_db
+DB_USER=root
+DB_PASSWORD=yourpassword
+SECRET_KEY=your-secret-key-here
 ```
 
-### 5. Chạy server
+### 3. Migrate & chạy server
 
 ```bash
+python manage.py makemigrations
+python manage.py migrate
 python manage.py runserver
 ```
 
@@ -99,8 +71,9 @@ python manage.py runserver
 ## Test API
 
 ### Swagger UI
+
 ```
-http://localhost:8000/api/docs/
+http://localhost:8000/swagger/
 ```
 
 ### Đăng nhập lấy token
@@ -133,14 +106,14 @@ curl -X POST http://localhost:8000/api/appointments/ \
   -d '{
     "doctor": 1,
     "schedule": 1,
-    "appointment_date": "2024-12-20T09:00:00",
+    "appointment_date": "2025-12-20T09:00:00",
     "reason": "Đau ngực, khó thở"
   }'
 ```
 
 ---
 
-## Tài khoản test (sau khi seed)
+## Tài khoản test
 
 | Email | Password | Role |
 |---|---|---|
@@ -159,15 +132,27 @@ curl -X POST http://localhost:8000/api/appointments/ \
 | POST | /api/auth/register/ | Đăng ký |
 | POST | /api/auth/login/ | Đăng nhập |
 | POST | /api/auth/refresh/ | Làm mới token |
-| GET | /api/auth/me/ | Thông tin user |
+| GET | /api/auth/me/ | Thông tin user hiện tại |
+| PUT | /api/auth/change-password/ | Đổi mật khẩu |
 | GET | /api/specialties/ | Danh sách chuyên khoa |
+| GET | /api/services/ | Danh sách dịch vụ |
 | GET | /api/doctors/ | Danh sách bác sĩ |
-| GET | /api/doctors/{id}/schedules/ | Lịch trống bác sĩ |
-| POST | /api/appointments/ | Đặt lịch |
+| GET | /api/doctors/{id}/schedules/ | Lịch trống của bác sĩ |
+| GET | /api/doctors/{id}/appointments/ | Lịch hẹn của bác sĩ |
+| GET | /api/patients/{id}/medical_records/ | Hồ sơ bệnh án |
+| POST | /api/appointments/ | Đặt lịch hẹn |
 | PATCH | /api/appointments/{id}/status/ | Cập nhật trạng thái |
 | POST | /api/medical-records/ | Tạo hồ sơ bệnh án |
-| POST | /api/prescriptions/{id}/dispense/ | Cấp phát thuốc |
-| POST | /api/payments/init/ | Khởi tạo thanh toán |
+| POST | /api/medical-records/{id}/add_test_result/ | Thêm kết quả xét nghiệm |
+| POST | /api/prescriptions/ | Kê đơn thuốc |
+| POST | /api/prescriptions/{id}/dispense/ | Cấp phát thuốc (trừ kho) |
+| GET | /api/medicines/ | Danh sách thuốc |
+| GET | /api/inventory/ | Xem tồn kho |
 | GET | /api/inventory/low_stock/ | Thuốc sắp hết |
+| GET | /api/inventory/near_expiry/ | Thuốc sắp hết hạn |
+| POST | /api/payments/init/ | Khởi tạo thanh toán |
+| POST | /api/payments/{id}/confirm/ | Xác nhận thanh toán |
+| GET | /api/notifications/ | Thông báo của tôi |
+| POST | /api/notifications/read-all/ | Đánh dấu tất cả đã đọc |
 | GET | /api/admin/dashboard/ | Thống kê tổng hợp |
-| ... | | Xem đầy đủ tại /api/docs/ |
+| ... | | Xem đầy đủ tại /swagger/ |
