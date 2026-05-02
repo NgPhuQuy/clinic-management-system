@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
+from django.db.models import Sum
 
 from .models import (
     Patient, Doctor, Specialty, Service,
@@ -218,6 +219,15 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
             )
         return appointment
 
+    def validate(self, data):
+        doctor = data.get('doctor')
+        schedule = data.get('schedule')
+        if schedule:
+            booked = schedule.appointments.exclude(status='cancelled').count()
+            if booked >= schedule.max_appointments:
+                raise serializers.ValidationError("Ca khám này đã đủ số lượng.")
+        return data
+
 
 class AppointmentStatusSerializer(serializers.ModelSerializer):
     class Meta:
@@ -301,12 +311,7 @@ class MedicineSerializer(serializers.ModelSerializer):
         )
 
     def get_total_stock(self, obj):
-        from django.utils import timezone
-        return obj.inventory_batches.filter(
-            expiry_date__gt=timezone.now().date()
-        ).aggregate(
-            total=models.Sum("quantity")
-        )["total"] or 0
+        return obj.inventory_batches.filter(expiry_date__gt=timezone.now().date()).aggregate(total=Sum("quantity"))["total"] or 0
 
 
 class InventorySerializer(serializers.ModelSerializer):

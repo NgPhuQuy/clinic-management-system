@@ -27,14 +27,12 @@ class MedicineAdmin(admin.ModelAdmin):
 
 
 class DoctorAdmin(admin.ModelAdmin):
-    # Thay đổi 'name', 'specialty' cho khớp với tên field trong model Doctor
     list_display = ['id', 'full_name', 'specialty']
     readonly_fields = ['avatar_preview']
 
-    # Giả sử model Doctor có trường ảnh tên là 'avatar' hoặc 'image'
     def avatar_preview(self, doctor):
-        if hasattr(doctor, 'avatar') and doctor.avatar:
-            return mark_safe(f'<img src="{doctor.avatar.url}" width="150" />')
+        if doctor.user.avatar:
+            return mark_safe(f'<img src="{doctor.user.avatar.url}" width="150" />')
         return "Chưa có ảnh"
 
     avatar_preview.short_description = 'Ảnh đại diện'
@@ -51,7 +49,7 @@ class ClinicAdminSite(admin.AdminSite):
     def clinic_stats(self, request):
         # Thống kê số lượng thuốc theo từng danh mục thuốc
         # Chú ý: chữ 'medicine' trong Count() thường là related_name hoặc tên model Medicine viết thường
-        stats = MedicineCategory.objects.annotate(c=Count('medicine')).values('id', 'name', 'c')
+        stats = MedicineCategory.objects.annotate(c=Count('medicines')).values('id', 'name', 'c')
 
         return TemplateResponse(request, 'admin/stats.html', {
             'stats': stats

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django_filters.rest_framework import DjangoFilterBackend
+from django.shortcuts import get_object_or_404
 
 from .models import (
     Patient, Doctor, Specialty, Service,
@@ -61,7 +62,7 @@ class RegisterView(generics.CreateAPIView):
         if user.role == "patient":
             Patient.objects.create(user=user, full_name=user.username)
         elif user.role == "doctor":
-            Doctor.objects.create(user=user, full_name=user.username)
+            Doctor.objects.create(user=user,full_name=user.username,license_number=f"TEMP-{user.id}")
 
         # Trả về JWT ngay sau đăng ký
         refresh = RefreshToken.for_user(user)
@@ -300,7 +301,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(AppointmentSerializer(appointment).data)
+        return Response(AppointmentSerializer(serializer.instance).data)
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def add_service(self, request, pk=None):
@@ -559,10 +560,8 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = PaymentInitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        appointment = Appointment.objects.get(
-            pk=serializer.validated_data["appointment_id"],
-            patient__user=request.user,
-        )
+
+        appointment = get_object_or_404(Appointment, pk=..., patient__user=request.user)
 
         # Tính tổng tiền từ dịch vụ + phí khám
         total = appointment.doctor.consultation_fee
