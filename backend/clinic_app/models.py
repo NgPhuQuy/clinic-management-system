@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 from cloudinary.models import CloudinaryField
 
@@ -24,7 +24,7 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
-class User(AbstractUser, PermissionsMixin):
+class User(AbstractUser):
     class Role(models.TextChoices):
         PATIENT = "patient", "Bệnh nhân"
         DOCTOR = "doctor", "Bác sĩ"
