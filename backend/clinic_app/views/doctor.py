@@ -22,13 +22,15 @@ class DoctorViewSet(viewsets.ModelViewSet):
     search_fields = ["full_name", "license_number"]
 
     def get_permissions(self):
-        if self.action in ("list", "retrieve"):
+        if self.action in ("list", "retrieve", "schedules"):
             return [AllowAny()]
         if self.action in ("update", "partial_update"):
             return [IsAuthenticated(), IsOwnerOrAdmin()]
+        if self.action == "appointments":
+            return [IsDoctorOrAdmin()]
         return [IsAdmin()]
 
-    @action(detail=True, methods=["get"], permission_classes=[AllowAny])
+    @action(detail=True, methods=["get"])
     def schedules(self, request, pk=None):
         """GET /api/doctors/{id}/schedules/?date=YYYY-MM-DD — Lịch khám còn trống."""
         doctor = self.get_object()
@@ -39,7 +41,7 @@ class DoctorViewSet(viewsets.ModelViewSet):
         serializer = DoctorScheduleSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get"], permission_classes=[IsDoctorOrAdmin])
+    @action(detail=True, methods=["get"])
     def appointments(self, request, pk=None):
         """GET /api/doctors/{id}/appointments/ — Lịch hẹn của bác sĩ."""
         doctor = self.get_object()

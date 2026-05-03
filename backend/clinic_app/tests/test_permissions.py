@@ -16,7 +16,7 @@ Luồng được test:
   ✓ Danh sách chuyên khoa là public
 """
 
-from .base import BaseAPITestCase, make_user
+from .base_test import BaseAPITestCase, make_user
 
 
 class AnonymousAccessTests(BaseAPITestCase):

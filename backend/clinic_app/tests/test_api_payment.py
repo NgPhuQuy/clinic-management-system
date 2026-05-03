@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from clinic_app.models import Appointment, Doctor, Patient, DoctorSchedule, Payment
 
-from .base import BaseAPITestCase, make_user
+from .base_test import BaseAPITestCase, make_user
 
 
 PAYMENTS_URL = "/payments/"

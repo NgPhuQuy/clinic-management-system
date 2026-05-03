@@ -29,9 +29,15 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
     def get_permissions(self):
+        # NOTE: overriding get_permissions() silently ignores @action(permission_classes=[...])
+        # Every action must be listed here explicitly.
+        if self.action == "init":
+            return [IsPatient()]
+        if self.action == "confirm":
+            return [IsStaff()]
         return [IsAuthenticated()]
 
-    @action(detail=False, methods=["post"], permission_classes=[IsPatient])
+    @action(detail=False, methods=["post"])
     def init(self, request):
         """
         POST /api/payments/init/
@@ -64,7 +70,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         payment_url = f"https://payment-gateway.example.com/pay?order={payment.id}&amount={total}"
         return Response({"payment_id": payment.id, "amount": total, "payment_url": payment_url})
 
-    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    @action(detail=True, methods=["post"])
     def confirm(self, request, pk=None):
         """POST /api/payments/{id}/confirm/ — Xác nhận thanh toán thành công (webhook/manual)."""
         payment = self.get_object()

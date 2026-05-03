@@ -20,7 +20,7 @@ Các luồng được test:
 
 from django.urls import reverse
 
-from .base import BaseAPITestCase, make_user, get_tokens_for_user
+from .base_test import BaseAPITestCase, make_user, get_tokens_for_user
 
 
 class RegisterTests(BaseAPITestCase):
