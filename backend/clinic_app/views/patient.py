@@ -24,6 +24,8 @@ class PatientViewSet(viewsets.ModelViewSet):
             return [IsStaff()]
         if self.action in ("retrieve", "update", "partial_update"):
             return [IsAuthenticated(), IsOwnerOrAdmin()]
+        if self.action in ("appointments", "medical_records"):
+            return [IsAuthenticated()]
         return [IsAdmin()]
 
     @action(detail=True, methods=["get"], permission_classes=[IsAuthenticated])

@@ -11,6 +11,7 @@ class Specialty(models.Model):
     class Meta:
         db_table = "specialties"
         verbose_name = "Chuyên khoa"
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
