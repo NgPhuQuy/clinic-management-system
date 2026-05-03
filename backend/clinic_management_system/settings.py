@@ -89,6 +89,7 @@ WSGI_APPLICATION = 'clinic_management_system.wsgi.application'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
@@ -104,6 +105,8 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
 }
+
+OAUTH2_PROVIDER = { 'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore' }
 
 # ─────────────────────────────────────────────
 # SIMPLE JWT  (bản gốc THIẾU hoàn toàn phần này)
@@ -222,3 +225,4 @@ if DEBUG:
             "django.db.backends": {"level": "DEBUG", "handlers": ["console"]},
         },
     }
+
