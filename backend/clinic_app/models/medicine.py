@@ -1,7 +1,5 @@
 from datetime import date, timedelta
-
 from django.db import models
-from django.utils import timezone
 
 
 class MedicineCategory(models.Model):
@@ -42,7 +40,7 @@ class Inventory(models.Model):
     batch_number = models.CharField(max_length=100)
     quantity = models.PositiveIntegerField(default=0, help_text="Số lượng tồn kho")
     expiry_date = models.DateField()
-    import_date = models.DateField(default=timezone.now)
+    import_date = models.DateField(default=date.today)
     import_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     supplier = models.CharField(max_length=255, blank=True)
     warning_threshold = models.PositiveIntegerField(
