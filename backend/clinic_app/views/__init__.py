@@ -1,0 +1,27 @@
+from .auth import RegisterView, MeView, ChangePasswordView
+from .specialty import SpecialtyViewSet, ServiceViewSet
+from .patient import PatientViewSet
+from .doctor import DoctorViewSet, DoctorScheduleViewSet
+from .appointment import AppointmentViewSet
+from .medical_record import MedicalRecordViewSet
+from .medicine import MedicineCategoryViewSet, MedicineViewSet, InventoryViewSet, InventoryAlertViewSet
+from .prescription import PrescriptionViewSet
+from .payment import PaymentViewSet
+from .consultation import ConsultationViewSet
+from .notification import NotificationViewSet
+from .dashboard import DashboardView
+
+__all__ = [
+    "RegisterView", "MeView", "ChangePasswordView",
+    "SpecialtyViewSet", "ServiceViewSet",
+    "PatientViewSet",
+    "DoctorViewSet", "DoctorScheduleViewSet",
+    "AppointmentViewSet",
+    "MedicalRecordViewSet",
+    "MedicineCategoryViewSet", "MedicineViewSet", "InventoryViewSet", "InventoryAlertViewSet",
+    "PrescriptionViewSet",
+    "PaymentViewSet",
+    "ConsultationViewSet",
+    "NotificationViewSet",
+    "DashboardView",
+]
