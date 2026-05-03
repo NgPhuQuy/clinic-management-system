@@ -30,6 +30,7 @@ class Medicine(models.Model):
     class Meta:
         db_table = "medicines"
         verbose_name = "Thuốc"
+        ordering = ["name"]
 
     def __str__(self):
         return f"{self.code} - {self.name}"

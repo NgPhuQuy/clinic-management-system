@@ -20,6 +20,7 @@ class Patient(models.Model):
     class Meta:
         db_table = "patients"
         verbose_name = "Bệnh nhân"
+        ordering = ["full_name"]
 
     def __str__(self):
         return self.full_name

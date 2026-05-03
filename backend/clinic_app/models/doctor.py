@@ -18,6 +18,7 @@ class Doctor(models.Model):
     class Meta:
         db_table = "doctors"
         verbose_name = "Bác sĩ"
+        ordering = ["full_name"]
 
     def __str__(self):
         return f"BS. {self.full_name} - {self.specialty}"

@@ -1,34 +1,33 @@
-from django.db import models
-from cloudinary.models import CloudinaryField
-
-
-class Specialty(models.Model):
-    name = models.CharField(max_length=200, unique=True)
-    description = models.TextField(blank=True)
-    icon = CloudinaryField(null=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = "specialties"
-        verbose_name = "Chuyên khoa"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-
-class Service(models.Model):
-    specialty = models.ForeignKey(
-        Specialty, on_delete=models.SET_NULL, null=True, related_name="services"
-    )
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=12, decimal_places=2)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = "services"
-        verbose_name = "Dịch vụ y tế"
-
-    def __str__(self):
-        return self.name
+from rest_framework import viewsets, filters
+from rest_framework.permissions import AllowAny
+from django_filters.rest_framework import DjangoFilterBackend
+from ..models import Specialty, Service
+from ..serializers import SpecialtySerializer, ServiceSerializer
+from ..permissions import IsAdmin
+class SpecialtyViewSet(viewsets.ModelViewSet):
+    """
+    GET    /api/specialties/         — Danh sách chuyên khoa
+    POST   /api/specialties/         — Tạo mới (admin)
+    GET    /api/specialties/{id}/    — Chi tiết
+    PUT    /api/specialties/{id}/    — Cập nhật (admin)
+    DELETE /api/specialties/{id}/    — Xóa (admin)
+    """
+    queryset = Specialty.objects.filter(is_active=True)
+    serializer_class = SpecialtySerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [IsAdmin()]
+        return [AllowAny()]
+class ServiceViewSet(viewsets.ModelViewSet):
+    """GET /api/services/ — Danh sách dịch vụ, lọc theo chuyên khoa."""
+    queryset = Service.objects.filter(is_active=True).select_related("specialty")
+    serializer_class = ServiceSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ["specialty"]
+    search_fields = ["name"]
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [IsAdmin()]
+        return [AllowAny()]
