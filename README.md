@@ -55,7 +55,6 @@ cp .env.example .env
 DB_NAME=clinic_db
 DB_USER=root
 DB_PASSWORD=yourpassword
-SECRET_KEY=your-secret-key-here
 ```
 
 ### 3. Migrate & chạy server
