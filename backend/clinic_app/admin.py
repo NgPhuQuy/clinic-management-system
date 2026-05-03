@@ -8,9 +8,7 @@ from ckeditor_uploader.widgets import CKEditorUploadingWidget
 from django.db.models import Count
 
 
-# Tích hợp CKEditor cho mô tả Thuốc (hoặc bạn có thể đổi sang form Bác sĩ nếu muốn)
 class MedicineForm(forms.ModelForm):
-    # Giả sử model Medicine có trường 'description' (mô tả/hướng dẫn sử dụng)
     description = forms.CharField(widget=CKEditorUploadingWidget, required=False)
 
     class Meta:
@@ -19,7 +17,6 @@ class MedicineForm(forms.ModelForm):
 
 
 class MedicineAdmin(admin.ModelAdmin):
-    # Thay đổi 'name', 'category' cho khớp với tên field trong model Medicine của bạn
     list_display = ['id', 'name', 'category']
     search_fields = ['name', 'description']
     list_filter = ['category']
