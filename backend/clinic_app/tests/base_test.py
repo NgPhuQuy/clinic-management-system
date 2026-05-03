@@ -1,5 +1,5 @@
 """
-base.py — Lớp nền và các factory dùng chung cho toàn bộ test suite.
+base_test.py — Lớp nền và các factory dùng chung cho toàn bộ test suite.
 
 Mỗi test module import BaseAPITestCase thay vì viết lại setup.
 """

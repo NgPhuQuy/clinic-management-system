@@ -16,7 +16,7 @@ from datetime import date, timedelta
 
 from clinic_app.models import MedicineCategory, Medicine, Inventory, InventoryAlert
 
-from .base import BaseAPITestCase, make_user
+from .base_test import BaseAPITestCase, make_user
 
 
 MEDICINES_URL = "/medicines/"

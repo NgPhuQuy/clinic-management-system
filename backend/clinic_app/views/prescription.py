@@ -27,6 +27,10 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
             return [IsDoctor()]
         if self.action in ("update", "partial_update"):
             return [IsDoctorOrAdmin()]
+        if self.action == "dispense":
+            return [IsStaff()]
+        if self.action == "add_medicine":
+            return [IsDoctor()]
         return [IsAuthenticated()]
 
     def get_queryset(self):
@@ -42,7 +46,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         doctor = self.request.user.doctor_profile
         serializer.save(doctor=doctor)
 
-    @action(detail=True, methods=["post"], permission_classes=[IsStaff])
+    @action(detail=True, methods=["post"])
     def dispense(self, request, pk=None):
         """POST /api/prescriptions/{id}/dispense/ — Cấp phát thuốc, trừ tồn kho."""
         prescription = self.get_object()
@@ -79,7 +83,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         prescription.save()
         return Response(PrescriptionSerializer(prescription).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[IsDoctor])
+    @action(detail=True, methods=["post"])
     def add_medicine(self, request, pk=None):
         """POST /api/prescriptions/{id}/add_medicine/ — Thêm thuốc vào đơn."""
         prescription = self.get_object()

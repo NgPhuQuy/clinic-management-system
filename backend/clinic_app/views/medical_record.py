@@ -28,6 +28,8 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
             return [IsDoctor()]
         if self.action in ("update", "partial_update"):
             return [IsDoctorOrAdmin()]
+        if self.action == "add_test_result":
+            return [IsDoctor()]
         return [IsAuthenticated(), IsPatientOwnerOrDoctor()]
 
     def get_queryset(self):
@@ -43,7 +45,7 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
         doctor = self.request.user.doctor_profile
         serializer.save(doctor=doctor)
 
-    @action(detail=True, methods=["post"], permission_classes=[IsDoctor])
+    @action(detail=True, methods=["post"])
     def add_test_result(self, request, pk=None):
         """POST /api/medical-records/{id}/add_test_result/"""
         record = self.get_object()
