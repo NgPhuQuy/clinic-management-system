@@ -16,6 +16,7 @@ djangorestframework==3.17.1
 djangorestframework-stubs==3.16.9
 djangorestframework_simplejwt==5.5.1
 drf-yasg==1.21.15
+Faker==40.15.0
 idna==3.13
 inflection==0.5.1
 jwcrypto==1.5.7
