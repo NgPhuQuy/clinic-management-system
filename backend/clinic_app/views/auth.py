@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from ..models import Patient, Doctor
 from ..serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer
@@ -29,7 +28,6 @@ class RegisterView(generics.CreateAPIView):
         elif user.role == "doctor":
             Doctor.objects.create(user=user, full_name=user.username, license_number=f"TEMP-{user.id}")
 
-        refresh = RefreshToken.for_user(user)
         return Response(
             {
                 "user": UserSerializer(user).data,
