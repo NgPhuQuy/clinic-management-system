@@ -1,6 +1,6 @@
 # Phòng Khám Đa Khoa Trực Tuyến — Backend API
 
-Django REST Framework + SimpleJWT + OAuth2
+Django REST Framework + OAuth2
 
 ---
 
