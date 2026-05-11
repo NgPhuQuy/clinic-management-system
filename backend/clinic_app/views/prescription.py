@@ -7,7 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import Prescription, Inventory
 from ..serializers import PrescriptionSerializer, PrescriptionDetailSerializer
-from ..permissions import IsDoctor, IsStaff, IsDoctorOrAdmin
+from ..permissions import HasDoctorScope, HasDoctorOrAdminScope
 
 
 class PrescriptionViewSet(viewsets.ModelViewSet):
@@ -24,13 +24,11 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "create":
-            return [IsDoctor()]
+            return [HasDoctorScope()]
         if self.action in ("update", "partial_update"):
-            return [IsDoctorOrAdmin()]
-        if self.action == "dispense":
-            return [IsStaff()]
+            return [HasDoctorOrAdminScope()]
         if self.action == "add_medicine":
-            return [IsDoctor()]
+            return [HasDoctorScope()]
         return [IsAuthenticated()]
 
     def get_queryset(self):

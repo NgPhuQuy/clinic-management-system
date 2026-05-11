@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import MedicalRecord
 from ..serializers import MedicalRecordSerializer, TestResultSerializer
-from ..permissions import IsDoctor, IsDoctorOrAdmin, IsPatientOwnerOrDoctor
+from ..permissions import HasDoctorScope, HasDoctorOrAdminScope, IsPatientOwnerOrDoctor
 
 
 class MedicalRecordViewSet(viewsets.ModelViewSet):
@@ -25,11 +25,11 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "create":
-            return [IsDoctor()]
+            return [HasDoctorScope()]
         if self.action in ("update", "partial_update"):
-            return [IsDoctorOrAdmin()]
+            return [HasDoctorOrAdminScope()]
         if self.action == "add_test_result":
-            return [IsDoctor()]
+            return [HasDoctorScope()]
         return [IsAuthenticated(), IsPatientOwnerOrDoctor()]
 
     def get_queryset(self):

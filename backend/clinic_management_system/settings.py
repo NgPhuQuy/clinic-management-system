@@ -58,14 +58,15 @@ CKEDITOR_UPLOAD_PATH = "ckeditor/"
 AUTH_USER_MODEL = 'clinic_app.User'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "oauth2_provider.middleware.OAuth2TokenMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = 'clinic_management_system.urls'
@@ -103,7 +104,29 @@ REST_FRAMEWORK = {
     ],
 }
 
-OAUTH2_PROVIDER = { 'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore' }
+OAUTH2_PROVIDER = {
+    "OAUTH2_BACKEND_CLASS": "oauth2_provider.oauth2_backends.JSONOAuthLibCore",
+
+    # Scopes hiển thị khi user grant permission
+    "SCOPES": {
+        "admin": "Toàn quyền quản trị hệ thống",
+        "doctor": "Quyền bác sĩ — hồ sơ bệnh án, đơn thuốc, lịch khám",
+        "patient": "Quyền bệnh nhân — đặt lịch, xem hồ sơ cá nhân, thanh toán",
+        "read": "Chỉ đọc",
+    },
+
+    # Scopes mặc định nếu client không yêu cầu cụ thể
+    "DEFAULT_SCOPES": ["read"],
+
+    # Access token hết hạn sau 1 giờ
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
+
+    # Refresh token hết hạn sau 30 ngày
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 30,
+
+    # Cho phép refresh token
+    "ROTATE_REFRESH_TOKEN": True,
+}
 
 # ─────────────────────────────────────────────
 # CORS

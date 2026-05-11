@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from ..models import Specialty, Service
 from ..serializers import SpecialtySerializer, ServiceSerializer
-from ..permissions import IsAdmin
+from ..permissions import HasAdminScope
 class SpecialtyViewSet(viewsets.ModelViewSet):
     """
     GET    /api/specialties/         — Danh sách chuyên khoa
@@ -18,7 +18,7 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
     search_fields = ["name"]
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
-            return [IsAdmin()]
+            return [HasAdminScope()]
         return [AllowAny()]
 class ServiceViewSet(viewsets.ModelViewSet):
     """GET /api/services/ — Danh sách dịch vụ, lọc theo chuyên khoa."""
@@ -29,5 +29,5 @@ class ServiceViewSet(viewsets.ModelViewSet):
     search_fields = ["name"]
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
-            return [IsAdmin()]
+            return [HasAdminScope()]
         return [AllowAny()]

@@ -7,7 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import Doctor, DoctorSchedule
 from ..serializers import DoctorSerializer, DoctorScheduleSerializer, AppointmentSerializer
-from ..permissions import IsAdmin, IsOwnerOrAdmin, IsDoctorOrAdmin
+from ..permissions import HasAdminScope, IsOwnerOrAdmin, HasDoctorOrAdminScope
 
 
 class DoctorViewSet(viewsets.ModelViewSet):
@@ -27,8 +27,8 @@ class DoctorViewSet(viewsets.ModelViewSet):
         if self.action in ("update", "partial_update"):
             return [IsAuthenticated(), IsOwnerOrAdmin()]
         if self.action == "appointments":
-            return [IsDoctorOrAdmin()]
-        return [IsAdmin()]
+            return [HasDoctorOrAdminScope()]
+        return [HasAdminScope()]
 
     @action(detail=True, methods=["get"])
     def schedules(self, request, pk=None):
@@ -65,7 +65,7 @@ class DoctorScheduleViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
-            return [IsDoctorOrAdmin()]
+            return [HasDoctorOrAdminScope()]
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):

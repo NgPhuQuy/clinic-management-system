@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from ..models import Patient
 from ..serializers import PatientSerializer, AppointmentSerializer, MedicalRecordSerializer
-from ..permissions import IsAdmin, IsStaff, IsOwnerOrAdmin
+from ..permissions import HasAdminScope, IsOwnerOrAdmin
 
 
 class PatientViewSet(viewsets.ModelViewSet):
@@ -20,13 +20,11 @@ class PatientViewSet(viewsets.ModelViewSet):
     search_fields = ["full_name", "phone", "insurance_number"]
 
     def get_permissions(self):
-        if self.action == "list":
-            return [IsStaff()]
         if self.action in ("retrieve", "update", "partial_update"):
             return [IsAuthenticated(), IsOwnerOrAdmin()]
         if self.action in ("appointments", "medical_records"):
             return [IsAuthenticated()]
-        return [IsAdmin()]
+        return [HasAdminScope()]
 
     @action(detail=True, methods=["get"], permission_classes=[IsAuthenticated])
     def appointments(self, request, pk=None):
