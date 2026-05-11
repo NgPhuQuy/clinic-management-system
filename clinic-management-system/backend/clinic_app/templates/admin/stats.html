@@ -1,0 +1,29 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Thống kê tổng quan</h1>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0">
+  {% for card in cards %}
+  <div style="background:{{ card.color }};color:white;padding:20px;border-radius:8px;text-align:center">
+    <div style="font-size:32px;font-weight:bold">{{ card.value }}</div>
+    <div>{{ card.label }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>💰 Doanh thu 7 ngày gần nhất</h2>
+<table style="width:100%;border-collapse:collapse">
+  <tr style="background:#417690;color:white">
+    <th style="padding:8px">Ngày</th>
+    <th style="padding:8px">Số GD</th>
+    <th style="padding:8px">Doanh thu</th>
+  </tr>
+  {% for row in revenue_by_day %}
+  <tr style="border-bottom:1px solid #eee">
+    <td style="padding:8px;text-align:center">{{ row.day }}</td>
+    <td style="padding:8px;text-align:center">{{ row.count }}</td>
+    <td style="padding:8px;text-align:right">{{ row.total|floatformat:0 }} đ</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
