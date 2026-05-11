@@ -1,18 +1,18 @@
 from django.db.models import Count, Sum
 from django.utils import timezone
-from rest_framework import generics
+from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from ..models import Patient, Appointment, Payment, MedicalRecord, AppointmentService, InventoryAlert
-from ..permissions import IsAdmin
+from ..permissions import HasAdminScope
 
 
-class DashboardView(generics.GenericAPIView):
+class DashboardView(APIView):
     """
     GET /api/admin/dashboard/
     Báo cáo tổng hợp cho admin.
     """
-    permission_classes = [IsAdmin]
+    permission_classes = [HasAdminScope]
 
     def get(self, request):
         today = timezone.now().date()

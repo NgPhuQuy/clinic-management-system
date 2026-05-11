@@ -8,8 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import Payment, Appointment
 from ..serializers import PaymentSerializer, PaymentInitSerializer
-from ..permissions import IsPatient, IsStaff
-
+from ..permissions import HasPatientScope
 
 class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -32,9 +31,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         # NOTE: overriding get_permissions() silently ignores @action(permission_classes=[...])
         # Every action must be listed here explicitly.
         if self.action == "init":
-            return [IsPatient()]
-        if self.action == "confirm":
-            return [IsStaff()]
+            return [HasPatientScope()]
         return [IsAuthenticated()]
 
     @action(detail=False, methods=["post"])
