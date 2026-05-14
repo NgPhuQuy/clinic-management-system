@@ -28,11 +28,11 @@ schema_view = get_schema_view(
         contact=openapi.Contact(email="admin@clinic.example.com"),
     ),
     public=True,
-    permission_classes=(permissions.AllowAny,),
+    permission_classes=[permissions.AllowAny],
 )
 
 urlpatterns = [
-    path("/", include("clinic_app.urls")),
+    path("", include("clinic_app.urls")),
     path("admin/", admin.site.urls),
     re_path(r"^ckeditor/", include("ckeditor_uploader.urls")),
     path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),

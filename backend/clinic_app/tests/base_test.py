@@ -4,9 +4,12 @@ base_test.py — Lớp nền và các factory dùng chung cho toàn bộ test su
 Mỗi test module import BaseAPITestCase thay vì viết lại setup.
 """
 
+from datetime import timedelta
+from django.utils import timezone
+from oauth2_provider.models import AccessToken, Application
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase, APIClient
-
+import secrets
 from clinic_app.models import (
     Patient, Doctor, Specialty, DoctorSchedule,
     MedicineCategory, Medicine, Inventory,
@@ -63,13 +66,24 @@ def make_admin_user(email="admin@test.com", **kwargs):
     )
 
 
-def get_tokens_for_user(user):
-    """Trả về dict {'access': ..., 'refresh': ...}"""
-    refresh = RefreshToken.for_user(user)
-    return {
-        "access": str(refresh.access_token),
-        "refresh": str(refresh),
-    }
+def get_oauth2_token_for_user(user, scope="read"):
+    app, _ = Application.objects.get_or_create(
+        name="TestApp",
+        defaults={
+            "client_type": Application.CLIENT_CONFIDENTIAL,
+            "authorization_grant_type": Application.GRANT_PASSWORD,
+            "user": user,
+        }
+    )
+    token = AccessToken.objects.create(
+        user=user,
+        application=app,
+        token=secrets.token_urlsafe(32),
+        expires=timezone.now() + timedelta(hours=1),
+        scope=scope,
+    )
+    return token.token
+
 
 
 # ─────────────────────────────────────────────────────────────
@@ -101,9 +115,9 @@ class BaseAPITestCase(APITestCase):
 
     def auth(self, user):
         """Gắn JWT Bearer token cho user vào self.client."""
-        tokens = get_tokens_for_user(user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
-        return tokens
+        token = get_oauth2_token_for_user(user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        return token
 
     def unauth(self):
         """Xóa credentials (anonymous request)."""
