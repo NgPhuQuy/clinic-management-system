@@ -86,7 +86,7 @@ class InventoryAlertViewSet(viewsets.ModelViewSet):
     filterset_fields = ["alert_type", "is_resolved"]
 
     def get_permissions(self):
-        return nullcontext #[IsStaff()]
+        return [HasAdminScope()]
 
     @action(detail=True, methods=["patch"])
     def resolve(self, request, pk=None):

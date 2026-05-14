@@ -20,7 +20,7 @@ Các luồng được test:
 
 from django.urls import reverse
 
-from .base_test import BaseAPITestCase, make_user, get_tokens_for_user
+from .base_test import BaseAPITestCase, make_user, get_oauth2_token_for_user
 
 
 class RegisterTests(BaseAPITestCase):
@@ -107,7 +107,7 @@ class RegisterTests(BaseAPITestCase):
 class LoginTests(BaseAPITestCase):
     """POST /api/auth/login/  (SimpleJWT TokenObtainPairView)"""
 
-    URL = "/auth/login/"
+    URL = "/o/token/"
 
     def test_login_success(self):
         res = self.client.post(self.URL, {
@@ -143,7 +143,7 @@ class TokenRefreshTests(BaseAPITestCase):
     URL = "/auth/refresh/"
 
     def test_refresh_success(self):
-        tokens = get_tokens_for_user(self.patient_user)
+        tokens = get_oauth2_token_for_user(self.patient_user)
         res = self.client.post(self.URL, {"refresh": tokens["refresh"]})
         self.assertEqual(res.status_code, 200)
         self.assertIn("access", res.data)
@@ -156,10 +156,10 @@ class TokenRefreshTests(BaseAPITestCase):
 class TokenVerifyTests(BaseAPITestCase):
     """POST /api/auth/verify/"""
 
-    URL = "/auth/verify/"
+    URL = "/o/introspect/"
 
     def test_verify_valid_token(self):
-        tokens = get_tokens_for_user(self.patient_user)
+        tokens = get_oauth2_token_for_user(self.patient_user)
         res = self.client.post(self.URL, {"token": tokens["access"]})
         self.assertEqual(res.status_code, 200)
 

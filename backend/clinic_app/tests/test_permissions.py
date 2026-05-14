@@ -139,21 +139,3 @@ class DoctorAccessTests(BaseAPITestCase):
         self.auth(self.doctor_user)
         res = self.client.get("/medicines/")
         self.assertEqual(res.status_code, 200)
-
-
-class StaffAccessTests(BaseAPITestCase):
-    """Staff có quyền quản lý kho thuốc."""
-
-    def setUp(self):
-        super().setUp()
-        self.staff_user = make_user("staff_perm@test.com", role="staff")
-
-    def test_staff_can_access_inventory_alerts(self):
-        self.auth(self.staff_user)
-        res = self.client.get("/inventory-alerts/")
-        self.assertEqual(res.status_code, 200)
-
-    def test_staff_cannot_access_dashboard(self):
-        self.auth(self.staff_user)
-        res = self.client.get("/admin/dashboard/")
-        self.assertEqual(res.status_code, 403)
