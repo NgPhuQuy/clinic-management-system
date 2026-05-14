@@ -1,18 +1,32 @@
+"""
+clinic_app/views/patient.py
+
+Endpoints:
+  GET   /api/patients/              — Danh sách           [admin scope]
+  GET   /api/patients/{id}/         — Chi tiết            [owner or admin]
+  PATCH /api/patients/{id}/         — Cập nhật profile    [owner or admin]
+  GET   /api/patients/{id}/appointments/   — Lịch sử khám [owner or admin]
+  GET   /api/patients/{id}/medical_records/ — Hồ sơ bệnh  [owner or admin]
+
+BUG ĐÃ SỬA:
+  - Dùng IsAuthenticated (Django session) → thay bằng IsAuthenticatedWithValidToken (OAuth2)
+  - Docstring cũ "admin/staff" → chỉ còn "admin"
+"""
+
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ..models import Patient
 from ..serializers import PatientSerializer, AppointmentSerializer, MedicalRecordSerializer
-from ..permissions import HasAdminScope, IsOwnerOrAdmin
+from ..permissions import HasAdminScope, IsOwnerOrAdmin, IsAuthenticatedWithValidToken
 
 
 class PatientViewSet(viewsets.ModelViewSet):
     """
-    GET  /api/patients/        — Danh sách (admin/staff)
-    GET  /api/patients/{id}/   — Chi tiết
-    PATCH /api/patients/{id}/  — Cập nhật profile
+    GET   /api/patients/        — Danh sách [admin]
+    GET   /api/patients/{id}/   — Chi tiết  [owner or admin]
+    PATCH /api/patients/{id}/   — Cập nhật  [owner or admin]
     """
     queryset = Patient.objects.select_related("user").all()
     serializer_class = PatientSerializer
@@ -21,12 +35,15 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ("retrieve", "update", "partial_update"):
-            return [IsAuthenticated(), IsOwnerOrAdmin()]
+            # BUG FIX: IsAuthenticated → IsAuthenticatedWithValidToken
+            return [IsAuthenticatedWithValidToken(), IsOwnerOrAdmin()]
         if self.action in ("appointments", "medical_records"):
-            return [IsAuthenticated()]
+            # BUG FIX: IsAuthenticated → IsAuthenticatedWithValidToken
+            return [IsAuthenticatedWithValidToken()]
+        # list, create, destroy → admin only
         return [HasAdminScope()]
 
-    @action(detail=True, methods=["get"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["get"])
     def appointments(self, request, pk=None):
         """GET /api/patients/{id}/appointments/ — Lịch sử khám bệnh."""
         patient = self.get_object()
@@ -34,9 +51,9 @@ class PatientViewSet(viewsets.ModelViewSet):
         serializer = AppointmentSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["get"])
     def medical_records(self, request, pk=None):
-        """GET /api/patients/{id}/medical_records/"""
+        """GET /api/patients/{id}/medical_records/ — Hồ sơ bệnh án."""
         patient = self.get_object()
         qs = patient.medical_records.prefetch_related("test_results").order_by("-created_at")
         serializer = MedicalRecordSerializer(qs, many=True)

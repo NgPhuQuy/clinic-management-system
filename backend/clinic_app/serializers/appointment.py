@@ -1,3 +1,12 @@
+"""
+clinic_app/serializers/appointment.py
+
+BUG ĐÃ SỬA:
+  1. validate_status() dùng `user.role` → thay bằng token scope (OAuth2-consistent)
+  2. Xóa key "staff" trong allowed_transitions (role staff đã bị loại)
+  3. Comment cũ ám chỉ "staff" đã được cập nhật
+"""
+
 from django.utils import timezone
 from rest_framework import serializers
 from ..models import Appointment, AppointmentService, Service
@@ -41,7 +50,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
 class AppointmentCreateSerializer(serializers.ModelSerializer):
     services = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Service.objects.filter(is_active=True), write_only=True, required=False
+        many=True,
+        queryset=Service.objects.filter(is_active=True),
+        write_only=True,
+        required=False,
     )
 
     class Meta:
@@ -76,28 +88,56 @@ class AppointmentStatusSerializer(serializers.ModelSerializer):
         fields = ("status",)
 
     def validate_status(self, value):
+        """
+        Kiểm tra chuyển trạng thái dựa trên OAuth2 token scope.
+
+        BUG FIX (2 lỗi):
+          1. Trước: dùng user.role → không nhất quán với OAuth2; nếu token scope khác role
+             thì sẽ authorize sai.
+          2. Trước: có key "staff" trong allowed_transitions → staff đã bị loại khỏi hệ thống.
+
+        Quy tắc chuyển trạng thái theo scope:
+          patient : pending→cancelled, confirmed→cancelled
+          doctor  : pending→confirmed|cancelled, confirmed→completed|no_show
+          admin   : không giới hạn
+        """
         instance = self.instance
-        user = self.context["request"].user
-        allowed = {
+        request = self.context.get("request")
+
+        # Lấy scope từ OAuth2 token
+        token = getattr(request, "auth", None) if request else None
+        token_scopes = set(token.scope.split()) if token else set()
+
+        # Admin scope: không giới hạn
+        if "admin" in token_scopes:
+            return value
+
+        # Map scope → quy tắc chuyển trạng thái
+        ALLOWED_TRANSITIONS = {
             "patient": {
-                "pending": ["cancelled"],
+                "pending":   ["cancelled"],
                 "confirmed": ["cancelled"],
             },
             "doctor": {
-                "pending": ["confirmed", "cancelled"],
+                "pending":   ["confirmed", "cancelled"],
                 "confirmed": ["completed", "no_show"],
             },
-            "staff": {
-                "pending": ["confirmed", "cancelled"],
-                "confirmed": ["completed", "no_show"],
-            },
-            "admin": None,  # unrestricted
+            # "staff" đã bị loại — không còn trong hệ thống
         }
-        role_rules = allowed.get(user.role)
-        if role_rules is not None:
+
+        # Xác định scope hiện tại
+        active_scope = None
+        if "doctor" in token_scopes:
+            active_scope = "doctor"
+        elif "patient" in token_scopes:
+            active_scope = "patient"
+
+        if active_scope:
+            role_rules = ALLOWED_TRANSITIONS.get(active_scope, {})
             permitted = role_rules.get(instance.status, [])
             if value not in permitted:
                 raise serializers.ValidationError(
                     f"Không thể chuyển từ '{instance.status}' → '{value}'."
                 )
+
         return value

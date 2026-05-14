@@ -3,13 +3,22 @@ test_api_medicine.py — Kiểm thử API Thuốc & Kho (Medicine / Inventory).
 
 Chạy: python manage.py test clinic_app.tests.test_api_medicine
 
+BUG ĐÃ SỬA:
+  1. InventoryTests và InventoryAlertTests tạo make_user(role="staff")
+     → role không hợp lệ sau migration 0003. Fix: xóa staff tests, thay bằng admin.
+  2. test_staff_can_add_inventory() → đổi thành test_admin_can_add_inventory()
+  3. test_staff_can_list_alerts() → đổi thành test_admin_can_list_alerts()
+  4. test_patient_cannot_view_low_stock() assertIn([403, 200]) → test quá lỏng lẻo,
+     không verify security thực sự. Fix: assert cụ thể 200 (IsAuthenticatedWithValidToken)
+  5. Scope mặc định trong auth() đã được fix ở base_test → tự map đúng per role.
+
 Luồng được test:
   ✓ Mọi user đã đăng nhập đều xem được danh sách thuốc
   ✓ Chỉ Admin mới tạo/sửa/xóa thuốc
-  ✓ Staff nhập kho
+  ✓ Admin nhập kho (staff đã bị loại)
   ✓ Endpoint low_stock trả về thuốc sắp hết
   ✓ Endpoint near_expiry trả về thuốc sắp hết hạn
-  ✓ Alert: resolve cảnh báo
+  ✓ Alert: chỉ admin mới list và resolve cảnh báo
 """
 
 from datetime import date, timedelta
@@ -79,6 +88,11 @@ class MedicineListTests(BaseAPITestCase):
         res = self.client.get(MEDICINES_URL)
         self.assertEqual(res.status_code, 200)
 
+    def test_admin_can_view_medicines(self):
+        self.auth(self.admin)
+        res = self.client.get(MEDICINES_URL)
+        self.assertEqual(res.status_code, 200)
+
     def test_unauthenticated_cannot_view(self):
         res = self.client.get(MEDICINES_URL)
         self.assertEqual(res.status_code, 401)
@@ -87,6 +101,8 @@ class MedicineListTests(BaseAPITestCase):
         self.auth(self.admin)
         res = self.client.get(MEDICINES_URL, {"search": "Amoxicillin"})
         self.assertEqual(res.status_code, 200)
+        results = res.data.get("results", res.data)
+        self.assertGreaterEqual(len(results), 1)
 
 
 class MedicineCreateTests(BaseAPITestCase):
@@ -119,14 +135,23 @@ class MedicineCreateTests(BaseAPITestCase):
         res = self.client.post(MEDICINES_URL, self._payload(), format="json")
         self.assertEqual(res.status_code, 403)
 
+    def test_unauthenticated_cannot_create(self):
+        res = self.client.post(MEDICINES_URL, self._payload(), format="json")
+        self.assertEqual(res.status_code, 401)
+
 
 class InventoryTests(BaseAPITestCase):
-    """POST /api/inventory/ — Nhập kho (Staff/Admin)."""
+    """
+    POST /api/inventory/ — Nhập kho.
+
+    BUG FIX: staff đã bị loại → chỉ Admin mới nhập kho.
+    Trước: tạo user role="staff" (invalid), test_staff_can_add_inventory().
+    Nay:   chỉ Admin, test patient/doctor bị từ chối.
+    """
 
     def setUp(self):
         super().setUp()
         self.medicine = make_medicine()
-        self.staff_user = make_user("staff@test.com", role="staff")
 
     def _payload(self):
         return {
@@ -139,12 +164,8 @@ class InventoryTests(BaseAPITestCase):
             "warning_threshold": 10,
         }
 
-    def test_staff_can_add_inventory(self):
-        self.auth(self.staff_user)
-        res = self.client.post(INVENTORY_URL, self._payload(), format="json")
-        self.assertEqual(res.status_code, 201, res.data)
-
     def test_admin_can_add_inventory(self):
+        """BUG FIX: trước là test_staff_can_add_inventory → staff không còn tồn tại."""
         self.auth(self.admin)
         res = self.client.post(INVENTORY_URL, self._payload(), format="json")
         self.assertEqual(res.status_code, 201, res.data)
@@ -154,13 +175,27 @@ class InventoryTests(BaseAPITestCase):
         res = self.client.post(INVENTORY_URL, self._payload(), format="json")
         self.assertEqual(res.status_code, 403)
 
+    def test_doctor_cannot_add_inventory(self):
+        self.auth(self.doctor_user)
+        res = self.client.post(INVENTORY_URL, self._payload(), format="json")
+        self.assertEqual(res.status_code, 403)
+
+    def test_unauthenticated_cannot_add_inventory(self):
+        res = self.client.post(INVENTORY_URL, self._payload(), format="json")
+        self.assertEqual(res.status_code, 401)
+
+    def test_all_auth_users_can_view_inventory(self):
+        """GET inventory là read-only cho mọi user đã đăng nhập."""
+        self.auth(self.patient_user)
+        res = self.client.get(INVENTORY_URL)
+        self.assertEqual(res.status_code, 200)
+
 
 class LowStockTests(BaseAPITestCase):
     """GET /api/inventory/low_stock/ — Thuốc sắp hết."""
 
     def setUp(self):
         super().setUp()
-        # Inventory dưới ngưỡng cảnh báo
         med = make_medicine(code="LOW001")
         make_inventory(medicine=med, quantity=3, threshold=10)  # 3 <= 10 → low
 
@@ -170,11 +205,18 @@ class LowStockTests(BaseAPITestCase):
         self.assertEqual(res.status_code, 200)
         self.assertGreaterEqual(len(res.data), 1)
 
-    def test_patient_cannot_view_low_stock(self):
+    def test_authenticated_patient_can_view_low_stock(self):
+        """
+        BUG FIX: test cũ assertIn([403, 200]) → quá lỏng lẻo.
+        InventoryViewSet GET dùng IsAuthenticatedWithValidToken → patient được xem.
+        """
         self.auth(self.patient_user)
         res = self.client.get(f"{INVENTORY_URL}low_stock/")
-        # patient không phải staff → 403
-        self.assertIn(res.status_code, [403, 200])  # tuỳ permission
+        self.assertEqual(res.status_code, 200)  # read action → any auth
+
+    def test_unauthenticated_cannot_view_low_stock(self):
+        res = self.client.get(f"{INVENTORY_URL}low_stock/")
+        self.assertEqual(res.status_code, 401)
 
 
 class NearExpiryTests(BaseAPITestCase):
@@ -183,8 +225,7 @@ class NearExpiryTests(BaseAPITestCase):
     def setUp(self):
         super().setUp()
         med = make_medicine(code="EXP001")
-        # Hết hạn trong 15 ngày → near expiry
-        make_inventory(medicine=med, expiry_days=15)
+        make_inventory(medicine=med, expiry_days=15)  # hết hạn trong 15 ngày → near expiry
 
     def test_near_expiry_returns_items(self):
         self.auth(self.admin)
@@ -192,13 +233,22 @@ class NearExpiryTests(BaseAPITestCase):
         self.assertEqual(res.status_code, 200)
         self.assertGreaterEqual(len(res.data), 1)
 
+    def test_doctor_can_view_near_expiry(self):
+        self.auth(self.doctor_user)
+        res = self.client.get(f"{INVENTORY_URL}near_expiry/")
+        self.assertEqual(res.status_code, 200)
+
 
 class InventoryAlertTests(BaseAPITestCase):
-    """PATCH /api/inventory-alerts/{id}/resolve/ — Xử lý cảnh báo."""
+    """
+    GET  /api/inventory-alerts/              — Danh sách cảnh báo [admin only]
+    PATCH /api/inventory-alerts/{id}/resolve/ — Xử lý cảnh báo   [admin only]
+
+    BUG FIX: staff_user đã bị loại → dùng admin user.
+    """
 
     def setUp(self):
         super().setUp()
-        self.staff_user = make_user("staff2@test.com", role="staff")
         med = make_medicine(code="ALERT001")
         inv = make_inventory(medicine=med)
         self.alert = InventoryAlert.objects.create(
@@ -208,13 +258,15 @@ class InventoryAlertTests(BaseAPITestCase):
             message="Thuốc sắp hết hàng",
         )
 
-    def test_staff_can_list_alerts(self):
-        self.auth(self.staff_user)
+    def test_admin_can_list_alerts(self):
+        """BUG FIX: trước là test_staff_can_list_alerts."""
+        self.auth(self.admin)
         res = self.client.get(ALERTS_URL)
         self.assertEqual(res.status_code, 200)
 
-    def test_resolve_alert(self):
-        self.auth(self.staff_user)
+    def test_admin_can_resolve_alert(self):
+        """BUG FIX: trước là test_resolve_alert với staff_user."""
+        self.auth(self.admin)
         res = self.client.patch(f"{ALERTS_URL}{self.alert.id}/resolve/")
         self.assertEqual(res.status_code, 200, res.data)
         self.alert.refresh_from_db()
@@ -224,3 +276,12 @@ class InventoryAlertTests(BaseAPITestCase):
         self.auth(self.patient_user)
         res = self.client.get(ALERTS_URL)
         self.assertEqual(res.status_code, 403)
+
+    def test_doctor_cannot_list_alerts(self):
+        self.auth(self.doctor_user)
+        res = self.client.get(ALERTS_URL)
+        self.assertEqual(res.status_code, 403)
+
+    def test_unauthenticated_cannot_list_alerts(self):
+        res = self.client.get(ALERTS_URL)
+        self.assertEqual(res.status_code, 401)

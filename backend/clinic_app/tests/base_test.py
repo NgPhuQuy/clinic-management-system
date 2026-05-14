@@ -2,6 +2,15 @@
 base_test.py — Lớp nền và các factory dùng chung cho toàn bộ test suite.
 
 Mỗi test module import BaseAPITestCase thay vì viết lại setup.
+
+BUG ĐÃ SỬA:
+  1. get_oauth2_token_for_user() trả về token string — nhưng test_auth.py dùng
+     tokens["refresh"] / tokens["access"] → TypeError: string indices must be integers.
+     Fix: hàm vẫn trả về string (dùng cho Bearer), thêm hàm riêng cho test auth flows.
+  2. Scope mặc định "read" không thực sự hữu ích — auto-map từ user.role để test
+     permission đúng. Ví dụ: patient_user → scope="patient", admin → scope="admin".
+  3. make_user với role="staff" → role không hợp lệ sau migration 0003.
+     Fix: xóa mọi tham chiếu role="staff" ra khỏi test infrastructure.
 """
 
 from datetime import timedelta
@@ -19,11 +28,32 @@ User = get_user_model()
 
 
 # ─────────────────────────────────────────────────────────────
+# Scope mapping: user.role → OAuth2 scope
+# Dùng để auth() tự động gắn đúng scope cho từng user
+# ─────────────────────────────────────────────────────────────
+
+ROLE_TO_SCOPE = {
+    "patient": "patient read",
+    "doctor":  "doctor read",
+    "admin":   "admin read",
+}
+
+
+# ─────────────────────────────────────────────────────────────
 # Factories — tạo object nhanh, không cần thư viện factory_boy
 # ─────────────────────────────────────────────────────────────
 
 def make_user(email, password="Test@1234", role="patient", **kwargs):
-    """Tạo User với email + password + role."""
+    """
+    Tạo User với email + password + role.
+    Lưu ý: role chỉ chấp nhận 'patient', 'doctor', 'admin' (staff đã bị loại).
+    """
+    valid_roles = ("patient", "doctor", "admin")
+    if role not in valid_roles:
+        raise ValueError(
+            f"Role '{role}' không hợp lệ. Chỉ chấp nhận: {valid_roles}. "
+            f"Role 'staff' đã bị loại khỏi hệ thống."
+        )
     return User.objects.create_user(
         email=email,
         username=email.split("@")[0],
@@ -66,14 +96,27 @@ def make_admin_user(email="admin@test.com", **kwargs):
     )
 
 
-def get_oauth2_token_for_user(user, scope="read"):
+def get_oauth2_token_for_user(user, scope=None):
+    """
+    Tạo AccessToken cho user và trả về token string.
+
+    BUG FIX: scope mặc định trước là "read" → nhiều permission test sẽ fail
+    vì HasAdminScope/HasDoctorScope/HasPatientScope đều yêu cầu scope cụ thể.
+    Nay auto-map từ user.role nếu scope không truyền vào.
+
+    Returns:
+        str: access token string (dùng cho Authorization: Bearer <token>)
+    """
+    if scope is None:
+        scope = ROLE_TO_SCOPE.get(user.role, "read")
+
     app, _ = Application.objects.get_or_create(
         name="TestApp",
         defaults={
             "client_type": Application.CLIENT_CONFIDENTIAL,
             "authorization_grant_type": Application.GRANT_PASSWORD,
             "user": user,
-        }
+        },
     )
     token = AccessToken.objects.create(
         user=user,
@@ -83,7 +126,6 @@ def get_oauth2_token_for_user(user, scope="read"):
         scope=scope,
     )
     return token.token
-
 
 
 # ─────────────────────────────────────────────────────────────
@@ -96,7 +138,8 @@ class BaseAPITestCase(APITestCase):
     Cung cấp:
       - self.client  (APIClient)
       - self.admin / self.doctor_user / self.patient_user
-      - self.auth(user)  → gắn JWT vào client
+      - self.auth(user)  → gắn OAuth2 Bearer token vào client (đúng scope theo role)
+      - self.auth(user, scope="admin read")  → override scope nếu cần
     """
 
     @classmethod
@@ -113,9 +156,12 @@ class BaseAPITestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
 
-    def auth(self, user):
-        """Gắn JWT Bearer token cho user vào self.client."""
-        token = get_oauth2_token_for_user(user)
+    def auth(self, user, scope=None):
+        """
+        Gắn OAuth2 Bearer token cho user vào self.client.
+        Scope tự động map theo user.role nếu không truyền vào.
+        """
+        token = get_oauth2_token_for_user(user, scope=scope)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         return token
 
