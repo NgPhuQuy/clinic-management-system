@@ -31,7 +31,9 @@ router.register(r"notifications",      views.NotificationViewSet,      basename=
 urlpatterns = [
 
     # ── Auth ─────────────────────────────────
-    path("auth/register/",        views.RegisterView.as_view(),      name="register"),
+    #api auth/login/ là API trung giang dùng để gửi username, password lên server để gọi o/token/
+    path("auth/login/",           views.LoginView.as_view(),          name="login"),
+    path("auth/register/",        views.RegisterView.as_view(),       name="register"),
     path("auth/me/",              views.MeView.as_view(),             name="me"),
     path("auth/change-password/", views.ChangePasswordView.as_view(), name="change-password"),
 

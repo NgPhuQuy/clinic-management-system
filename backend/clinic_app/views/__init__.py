@@ -1,4 +1,4 @@
-from .auth import RegisterView, MeView, ChangePasswordView, FirebaseTokenView
+from .auth import RegisterView, LoginView, MeView, ChangePasswordView, FirebaseTokenView
 from .specialty import SpecialtyViewSet, ServiceViewSet
 from .patient import PatientViewSet
 from .doctor import DoctorViewSet, DoctorScheduleViewSet
@@ -12,7 +12,7 @@ from .notification import NotificationViewSet
 from .dashboard import DashboardView
 
 __all__ = [
-    "RegisterView", "MeView", "ChangePasswordView", "FirebaseTokenView",
+    "RegisterView", "LoginView", "MeView", "ChangePasswordView", "FirebaseTokenView",
     "SpecialtyViewSet", "ServiceViewSet",
     "PatientViewSet",
     "DoctorViewSet", "DoctorScheduleViewSet",
