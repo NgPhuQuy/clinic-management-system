@@ -33,13 +33,10 @@ const Login = () => {
             setLoading(true);
             setErr(null);
 
-            // OAuth2 password grant – giống ecourse pattern
+            // gửi request lên APIs trung gian, sau đó lấy Client_ID, Client_Secret từ server
             const res = await Apis.post(endpoints["login"], {
                 username: user.username,
                 password: user.password,
-                client_id: "ClinicClientId",          // Thay bằng client_id thực từ Django admin
-                client_secret: "ClinicClientSecret",   // Thay bằng client_secret thực
-                grant_type: "password",
             });
 
             await AsyncStorage.setItem("token", res.data.access_token);

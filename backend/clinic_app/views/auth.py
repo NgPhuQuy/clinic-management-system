@@ -2,6 +2,7 @@
 clinic_app/views/auth.py
 
 Endpoints:
+  POST /auth/login/             — Đăng Nhập (AllowAny)
   POST /auth/register/          — Đăng ký (AllowAny)
   GET  /auth/me/                — Thông tin user hiện tại
   PUT  /auth/change-password/   — Đổi mật khẩu
@@ -18,6 +19,8 @@ Lấy access token OAuth2:
 """
 
 import logging
+import os
+import requests
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -51,6 +54,50 @@ def _get_firebase_app():
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
     return firebase_admin.get_app()
+
+
+# ─────────────────────────────────────────────
+# Login
+# ─────────────────────────────────────────────
+class LoginView(APIView):
+    """
+    POST /auth/login/
+    Mobile app chỉ gửi username + password.
+    Backend tự gắn client_id, client_secret rồi gọi /o/token/.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        # Validate
+        if not username or not password:
+            return Response(
+                {'detail': 'Vui lòng nhập username và password.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Gọi /o/token/ từ phía SERVER
+        token_url = request.build_absolute_uri('/o/token/')
+
+        token_response = requests.post(token_url, data={
+            'grant_type': 'password',
+            'username': username,
+            'password': password,
+            'client_id': settings.OAUTH2_CLIENT_ID,
+            'client_secret': settings.OAUTH2_CLIENT_SECRET,
+        })
+
+        # Nếu OAuth2 server trả lỗi thì chuyển tiếp lỗi về app
+        if token_response.status_code != 200:
+            return Response(
+                {'detail': 'Sai tên đăng nhập hoặc mật khẩu.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Trả access_token về cho mobile app
+        return Response(token_response.json(), status=status.HTTP_200_OK)
 
 
 # ─────────────────────────────────────────────

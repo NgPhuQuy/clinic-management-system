@@ -2,12 +2,12 @@ import axios from "axios";
 
 // Thay IP này bằng IP máy tính đang chạy Django (xem bằng ipconfig/ifconfig)
 // const BASE_URL = "http://10.0.2.2:8000/";
-const BASE_URL = "http://192.168.182.1/";
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 
 export const endpoints = {
     // Auth
     'register': '/auth/register/',
-    'login': '/o/token/',
+    'login': 'auth/login',
     'current-user': '/auth/me/',
     'change-password': '/auth/change-password/',
 
