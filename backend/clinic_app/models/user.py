@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-from django.utils import timezone
 from cloudinary.models import CloudinaryField
 
 
@@ -28,12 +27,8 @@ class User(AbstractUser):
         ADMIN = "admin", "Quản trị viên"
 
     email = models.EmailField(unique=True)
-    username = models.CharField(max_length=150, unique=True)
     role = models.CharField(max_length=20, choices=Role, default=Role.PATIENT)
     avatar = CloudinaryField(null=True)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
 
     # OAuth2 / Social login
     oauth_provider = models.CharField(
@@ -42,25 +37,7 @@ class User(AbstractUser):
     )
     oauth_uid = models.CharField(max_length=255, blank=True, null=True)
 
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
-
     objects = UserManager()
-
-    groups = models.ManyToManyField(
-        'auth.Group',
-        related_name='clinic_user_groups',
-        blank=True,
-        help_text='The groups this user belongs to.',
-        verbose_name='groups',
-    )
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        related_name='clinic_user_permissions',
-        blank=True,
-        help_text='Specific permissions for this user.',
-        verbose_name='user permissions',
-    )
 
     class Meta:
         db_table = "users"

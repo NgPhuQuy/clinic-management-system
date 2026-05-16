@@ -19,6 +19,7 @@ from django.urls import path, re_path, include
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from clinic_app.admin import admin_site
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -33,7 +34,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path("", include("clinic_app.urls")),
-    path("admin/", admin.site.urls),
+    path("admin/", admin_site.urls),
     path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
     
     re_path(r"^ckeditor/", include("ckeditor_uploader.urls")),
