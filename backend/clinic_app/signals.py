@@ -2,12 +2,11 @@
 clinic_app/signals.py
 
 Signals:
-  1. Inventory   → auto tạo InventoryAlert (LOW_STOCK / NEAR_EXPIRY / EXPIRED)
-  2. Appointment → auto Notification khi status thay đổi
-  3. Prescription→ auto Notification khi status → dispensed
-  4. Appointment → auto tạo Consultation record khi status → confirmed
-
-Kết nối trong apps.py → ClinicAppConfig.ready()
+  1. Inventory    → auto tạo InventoryAlert (LOW_STOCK / NEAR_EXPIRY / EXPIRED)
+  2. Appointment  → auto Notification khi status thay đổi
+  3. Appointment  → auto tạo Consultation record khi status → confirmed
+  4. Prescription → auto Notification khi status → dispensed
+  5. Prescription → auto trừ kho khi status → dispensed        ← THÊM MỚI
 """
 import logging
 
@@ -23,10 +22,6 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────
 
 def _cache_old_status(sender, instance, **kwargs):
-    """
-    Lưu status cũ vào instance._old_status trước khi save.
-    Gắn vào pre_save của bất kỳ model nào có trường `status`.
-    """
     if instance.pk:
         try:
             instance._old_status = sender.objects.get(pk=instance.pk).status
@@ -42,19 +37,12 @@ def _cache_old_status(sender, instance, **kwargs):
 
 @receiver(post_save, sender="clinic_app.Inventory")
 def check_inventory_alerts(sender, instance, **kwargs):
-    """
-    Sau mỗi lần save Inventory, kiểm tra:
-      - Số lượng ≤ warning_threshold → LOW_STOCK
-      - Hết hạn trong 30 ngày        → NEAR_EXPIRY
-      - Đã hết hạn                   → EXPIRED
-    """
     from .models import InventoryAlert
 
-    today = timezone.now().date()
+    today         = timezone.now().date()
     medicine_name = instance.medicine.name
-    batch = instance.batch_number
-
-    alert_cases = []
+    batch         = instance.batch_number
+    alert_cases   = []
 
     if instance.is_low_stock():
         alert_cases.append((
@@ -96,17 +84,11 @@ pre_save.connect(_cache_old_status, sender="clinic_app.Appointment")
 
 @receiver(post_save, sender="clinic_app.Appointment")
 def on_appointment_saved(sender, instance, created, **kwargs):
-    """
-    Hai việc sau mỗi lần save Appointment:
-      1. Gửi Notification cho bệnh nhân khi status thay đổi.
-      2. Tự tạo Consultation record khi status → confirmed.
-    """
     from .models import Consultation, Notification
 
     old_status = getattr(instance, "_old_status", None)
     new_status = instance.status
 
-    # Không làm gì nếu status không thay đổi
     if created or old_status == new_status or old_status is None:
         return
 
@@ -150,18 +132,24 @@ def on_appointment_saved(sender, instance, created, **kwargs):
             related_object_id=instance.pk,
         )
 
-    # ── 2. Auto-tạo Consultation khi confirmed ─
+    # ── 2. Auto-tạo Consultation khi confirmed ─── FIX: thêm set room_id
     if new_status == "confirmed":
         consultation, created_c = Consultation.objects.get_or_create(
             appointment=instance,
-            defaults={"type": Consultation.Type.CHAT, "status": Consultation.Status.WAITING},
+            defaults={
+                "type":   Consultation.Type.VIDEO,       # đổi sang VIDEO vì đã tích hợp Agora
+                "status": Consultation.Status.WAITING,
+            },
         )
         if created_c:
+            # FIX: set room_id sau khi có pk
+            consultation.room_id = f"clinic_consult_{consultation.pk}"
+            consultation.save(update_fields=["room_id"])
             logger.info("Consultation #%s created for Appointment #%s", consultation.pk, instance.pk)
 
 
 # ─────────────────────────────────────────────
-# PRESCRIPTION — notify khi dispensed
+# PRESCRIPTION — notify + trừ kho khi dispensed
 # ─────────────────────────────────────────────
 
 pre_save.connect(_cache_old_status, sender="clinic_app.Prescription")
@@ -176,6 +164,7 @@ def on_prescription_saved(sender, instance, created, **kwargs):
         return
 
     if instance.status == "dispensed":
+        # ── Notification cho bệnh nhân ──
         Notification.objects.create(
             user=instance.patient.user,
             title="Đơn thuốc đã sẵn sàng",
@@ -186,3 +175,47 @@ def on_prescription_saved(sender, instance, created, **kwargs):
             type=Notification.Type.PRESCRIPTION_READY,
             related_object_id=instance.pk,
         )
+
+        # ── THÊM MỚI: Trừ kho theo từng dòng đơn thuốc ──
+        _deduct_inventory(instance)
+
+
+def _deduct_inventory(prescription):
+    """
+    Trừ kho khi đơn thuốc được cấp phát.
+
+    Chiến lược: FEFO (First Expired First Out) —
+    ưu tiên dùng lô gần hết hạn nhất trước.
+    Nếu không đủ hàng → ghi log cảnh báo nhưng không raise exception
+    (tránh block toàn bộ flow dispensed).
+    """
+    from .models import Inventory
+
+    for detail in prescription.details.select_related("medicine").all():
+        remaining = detail.quantity  # số lượng cần trừ
+
+        # Lấy các lô còn hàng, ưu tiên lô gần hết hạn trước (FEFO)
+        batches = (
+            Inventory.objects
+            .filter(medicine=detail.medicine, quantity__gt=0)
+            .order_by("expiry_date")   # FEFO
+        )
+
+        for batch in batches:
+            if remaining <= 0:
+                break
+
+            deduct = min(batch.quantity, remaining)
+            batch.quantity -= deduct
+            batch.save(update_fields=["quantity"])  # trigger check_inventory_alerts tự động
+            remaining -= deduct
+
+        if remaining > 0:
+            # Không đủ hàng — ghi cảnh báo để admin biết
+            logger.warning(
+                "Prescription #%s: Thiếu %s %s %s khi cấp phát. Cần nhập thêm kho.",
+                prescription.pk,
+                remaining,
+                detail.medicine.unit,
+                detail.medicine.name,
+            )

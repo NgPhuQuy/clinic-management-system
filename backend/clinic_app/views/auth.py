@@ -87,6 +87,7 @@ class LoginView(APIView):
             'password': password,
             'client_id': settings.OAUTH2_CLIENT_ID,
             'client_secret': settings.OAUTH2_CLIENT_SECRET,
+            'scope': User.role,
         })
 
         # Nếu OAuth2 server trả lỗi thì chuyển tiếp lỗi về app
