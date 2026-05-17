@@ -1,25 +1,17 @@
 """
 clinic_app/permissions.py
 
-Hệ thống phân quyền dựa trên OAuth2 Scopes thay vì role string.
+Hệ thống phân quyền dựa trên OAuth2 Scopes.
 
 Scopes được cấp khi user lấy token qua /o/token/:
   - admin   → quản trị viên
   - doctor  → bác sĩ
   - patient → bệnh nhân
   - read    → chỉ đọc (default)
-
-Cách dùng trong view:
-    permission_classes = [HasAdminScope]
-    permission_classes = [HasDoctorScope | HasAdminScope]
-    permission_classes = [IsAuthenticatedWithValidToken]
 """
 
-from oauth2_provider.contrib.rest_framework import (
-    IsAuthenticatedOrTokenHasScope,
-    TokenHasScope,
-)
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from oauth2_provider.contrib.rest_framework import TokenHasScope
+from rest_framework.permissions import BasePermission
 
 
 # ─────────────────────────────────────────────
@@ -95,7 +87,7 @@ class IsAuthenticatedWithValidToken(BasePermission):
 
 
 # ─────────────────────────────────────────────
-# Object-level permissions (scope không xử lý được)
+# Object-level permissions 
 # ─────────────────────────────────────────────
 
 class IsOwnerOrAdmin(BasePermission):
