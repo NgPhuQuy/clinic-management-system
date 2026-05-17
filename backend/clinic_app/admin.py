@@ -46,7 +46,7 @@ class ClinicAdminSite(admin.AdminSite):
 
     def get_urls(self):
         return [
-            path('', self.admin_view(self.clinic_stats), name='clinic-stats'),
+            path('clinic-stats/', self.admin_view(self.clinic_stats), name='clinic-stats'),
         ] + super().get_urls()
 
     def clinic_stats(self, request):
