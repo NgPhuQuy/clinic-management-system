@@ -13,7 +13,6 @@ from clinic_app.models import (
     Prescription, PrescriptionDetail,
     Payment, Consultation, ChatMessage, Notification,
 )
-from oauth2_provider.models import Application
 
 fake = Faker("vi_VN")
 
@@ -91,13 +90,13 @@ SYMPTOMS = [
 ]
 
 TEST_NAMES = [
-    ("Công thức máu",  "Số lượng tế bào máu trong giới hạn bình thường", "",        "Bình thường"),
-    ("Đường huyết",    "5.8",                                             "mmol/L",  "3.9 - 6.1"),
-    ("Huyết áp",       "130/85",                                          "mmHg",    "< 120/80"),
-    ("Cholesterol",    "4.9",                                             "mmol/L",  "< 5.2"),
-    ("AST/ALT",        "28/32",                                           "U/L",     "< 40"),
-    ("Creatinine",     "88",                                              "umol/L",  "60 - 110"),
-    ("Tổng phân tích nước tiểu", "Không phát hiện bất thường",           "",        "Bình thường"),
+    ("Công thức máu",            "Số lượng tế bào máu trong giới hạn bình thường", "",        "Bình thường"),
+    ("Đường huyết",              "5.8",                                             "mmol/L",  "3.9 - 6.1"),
+    ("Huyết áp",                 "130/85",                                          "mmHg",    "< 120/80"),
+    ("Cholesterol",              "4.9",                                             "mmol/L",  "< 5.2"),
+    ("AST/ALT",                  "28/32",                                           "U/L",     "< 40"),
+    ("Creatinine",               "88",                                              "umol/L",  "60 - 110"),
+    ("Tổng phân tích nước tiểu", "Không phát hiện bất thường",                     "",        "Bình thường"),
 ]
 
 
@@ -135,7 +134,6 @@ class Command(BaseCommand):
         _            = self._seed_prescriptions(records, doctors, patients, medicines)
         _            = self._seed_payments(appointments, patients)
         _            = self._seed_notifications(patients, doctors)
-        _            = self._seed_oauth2_application()
 
         self.stdout.write(self.style.SUCCESS("\nSeed hoàn tất!\n"))
         self._print_summary(n_patients, n_doctors)
@@ -157,32 +155,7 @@ class Command(BaseCommand):
         for model in models_to_clear:
             model.objects.all().delete()
         User.objects.filter(is_superuser=False).delete()
-        Application.objects.all().delete()
         self.stdout.write("   -> Xong\n")
-
-    # -----------------------------------------------------------------------
-    # OAuth2 Application — tạo tự động để không phải vào Admin thủ công
-    # -----------------------------------------------------------------------
-
-    def _seed_oauth2_application(self):
-        self.stdout.write("OAuth2 Application...")
-        admin_user = User.objects.filter(is_superuser=True).first()
-        app, created = Application.objects.get_or_create(
-            name="Clinic App",
-            defaults={
-                "client_type": Application.CLIENT_CONFIDENTIAL,
-                "authorization_grant_type": Application.GRANT_PASSWORD,
-                "user": admin_user,
-            },
-        )
-        if created:
-            self.stdout.write("   -> Đã tạo mới")
-            self.stdout.write(f"   -> client_id     : {app.client_id}")
-            self.stdout.write(f"   -> client_secret : {app.client_secret}")
-        else:
-            self.stdout.write("   -> Đã tồn tại, bỏ qua")
-        self.stdout.write("")
-        return app
 
     # -----------------------------------------------------------------------
     # Specialties & Services
@@ -560,25 +533,33 @@ class Command(BaseCommand):
     # -----------------------------------------------------------------------
 
     def _print_summary(self, n_patients, n_doctors):
+        specialty_count = Specialty.objects.count()
+        service_count = Service.objects.count()
+        category_count = MedicineCategory.objects.count()
+        medicine_count = Medicine.objects.count()
+        inventory_count = Inventory.objects.count()
+        doctor_count = Doctor.objects.count()
+        schedule_count = DoctorSchedule.objects.count()
+        patient_count = Patient.objects.count()
+        appointment_count = Appointment.objects.count()
+        record_count = MedicalRecord.objects.count()
+        prescription_count = Prescription.objects.count()
+        payment_count = Payment.objects.count()
+        notification_count = Notification.objects.count()
+
         self.stdout.write("=" * 45)
         self.stdout.write("Tóm tắt dữ liệu đã seed:")
-        self.stdout.write(f"   Chuyên khoa     : {Specialty.objects.count()}")
-        self.stdout.write(f"   Dịch vụ         : {Service.objects.count()}")
-        self.stdout.write(f"   Danh mục thuốc  : {MedicineCategory.objects.count()}")
-        self.stdout.write(f"   Thuốc           : {Medicine.objects.count()}")
-        self.stdout.write(f"   Kho (lô hàng)   : {Inventory.objects.count()}")
-        self.stdout.write(f"   Bác sĩ          : {Doctor.objects.count()}")
-        self.stdout.write(f"   Ca làm việc     : {DoctorSchedule.objects.count()}")
-        self.stdout.write(f"   Bệnh nhân       : {Patient.objects.count()}")
-        self.stdout.write(f"   Lịch hẹn        : {Appointment.objects.count()}")
-        self.stdout.write(f"   Hồ sơ bệnh án   : {MedicalRecord.objects.count()}")
-        self.stdout.write(f"   Đơn thuốc       : {Prescription.objects.count()}")
-        self.stdout.write(f"   Thanh toán      : {Payment.objects.count()}")
-        self.stdout.write(f"   Thông báo       : {Notification.objects.count()}")
-        self.stdout.write(f"   OAuth2 App      : {Application.objects.count()}")
-        self.stdout.write("=" * 45)
-        self.stdout.write("\nTài khoản test:")
-        self.stdout.write("   Admin   : (tự tạo bằng createsuperuser)")
-        self.stdout.write("   Bác sĩ  : doctor1@clinic.test  / Test@1234")
-        self.stdout.write("   BN      : patient1@clinic.test / Test@1234")
-        self.stdout.write("=" * 45)
+        self.stdout.write(f"   Chuyên khoa     : {specialty_count}")
+        self.stdout.write(f"   Dịch vụ         : {service_count}")
+        self.stdout.write(f"   Danh mục thuốc  : {category_count}")
+        self.stdout.write(f"   Thuốc           : {medicine_count}")
+        self.stdout.write(f"   Kho (lô hàng)   : {inventory_count}")
+        self.stdout.write(f"   Bác sĩ          : {doctor_count}")
+        self.stdout.write(f"   Ca làm việc     : {schedule_count}")
+        self.stdout.write(f"   Bệnh nhân       : {patient_count}")
+        self.stdout.write(f"   Lịch hẹn        : {appointment_count}")
+        self.stdout.write(f"   Hồ sơ bệnh án   : {record_count}")
+        self.stdout.write(f"   Đơn thuốc       : {prescription_count}")
+        self.stdout.write(f"   Thanh toán      : {payment_count}")
+        self.stdout.write(f"   Thông báo       : {notification_count}")
+        self.stdout.write("-" * 45)
