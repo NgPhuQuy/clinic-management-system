@@ -19,7 +19,7 @@ class DashboardView(APIView):
         this_month = timezone.now().replace(day=1).date()
 
         total_patients = Patient.objects.count()
-        new_patients_month = Patient.objects.filter(user__created_at__date__gte=this_month).count()
+        new_patients_month = Patient.objects.filter(user__date_joined__date__gte=this_month).count()
 
         appointments_today = Appointment.objects.filter(appointment_date__date=today).count()
         appointments_month = Appointment.objects.filter(appointment_date__date__gte=this_month).count()
