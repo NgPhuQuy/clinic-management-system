@@ -388,14 +388,14 @@ class MedicalRecordAdmin(admin.ModelAdmin):
 
 @admin.register(TestResult, site=admin_site)
 class TestResultAdmin(admin.ModelAdmin):
-    list_display  = ("id", "medical_record", "test_name", "result_date")
-    list_filter   = ("result_date",)
+    list_display  = ("id", "medical_record", "test_name", "test_date")
+    list_filter   = ("test_date",)
     search_fields = ("test_name",)
 
 
 @admin.register(Prescription, site=admin_site)
 class PrescriptionAdmin(admin.ModelAdmin):
-    list_display  = ("id", "medical_record", "issued_at", "notes")
+    list_display  = ("id", "medical_record", "created_at", "notes")
     search_fields = ("medical_record__patient__user__email",)
 
 
@@ -446,8 +446,8 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
 @admin.register(Notification, site=admin_site)
 class NotificationAdmin(admin.ModelAdmin):
-    list_display  = ("id", "user", "notification_type", "title", "is_read", "created_at")
-    list_filter   = ("notification_type", "is_read")
+    list_display  = ("id", "user", "type", "title", "is_read", "created_at")
+    list_filter   = ("type", "is_read")
     search_fields = ("user__email", "title")
 
 
