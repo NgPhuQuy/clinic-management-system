@@ -2,32 +2,22 @@
 clinic_app/views/auth.py
 
 Endpoints:
-  POST /auth/login/             — Đăng Nhập (AllowAny)
-  POST /auth/register/          — Đăng ký (AllowAny)
+  POST /auth/login/             — Đăng nhập (AllowAny)
+  POST /auth/register/          — Đăng ký   (AllowAny)
   GET  /auth/me/                — Thông tin user hiện tại
   PUT  /auth/change-password/   — Đổi mật khẩu
   POST /auth/firebase-token/    — Lấy Firebase Custom Token để dùng Chat
-
-Lấy access token OAuth2:
-  POST /o/token/
-    grant_type=password
-    username=<email>
-    password=<password>
-    client_id=<client_id>
-    client_secret=<client_secret>
-    scope=patient   (hoặc doctor / admin)
 """
 
 import logging
-import os
-import requests
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import requests
 
 from ..models import Doctor, Patient
 from ..permissions import IsAuthenticatedWithValidToken
@@ -38,14 +28,10 @@ User = get_user_model()
 
 
 # ─────────────────────────────────────────────
-# Firebase — lazy init để tránh crash khi chưa cấu hình
+# Firebase — lazy init
 # ─────────────────────────────────────────────
 
 def _get_firebase_app():
-    """
-    Khởi tạo Firebase Admin SDK lần đầu, trả về app.
-    Raise ImportError / ValueError nếu chưa cấu hình.
-    """
     import firebase_admin
     from firebase_admin import credentials
 
@@ -59,46 +45,71 @@ def _get_firebase_app():
 # ─────────────────────────────────────────────
 # Login
 # ─────────────────────────────────────────────
+
 class LoginView(APIView):
     """
     POST /auth/login/
-    Mobile app chỉ gửi username + password.
-    Backend tự gắn client_id, client_secret rồi gọi /o/token/.
+    Mobile app gửi username + password.
+    Backend authenticate user, lấy role → gọi /o/token/ với scope đúng.
+
+    BUG FIX: trước đây dùng User.role (class attribute) → crash.
+    Giờ authenticate user instance trước rồi mới lấy user.role.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
+        username = request.data.get("username")
+        password = request.data.get("password")
 
-        # Validate
         if not username or not password:
             return Response(
-                {'detail': 'Vui lòng nhập username và password.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Vui lòng nhập username và password."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Gọi /o/token/ từ phía SERVER
-        token_url = request.build_absolute_uri('/o/token/')
+        # BUG FIX: authenticate trước để lấy instance user
+        user = authenticate(request, username=username, password=password)
+        if user is None:
+            # Thử authenticate bằng email (vì project dùng email làm username)
+            try:
+                user_obj = User.objects.get(email=username)
+                user = authenticate(request, username=user_obj.username, password=password)
+            except User.DoesNotExist:
+                user = None
 
+        if user is None:
+            return Response(
+                {"detail": "Sai tên đăng nhập hoặc mật khẩu."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not user.is_active:
+            return Response(
+                {"detail": "Tài khoản đã bị vô hiệu hóa."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # BUG FIX: dùng user.role (instance) thay vì User.role (class)
+        token_url = request.build_absolute_uri("/o/token/")
         token_response = requests.post(token_url, data={
-            'grant_type': 'password',
-            'username': username,
-            'password': password,
-            'client_id': settings.OAUTH2_CLIENT_ID,
-            'client_secret': settings.OAUTH2_CLIENT_SECRET,
-            'scope': User.role,
+            "grant_type":    "password",
+            "username":      user.username,
+            "password":      password,
+            "client_id":     settings.OAUTH2_CLIENT_ID,
+            "client_secret": settings.OAUTH2_CLIENT_SECRET,
+            "scope":         user.role,   # ← FIX: instance attribute
         })
 
-        # Nếu OAuth2 server trả lỗi thì chuyển tiếp lỗi về app
         if token_response.status_code != 200:
             return Response(
-                {'detail': 'Sai tên đăng nhập hoặc mật khẩu.'},
-                status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Không thể lấy token. Vui lòng thử lại."},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        # Trả access_token về cho mobile app
-        return Response(token_response.json(), status=status.HTTP_200_OK)
+        data = token_response.json()
+        # Thêm thông tin user vào response cho tiện FE
+        data["user"] = UserSerializer(user).data
+        return Response(data, status=status.HTTP_200_OK)
 
 
 # ─────────────────────────────────────────────
@@ -108,19 +119,25 @@ class LoginView(APIView):
 class RegisterView(generics.CreateAPIView):
     """
     POST /auth/register/
-    Đăng ký tài khoản mới (patient hoặc doctor).
-    Tự động tạo Patient / Doctor profile tương ứng.
-
-    Sau khi đăng ký, client gọi POST /o/token/ với
-    grant_type=password để lấy access_token.
+    Đăng ký tài khoản mới.
+    Role hợp lệ: patient, doctor.
+    (staff và admin chỉ được tạo bởi admin qua Django Admin hoặc API riêng)
     """
-    serializer_class = RegisterSerializer
+    serializer_class   = RegisterSerializer
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        # Chặn tự đăng ký role staff/admin
+        if user.role in ("staff", "admin"):
+            user.delete()
+            return Response(
+                {"detail": "Không thể tự đăng ký role này."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if user.role == "patient":
             Patient.objects.create(user=user, full_name=user.username)
@@ -134,7 +151,6 @@ class RegisterView(generics.CreateAPIView):
         return Response(
             {
                 "user": UserSerializer(user).data,
-                # Token được lấy riêng qua POST /o/token/
                 "message": "Đăng ký thành công. Dùng POST /o/token/ để lấy access_token.",
             },
             status=status.HTTP_201_CREATED,
@@ -150,9 +166,9 @@ class MeView(generics.RetrieveUpdateAPIView):
     GET   /auth/me/  — Lấy thông tin user hiện tại
     PATCH /auth/me/  — Cập nhật avatar
     """
-    serializer_class = UserSerializer
+    serializer_class   = UserSerializer
     permission_classes = [IsAuthenticatedWithValidToken]
-    http_method_names = ["get", "patch", "head", "options"]
+    http_method_names  = ["get", "patch", "head", "options"]
 
     def get_object(self):
         return self.request.user
@@ -164,9 +180,9 @@ class MeView(generics.RetrieveUpdateAPIView):
 
 class ChangePasswordView(generics.UpdateAPIView):
     """PUT /auth/change-password/"""
-    serializer_class = ChangePasswordSerializer
+    serializer_class   = ChangePasswordSerializer
     permission_classes = [IsAuthenticatedWithValidToken]
-    http_method_names = ["put", "head", "options"]
+    http_method_names  = ["put", "head", "options"]
 
     def get_object(self):
         return self.request.user
@@ -185,17 +201,8 @@ class ChangePasswordView(generics.UpdateAPIView):
 class FirebaseTokenView(APIView):
     """
     POST /auth/firebase-token/
-
     Cấp Firebase Custom Token để client kết nối Firebase Realtime Chat.
     Token có hiệu lực 1 giờ (do Firebase quy định).
-
-    Claims được nhúng vào token:
-      - role:      patient | doctor | admin
-      - clinic_uid: ID trong DB clinic
-
-    Client dùng token này để signInWithCustomToken() trong Firebase SDK,
-    sau đó đọc/ghi Firestore collection:
-      /consultations/{consultationId}/messages/{messageId}
     """
     permission_classes = [IsAuthenticatedWithValidToken]
 
@@ -211,9 +218,7 @@ class FirebaseTokenView(APIView):
                 "email":      request.user.email,
             }
 
-            custom_token: bytes = firebase_auth.create_custom_token(
-                uid, additional_claims
-            )
+            custom_token: bytes = firebase_auth.create_custom_token(uid, additional_claims)
 
             return Response(
                 {"firebase_token": custom_token.decode("utf-8")},
