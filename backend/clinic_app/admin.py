@@ -78,10 +78,87 @@ class ClinicAdminSite(admin.AdminSite):
     site_url    = None   # ẩn nút "Xem trang"
 
     def index(self, request, extra_context=None):
-        """Nhúng KPI vào trang chủ admin (không cần template riêng)."""
+        """Dashboard chính — cung cấp data cho 4 tab."""
         extra_context = extra_context or {}
         extra_context.update(_quick_stats())
+        extra_context.update(self._index_tab_data())
         return super().index(request, extra_context)
+
+    def _index_tab_data(self):
+        """Tính toàn bộ data cần thiết cho 4 tab trên dashboard."""
+        today           = timezone.now()
+        current_year    = today.year
+        seven_days_ago  = today - timedelta(days=7)
+        thirty_days_ago = today - timedelta(days=30)
+
+        # ── Tab 1: Báo cáo & Thống kê ────────────────────────────────────
+        # Doanh thu 7 ngày
+        rev7d = {(today - timedelta(days=i)).strftime("%d/%m"): 0.0 for i in range(6, -1, -1)}
+        for p in Payment.objects.filter(status="success", paid_at__gte=seven_days_ago).values("paid_at", "amount"):
+            if p["paid_at"]:
+                lbl = timezone.localtime(p["paid_at"]).strftime("%d/%m")
+                if lbl in rev7d:
+                    rev7d[lbl] += float(p["amount"])
+
+        # Doanh thu 30 ngày
+        rev30d = {(today - timedelta(days=i)).strftime("%d/%m"): 0.0 for i in range(29, -1, -1)}
+        for p in Payment.objects.filter(status="success", paid_at__gte=thirty_days_ago).values("paid_at", "amount"):
+            if p["paid_at"]:
+                lbl = timezone.localtime(p["paid_at"]).strftime("%d/%m")
+                if lbl in rev30d:
+                    rev30d[lbl] += float(p["amount"])
+
+        # Phương thức thanh toán
+        method_qs = (Payment.objects.filter(status="success")
+            .values("payment_method").annotate(total=Sum("amount")).order_by("-total"))
+
+        # Trạng thái lịch hẹn
+        appt_map = {s: 0 for s in ["pending","confirmed","in_progress","completed","cancelled","no_show"]}
+        for row in Appointment.objects.values("status").annotate(count=Count("id")):
+            if row["status"] in appt_map:
+                appt_map[row["status"]] = row["count"]
+
+        # Giới tính bệnh nhân
+        gender_map = {"male": 0, "female": 0, "other": 0}
+        for row in Patient.objects.values("gender").annotate(total=Count("id")):
+            key = row["gender"] or "other"
+            if key in gender_map:
+                gender_map[key] = row["total"]
+
+        # ── Tab 2: Lịch hẹn ──────────────────────────────────────────────
+        upcoming_appts = (Appointment.objects
+            .filter(appointment_date__gte=today, status__in=["pending","confirmed"])
+            .select_related("patient__user", "doctor__user")
+            .order_by("appointment_date")[:10])
+
+        # ── Tab 3: Thanh toán ─────────────────────────────────────────────
+        recent_payments = (Payment.objects
+            .select_related("patient__user")
+            .order_by("-created_at")[:10])
+
+        # ── Tab 4: Kho thuốc ──────────────────────────────────────────────
+        low_stock_items = (Inventory.objects
+            .select_related("medicine")
+            .filter(quantity__lte=20)
+            .order_by("quantity")[:15])
+
+        return {
+            # Stats charts JSON
+            "rev7d_labels_json":       json.dumps(list(rev7d.keys())),
+            "rev7d_data_json":         json.dumps(list(rev7d.values())),
+            "rev30d_labels_json":      json.dumps(list(rev30d.keys())),
+            "rev30d_data_json":        json.dumps(list(rev30d.values())),
+            "method_labels_json":      json.dumps([r["payment_method"] for r in method_qs]),
+            "method_data_json":        json.dumps([float(r["total"]) for r in method_qs]),
+            "appt_status_labels_json": json.dumps(["Chờ xác nhận","Đã xác nhận","Đang khám","Hoàn thành","Đã hủy","Không đến"]),
+            "appt_status_data_json":   json.dumps([appt_map[k] for k in ["pending","confirmed","in_progress","completed","cancelled","no_show"]]),
+            "gender_labels_json":      json.dumps(["Nam", "Nữ", "Khác"]),
+            "gender_data_json":        json.dumps([gender_map["male"], gender_map["female"], gender_map["other"]]),
+            # Tab data
+            "upcoming_appts":   upcoming_appts,
+            "recent_payments":  recent_payments,
+            "low_stock_items":  low_stock_items,
+        }
 
     def get_urls(self):
         custom = [
@@ -293,9 +370,10 @@ class InventoryAlertAdmin(admin.ModelAdmin):
 
 @admin.register(Patient, site=admin_site)
 class PatientAdmin(admin.ModelAdmin):
-    list_display  = ("id", "full_name", "gender", "date_of_birth", "blood_type")
-    list_filter   = ("gender", "blood_type")
-    search_fields = ("user__first_name", "user__last_name", "user__email")
+    list_display        = ("id", "full_name", "gender", "date_of_birth", "blood_type")
+    list_filter         = ("gender", "blood_type")
+    search_fields       = ("user__first_name", "user__last_name", "user__email")
+    list_select_related = ("user",)
 
     def full_name(self, obj):
         return obj.user.get_full_name() or obj.user.email
@@ -304,10 +382,11 @@ class PatientAdmin(admin.ModelAdmin):
 
 @admin.register(Doctor, site=admin_site)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display    = ("id", "full_name", "specialty", "experience_years", "avatar_preview")
-    list_filter     = ("specialty",)
-    search_fields   = ("user__first_name", "user__last_name", "user__email")
-    readonly_fields = ("avatar_preview",)
+    list_display        = ("id", "full_name", "specialty", "experience_years", "avatar_preview")
+    list_filter         = ("specialty",)
+    search_fields       = ("user__first_name", "user__last_name", "user__email")
+    readonly_fields     = ("avatar_preview",)
+    list_select_related = ("user", "specialty")
 
     def full_name(self, obj):
         return obj.user.get_full_name() or obj.user.email
@@ -332,11 +411,12 @@ class DoctorScheduleAdmin(admin.ModelAdmin):
 
 @admin.register(Appointment, site=admin_site)
 class AppointmentAdmin(admin.ModelAdmin):
-    list_display   = ("id", "patient_name", "doctor_name", "appointment_date", "status_badge")
-    list_filter    = ("status", "appointment_date")
-    search_fields  = ("patient__user__email", "doctor__user__email")
-    date_hierarchy = "appointment_date"
-    ordering       = ("-appointment_date",)
+    list_display        = ("id", "patient_name", "doctor_name", "appointment_date", "status_badge")
+    list_filter         = ("status", "appointment_date")
+    search_fields       = ("patient__user__email", "doctor__user__email")
+    date_hierarchy      = "appointment_date"
+    ordering            = ("-appointment_date",)
+    list_select_related = ("patient__user", "doctor__user")
 
     STATUS_COLORS = {
         "pending":     "#f59e0b",
@@ -372,16 +452,20 @@ class AppointmentServiceAdmin(admin.ModelAdmin):
 
 @admin.register(MedicalRecord, site=admin_site)
 class MedicalRecordAdmin(admin.ModelAdmin):
-    list_display   = ("id", "patient_name", "doctor_name", "diagnosis", "created_at")
-    list_filter    = ("created_at",)
-    search_fields  = ("diagnosis", "patient__user__email", "doctor__user__email")
-    date_hierarchy = "created_at"
+    list_display        = ("id", "patient_name", "doctor_name", "diagnosis", "created_at")
+    list_filter         = ("created_at",)
+    search_fields       = ("diagnosis", "patient__user__email", "doctor__user__email")
+    date_hierarchy      = "created_at"
+    list_select_related = ("patient__user", "doctor__user")
 
     def patient_name(self, obj):
         return obj.patient.user.get_full_name() or obj.patient.user.email
     patient_name.short_description = "Bệnh nhân"
 
     def doctor_name(self, obj):
+        # doctor có thể null (SET_NULL) khi bác sĩ bị xóa
+        if obj.doctor is None:
+            return "—"
         return obj.doctor.user.get_full_name() or obj.doctor.user.email
     doctor_name.short_description = "Bác sĩ"
 
@@ -407,11 +491,13 @@ class PrescriptionDetailAdmin(admin.ModelAdmin):
 
 @admin.register(Payment, site=admin_site)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display   = ("id", "patient_name", "amount_display", "payment_method", "status_badge", "paid_at")
-    list_filter    = ("status", "payment_method", "paid_at")
-    search_fields  = ("patient__user__email", "transaction_id")
-    date_hierarchy = "paid_at"
-    ordering       = ("-created_at",)
+    list_display        = ("id", "patient_name", "amount_display", "payment_method", "status_badge", "paid_at")
+    list_filter         = ("status", "payment_method", "created_at")
+    search_fields       = ("patient__user__email", "transaction_id")
+    # paid_at là nullable → dùng created_at (luôn có giá trị) làm date_hierarchy
+    date_hierarchy      = "created_at"
+    ordering            = ("-created_at",)
+    list_select_related = ("patient__user",)
 
     def patient_name(self, obj):
         return obj.patient.user.get_full_name() or obj.patient.user.email
