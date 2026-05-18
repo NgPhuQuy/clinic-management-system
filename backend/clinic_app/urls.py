@@ -1,6 +1,3 @@
-"""
-clinic_app/urls.py
-"""
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
@@ -70,7 +67,7 @@ urlpatterns = [
 # 11. Staff thu tiền         → POST /payments/{id}/confirm/      [staff]
 #
 # ─────────────────────────────────────────────────────────────────────────────
-# BÁO CÁO THỐNG KÊ (đề tài)
+# BÁO CÁO THỐNG KÊ
 # ─────────────────────────────────────────────────────────────────────────────
 #
 #  GET /api/admin/dashboard/reports/?type=age_group    — Bệnh nhân theo độ tuổi
