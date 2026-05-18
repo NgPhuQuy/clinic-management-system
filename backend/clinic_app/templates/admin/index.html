@@ -1,0 +1,172 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<style>
+/* ── KPI Cards ─────────────────────────────────────────── */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+}
+.kpi-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px 18px;
+    border-left: 5px solid var(--kpi-color, #417690);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.kpi-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: .5px;
+}
+.kpi-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--kpi-color, #333);
+    line-height: 1.1;
+}
+.kpi-sub {
+    font-size: 11px;
+    color: #aaa;
+}
+
+/* ── Quick-links bar ───────────────────────────────────── */
+.quick-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+}
+.quick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none !important;
+    color: #fff !important;
+    transition: opacity .15s;
+}
+.quick-btn:hover { opacity: .85; }
+.btn-stats  { background: #417690; }
+.btn-appt   { background: #10b981; }
+.btn-pay    { background: #f59e0b; }
+.btn-inv    { background: #ef4444; }
+
+/* ── Alert banner ──────────────────────────────────────── */
+.alert-banner {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #856404;
+}
+
+/* ── App list (default Django section) ─────────────────── */
+#content-main { padding: 0; }
+</style>
+
+<!-- ── Alert: tồn kho thấp ──────────────────────────── -->
+{% if low_stock %}
+<div class="alert-banner">
+    ⚠️ <strong>Cảnh báo:</strong> Có <strong>{{ low_stock }}</strong> mặt hàng trong kho sắp hết (≤ 10 đơn vị).
+    <a href="{% url 'clinic_admin:clinic_app_inventory_changelist' %}" style="margin-left:8px;color:#856404;font-weight:700;text-decoration:underline">Xem kho thuốc →</a>
+</div>
+{% endif %}
+
+<!-- ── KPI Cards ─────────────────────────────────────── -->
+<div class="kpi-grid">
+    <div class="kpi-card" style="--kpi-color:#3b82f6">
+        <div class="kpi-label">Bác sĩ</div>
+        <div class="kpi-value">{{ total_doctors }}</div>
+        <div class="kpi-sub">Tổng số bác sĩ</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#10b981">
+        <div class="kpi-label">Bệnh nhân</div>
+        <div class="kpi-value">{{ total_patients }}</div>
+        <div class="kpi-sub">Đã đăng ký hệ thống</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#8b5cf6">
+        <div class="kpi-label">Lịch hẹn hôm nay</div>
+        <div class="kpi-value">{{ today_appts }}</div>
+        <div class="kpi-sub">{{ pending_appts }} đang chờ xác nhận</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#f59e0b">
+        <div class="kpi-label">Doanh thu tháng</div>
+        <div class="kpi-value" style="font-size:20px">{{ month_revenue|floatformat:"0" }}</div>
+        <div class="kpi-sub">VND — tháng hiện tại</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#06b6d4">
+        <div class="kpi-label">Doanh thu 7 ngày</div>
+        <div class="kpi-value" style="font-size:20px">{{ week_revenue|floatformat:"0" }}</div>
+        <div class="kpi-sub">VND — 7 ngày gần nhất</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#e11d48">
+        <div class="kpi-label">Tồn kho thấp</div>
+        <div class="kpi-value">{{ low_stock }}</div>
+        <div class="kpi-sub">Mặt hàng cần nhập thêm</div>
+    </div>
+</div>
+
+<!-- ── Quick-links ───────────────────────────────────── -->
+<div class="quick-bar">
+    <a class="quick-btn btn-stats" href="{% url 'clinic_admin:clinic-stats' %}">
+        📊 Báo cáo &amp; Thống kê đầy đủ
+    </a>
+    <a class="quick-btn btn-appt" href="{% url 'clinic_admin:clinic_app_appointment_changelist' %}">
+        📅 Quản lý lịch hẹn
+    </a>
+    <a class="quick-btn btn-pay" href="{% url 'clinic_admin:clinic_app_payment_changelist' %}">
+        💳 Quản lý thanh toán
+    </a>
+    <a class="quick-btn btn-inv" href="{% url 'clinic_admin:clinic_app_inventory_changelist' %}">
+        💊 Quản lý kho thuốc
+    </a>
+</div>
+
+<!-- ── App list mặc định của Django (models) ─────────── -->
+{% if app_list %}
+    {% for app in app_list %}
+    <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|slice:":"|add:app.app_url %} current-app{% endif %}">
+        <table>
+        <caption>
+            <a href="{{ app.app_url }}" class="section" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">{{ app.name }}</a>
+        </caption>
+        {% for model in app.models %}
+        <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path %} current-model{% endif %}">
+            {% if model.admin_url %}
+            <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
+            {% else %}
+            <th scope="row">{{ model.name }}</th>
+            {% endif %}
+            <td>
+            {% if model.add_url %}
+            <a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a>
+            {% endif %}
+            </td>
+            <td>
+            {% if model.admin_url %}
+            <a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a>
+            {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+{% else %}
+    <p>{% trans "You don't have permission to view or edit anything." %}</p>
+{% endif %}
+{% endblock %}
