@@ -51,7 +51,7 @@ class TestResult(models.Model):
     medical_record  = models.ForeignKey(
         MedicalRecord, on_delete=models.CASCADE, related_name="test_results"
     )
-    # ← THÊM MỚI: phân loại cận lâm sàng
+    # phân loại cận lâm sàng
     test_type       = models.CharField(
         max_length=20, choices=TestType, default=TestType.OTHER,
         help_text="Loại cận lâm sàng"

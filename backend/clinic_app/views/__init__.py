@@ -9,7 +9,7 @@ from .prescription import PrescriptionViewSet
 from .payment import PaymentViewSet
 from .consultation import ConsultationViewSet
 from .notification import NotificationViewSet
-from .dashboard import DashboardView
+from .dashboard import DashboardView, DashboardReportsView
 
 __all__ = [
     "RegisterView", "LoginView", "MeView", "ChangePasswordView", "FirebaseTokenView",
@@ -23,5 +23,5 @@ __all__ = [
     "PaymentViewSet",
     "ConsultationViewSet",
     "NotificationViewSet",
-    "DashboardView",
+    "DashboardView", "DashboardReportsView",
 ]
