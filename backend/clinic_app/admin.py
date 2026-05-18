@@ -354,11 +354,16 @@ class InventoryAdmin(admin.ModelAdmin):
     ordering      = ("quantity",)
 
     def stock_badge(self, obj):
+        # FIX: Django 6+ yêu cầu format_html() phải có ít nhất 1 arg/kwarg.
+        # Với chuỗi HTML tĩnh (không có {}), dùng mark_safe() thay vì format_html().
         if obj.quantity <= 0:
-            return format_html('<span style="color:red;font-weight:bold">⛔ Hết hàng</span>')
+            return mark_safe('<span style="color:red;font-weight:bold">⛔ Hết hàng</span>')
         if obj.quantity <= 10:
-            return format_html('<span style="color:orange;font-weight:bold">⚠️ Sắp hết ({} còn lại)</span>', obj.quantity)
-        return format_html('<span style="color:green">✅ Đủ hàng</span>')
+            return format_html(
+                '<span style="color:orange;font-weight:bold">⚠️ Sắp hết ({} còn lại)</span>',
+                obj.quantity,
+            )
+        return mark_safe('<span style="color:green">✅ Đủ hàng</span>')
     stock_badge.short_description = "Trạng thái kho"
 
 
@@ -412,9 +417,12 @@ class DoctorScheduleAdmin(admin.ModelAdmin):
 @admin.register(Appointment, site=admin_site)
 class AppointmentAdmin(admin.ModelAdmin):
     list_display        = ("id", "patient_name", "doctor_name", "appointment_date", "status_badge")
-    list_filter         = ("status", "appointment_date")
+    # FIX: Tách list_filter datetime ra khỏi DateTimeField để tránh lỗi CONVERT_TZ.
+    # appointment_date là DateTimeField — bỏ khỏi list_filter, giữ search bằng status.
+    list_filter         = ("status",)
     search_fields       = ("patient__user__email", "doctor__user__email")
-    date_hierarchy      = "appointment_date"
+    # FIX: Bỏ date_hierarchy trên DateTimeField. Nếu muốn giữ, cần đảm bảo
+    # settings.py đã thêm OPTIONS init_command (xem hướng dẫn fix).
     ordering            = ("-appointment_date",)
     list_select_related = ("patient__user", "doctor__user")
 
@@ -453,9 +461,12 @@ class AppointmentServiceAdmin(admin.ModelAdmin):
 @admin.register(MedicalRecord, site=admin_site)
 class MedicalRecordAdmin(admin.ModelAdmin):
     list_display        = ("id", "patient_name", "doctor_name", "diagnosis", "created_at")
-    list_filter         = ("created_at",)
+    # FIX: Dùng follow_up_date (DateField) thay vì created_at (DateTimeField)
+    # cho date_hierarchy và list_filter để tránh lỗi CONVERT_TZ khi MySQL
+    # chưa cài timezone tables. Xem thêm: settings.py → DATABASES → OPTIONS.
+    list_filter         = ("follow_up_date",)
     search_fields       = ("diagnosis", "patient__user__email", "doctor__user__email")
-    date_hierarchy      = "created_at"
+    date_hierarchy      = "follow_up_date"
     list_select_related = ("patient__user", "doctor__user")
 
     def patient_name(self, obj):
@@ -472,9 +483,10 @@ class MedicalRecordAdmin(admin.ModelAdmin):
 
 @admin.register(TestResult, site=admin_site)
 class TestResultAdmin(admin.ModelAdmin):
-    list_display  = ("id", "medical_record", "test_name", "test_date")
-    list_filter   = ("test_date",)
-    search_fields = ("test_name",)
+    # Sau khi chạy migration 0005, test_type và entered_by đã có trong DB.
+    list_display  = ("id", "medical_record", "test_type", "test_name", "test_date", "entered_by")
+    list_filter   = ("test_type", "test_date")
+    search_fields = ("test_name", "medical_record__patient__user__email")
 
 
 @admin.register(Prescription, site=admin_site)
@@ -492,10 +504,12 @@ class PrescriptionDetailAdmin(admin.ModelAdmin):
 @admin.register(Payment, site=admin_site)
 class PaymentAdmin(admin.ModelAdmin):
     list_display        = ("id", "patient_name", "amount_display", "payment_method", "status_badge", "paid_at")
-    list_filter         = ("status", "payment_method", "created_at")
+    # FIX: Bỏ created_at (DateTimeField) ra khỏi list_filter để tránh lỗi CONVERT_TZ.
+    list_filter         = ("status", "payment_method")
     search_fields       = ("patient__user__email", "transaction_id")
-    # paid_at là nullable → dùng created_at (luôn có giá trị) làm date_hierarchy
-    date_hierarchy      = "created_at"
+    # FIX: Bỏ date_hierarchy vì created_at là DateTimeField — MySQL cần timezone
+    # tables để xử lý, mà mặc định trên Windows chưa cài. Sau khi đã thêm
+    # OPTIONS init_command vào settings.py thì có thể bật lại.
     ordering            = ("-created_at",)
     list_select_related = ("patient__user",)
 
@@ -504,7 +518,10 @@ class PaymentAdmin(admin.ModelAdmin):
     patient_name.short_description = "Bệnh nhân"
 
     def amount_display(self, obj):
-        return format_html("<strong>{:,.0f} đ</strong>", obj.amount)
+        # FIX: Django 6 gọi conditional_escape() trên args trước khi format,
+        # làm Decimal bị chuyển thành SafeString → {:,.0f} không áp dụng được.
+        # Giải pháp: format số trước, rồi truyền chuỗi đã format vào format_html.
+        return format_html("<strong>{} đ</strong>", f"{obj.amount:,.0f}")
     amount_display.short_description = "Số tiền"
 
     def status_badge(self, obj):
