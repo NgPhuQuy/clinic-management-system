@@ -123,7 +123,7 @@
 <!-- ── Quick-links ───────────────────────────────────── -->
 <div class="quick-bar">
     <a class="quick-btn btn-stats" href="{% url 'clinic_admin:clinic-stats' %}">
-        📊 Báo cáo &amp; Thống kê đầy đủ
+        📊 Báo cáo &amp; Thống kê
     </a>
     <a class="quick-btn btn-appt" href="{% url 'clinic_admin:clinic_app_appointment_changelist' %}">
         📅 Quản lý lịch hẹn
@@ -136,37 +136,4 @@
     </a>
 </div>
 
-<!-- ── App list mặc định của Django (models) ─────────── -->
-{% if app_list %}
-    {% for app in app_list %}
-    <div class="app-{{ app.app_label }} module{% if app.app_url in request.path|slice:":"|add:app.app_url %} current-app{% endif %}">
-        <table>
-        <caption>
-            <a href="{{ app.app_url }}" class="section" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">{{ app.name }}</a>
-        </caption>
-        {% for model in app.models %}
-        <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path %} current-model{% endif %}">
-            {% if model.admin_url %}
-            <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
-            {% else %}
-            <th scope="row">{{ model.name }}</th>
-            {% endif %}
-            <td>
-            {% if model.add_url %}
-            <a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a>
-            {% endif %}
-            </td>
-            <td>
-            {% if model.admin_url %}
-            <a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a>
-            {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-        </table>
-    </div>
-    {% endfor %}
-{% else %}
-    <p>{% trans "You don't have permission to view or edit anything." %}</p>
-{% endif %}
 {% endblock %}
