@@ -154,7 +154,11 @@ DATABASES = {
         'NAME': os.getenv("DB_NAME"),
         'USER': os.getenv("DB_USER"),
         'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': ''
+        'HOST': '',
+        'OPTIONS': {
+            'init_command': "SET time_zone='+07:00'",
+            'charset': 'utf8mb4',
+        },
     }
 }
 
