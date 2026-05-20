@@ -1,25 +1,29 @@
 """
 clinic_app/permissions.py
 
-Hệ thống phân quyền dựa trên OAuth2 Scopes.
+Hệ thống phân quyền dựa trên OAuth2 Scopes thay vì role string.
 
 Scopes được cấp khi user lấy token qua /o/token/:
-  - admin   → quản trị viên (toàn quyền)
-  - doctor  → bác sĩ (khám, ghi hồ sơ, kê đơn)
-  - staff   → nhân viên y tế (tiếp nhận, cấp thuốc, thu tiền, nhập kết quả)
-  - patient → bệnh nhân (đặt lịch, xem hồ sơ, thanh toán)
-  - read    → chỉ đọc (default fallback)
+  - admin   → quản trị viên
+  - doctor  → bác sĩ
+  - patient → bệnh nhân
+  - read    → chỉ đọc (default)
 
-Phân cấp quyền:
-  admin > (doctor | staff) > patient
+Cách dùng trong view:
+    permission_classes = [HasAdminScope]
+    permission_classes = [HasDoctorScope | HasAdminScope]
+    permission_classes = [IsAuthenticatedWithValidToken]
 """
 
-from oauth2_provider.contrib.rest_framework import TokenHasScope
-from rest_framework.permissions import BasePermission
+from oauth2_provider.contrib.rest_framework import (
+    IsAuthenticatedOrTokenHasScope,
+    TokenHasScope,
+)
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
 # ─────────────────────────────────────────────
-# Single-scope permissions
+# Scope-based permissions
 # ─────────────────────────────────────────────
 
 class HasAdminScope(TokenHasScope):
@@ -32,104 +36,52 @@ class HasDoctorScope(TokenHasScope):
     required_scopes = ["doctor"]
 
 
-class HasStaffScope(TokenHasScope):
-    """Yêu cầu scope 'staff'. Nhân viên y tế: lễ tân, điều dưỡng, dược sĩ, thu ngân."""
-    required_scopes = ["staff"]
-
-
 class HasPatientScope(TokenHasScope):
     """Yêu cầu scope 'patient'."""
     required_scopes = ["patient"]
 
 
 class HasReadScope(TokenHasScope):
-    """Yêu cầu ít nhất scope 'read'."""
+    """Yêu cầu ít nhất scope 'read' (GET/HEAD/OPTIONS)."""
     required_scopes = ["read"]
-
-
-# ─────────────────────────────────────────────
-# Combined-scope permissions
-# ─────────────────────────────────────────────
-
-def _get_token_scopes(request) -> set:
-    token = getattr(request, "auth", None)
-    if token is None:
-        return set()
-    return set(token.scope.split())
 
 
 class HasDoctorOrAdminScope(BasePermission):
     """
-    scope 'doctor' HOẶC 'admin'.
-    Dùng cho: ghi hồ sơ bệnh án, kê đơn thuốc.
+    Cho phép nếu token có scope 'doctor' HOẶC 'admin'.
+    Tương đương IsDoctorOrAdmin cũ.
     """
     message = "Yêu cầu scope 'doctor' hoặc 'admin'."
 
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
-        return bool({"doctor", "admin"} & _get_token_scopes(request))
-
-
-class HasStaffOrAdminScope(BasePermission):
-    """
-    scope 'staff' HOẶC 'admin'.
-    Dùng cho: cấp phát thuốc, xác nhận thanh toán tiền mặt, nhập kho.
-    """
-    message = "Yêu cầu scope 'staff' hoặc 'admin'."
-
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
+        token = getattr(request, "auth", None)
+        if token is None:
             return False
-        return bool({"staff", "admin"} & _get_token_scopes(request))
-
-
-class HasDoctorOrStaffScope(BasePermission):
-    """
-    scope 'doctor' HOẶC 'staff'.
-    Dùng cho: nhập kết quả xét nghiệm (doctor chỉ định, staff nhập kết quả).
-    """
-    message = "Yêu cầu scope 'doctor' hoặc 'staff'."
-
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return bool({"doctor", "staff"} & _get_token_scopes(request))
-
-
-class HasStaffDoctorOrAdminScope(BasePermission):
-    """
-    scope 'staff' HOẶC 'doctor' HOẶC 'admin'.
-    Dùng cho: confirm appointment (staff lễ tân hoặc doctor hoặc admin đều được).
-    """
-    message = "Yêu cầu scope 'staff', 'doctor' hoặc 'admin'."
-
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return bool({"staff", "doctor", "admin"} & _get_token_scopes(request))
+        token_scopes = set(token.scope.split())
+        return bool({"doctor", "admin"} & token_scopes)
 
 
 class HasPatientOrAdminScope(BasePermission):
     """
-    scope 'patient' HOẶC 'admin'.
-    Dùng cho: patient tự xem thông tin của mình, admin xem tất cả.
+    Cho phép nếu token có scope 'patient' HOẶC 'admin'.
     """
     message = "Yêu cầu scope 'patient' hoặc 'admin'."
 
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
-        return bool({"patient", "admin"} & _get_token_scopes(request))
+        token = getattr(request, "auth", None)
+        if token is None:
+            return False
+        token_scopes = set(token.scope.split())
+        return bool({"patient", "admin"} & token_scopes)
 
-
-# ─────────────────────────────────────────────
-# Generic authenticated
-# ─────────────────────────────────────────────
 
 class IsAuthenticatedWithValidToken(BasePermission):
     """
-    Có token hợp lệ là đủ (bất kỳ scope nào).
+    Xác thực đơn giản: có token hợp lệ là đủ (bất kỳ scope nào).
     Thay thế IsAuthenticated + OAuth2Authentication.
     """
     message = "Yêu cầu đăng nhập với OAuth2 token hợp lệ."
@@ -143,19 +95,28 @@ class IsAuthenticatedWithValidToken(BasePermission):
 
 
 # ─────────────────────────────────────────────
-# Object-level permissions
+# Object-level permissions (scope không xử lý được)
 # ─────────────────────────────────────────────
 
 class IsOwnerOrAdmin(BasePermission):
     """
-    Object-level: chủ sở hữu hoặc admin.
-    Dùng kết hợp: [IsAuthenticatedWithValidToken, IsOwnerOrAdmin]
+    Object-level: chủ sở hữu hoặc token có scope 'admin'.
+    Dùng kết hợp: permission_classes = [IsAuthenticatedWithValidToken, IsOwnerOrAdmin]
     """
+
+    def _is_admin_scope(self, request) -> bool:
+        token = getattr(request, "auth", None)
+        if token is None:
+            return False
+        return "admin" in token.scope.split()
+
     def has_object_permission(self, request, view, obj):
-        if "admin" in _get_token_scopes(request):
+        if self._is_admin_scope(request):
             return True
+        # Patient profile
         if hasattr(obj, "user"):
             return obj.user == request.user
+        # Appointment / Record → check patient.user
         if hasattr(obj, "patient"):
             return obj.patient.user == request.user
         return False
@@ -163,12 +124,22 @@ class IsOwnerOrAdmin(BasePermission):
 
 class IsPatientOwnerOrDoctor(BasePermission):
     """
-    Bệnh nhân xem record của mình; bác sĩ xem record bệnh nhân mình điều trị.
-    Admin xem tất cả.
+    Bệnh nhân xem record của mình; bác sĩ xem record của bệnh nhân mình điều trị.
+    Admin (scope='admin') xem tất cả.
     """
+
+    def _token_scopes(self, request) -> set:
+        token = getattr(request, "auth", None)
+        if token is None:
+            return set()
+        return set(token.scope.split())
+
     def has_object_permission(self, request, view, obj):
-        scopes = _get_token_scopes(request)
-        if "admin"   in scopes: return True
-        if "patient" in scopes: return obj.patient.user == request.user
-        if "doctor"  in scopes: return obj.doctor.user  == request.user
+        scopes = self._token_scopes(request)
+        if "admin" in scopes:
+            return True
+        if "patient" in scopes:
+            return obj.patient.user == request.user
+        if "doctor" in scopes:
+            return obj.doctor.user == request.user
         return False

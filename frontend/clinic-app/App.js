@@ -1,10 +1,10 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Icon, PaperProvider } from "react-native-paper";
+import { PaperProvider } from "react-native-paper";
 import { useReducer, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Text, Platform } from "react-native";
 
 import { MyUserContext, MyDispatchContext, MyReducer } from "./contexts/MyContext";
 import Login from "./screens/Auth/Login";
@@ -20,49 +20,64 @@ import { Profile, Prescriptions, Payments } from "./screens/Profile/Profile";
 import { MedicalRecords, MedicalRecordDetail } from "./screens/Profile/MedicalRecords";
 import Notifications from "./screens/Notification/Notifications";
 import { authApis, endpoints } from "./configs/Apis";
+import { COLORS } from "./styles/Styles";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 const HS = {
-    headerStyle: { backgroundColor: "#1565c0" },
+    headerStyle: { backgroundColor: COLORS.primaryDark },
     headerTintColor: "#fff",
-    headerTitleStyle: { fontWeight: "bold" },
+    headerTitleStyle: { fontWeight: "800", fontSize: 17 },
+    headerShadowVisible: false,
 };
 
+// Tab 1: Trang chủ
 const HomeStack = () => (
     <Stack.Navigator screenOptions={HS}>
-        <Stack.Screen name="home-main" component={Home} options={{ title: "Trang chủ" }} />
+        <Stack.Screen name="home-main" component={Home} options={{ headerShown: false }} />
         <Stack.Screen name="doctor-list" component={DoctorList} options={{ title: "Tìm bác sĩ" }} />
         <Stack.Screen name="doctor-detail" component={DoctorDetail} options={{ title: "Thông tin bác sĩ" }} />
-        <Stack.Screen name="book-appointment" component={BookAppointment} options={{ title: "Đặt lịch hẹn" }} />
+        <Stack.Screen name="book-appointment" component={BookAppointment} options={{ title: "Đặt lịch khám" }} />
         <Stack.Screen name="my-appointments" component={MyAppointments} options={{ title: "Lịch hẹn của tôi" }} />
         <Stack.Screen name="appointment-detail" component={AppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
         <Stack.Screen name="medical-records" component={MedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
         <Stack.Screen name="medical-record-detail" component={MedicalRecordDetail} options={{ title: "Chi tiết bệnh án" }} />
         <Stack.Screen name="prescriptions" component={Prescriptions} options={{ title: "Đơn thuốc" }} />
+        <Stack.Screen name="prescription-detail" component={Prescriptions} options={{ title: "Chi tiết đơn thuốc" }} />
         <Stack.Screen name="payments" component={Payments} options={{ title: "Thanh toán" }} />
         <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
+        <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
     </Stack.Navigator>
 );
 
-const AppointmentsStack = () => (
+// Tab 2: Đặt khám
+const BookingStack = () => (
     <Stack.Navigator screenOptions={HS}>
-        <Stack.Screen name="appts-main" component={MyAppointments} options={{ title: "Lịch hẹn của tôi" }} />
-        <Stack.Screen name="appointment-detail" component={AppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
-        <Stack.Screen name="book-appointment" component={BookAppointment} options={{ title: "Đặt lịch hẹn" }} />
-        <Stack.Screen name="doctor-list" component={DoctorList} options={{ title: "Tìm bác sĩ" }} />
+        <Stack.Screen name="booking-main" component={DoctorList} options={{ title: "Chọn bác sĩ để đặt khám" }} />
         <Stack.Screen name="doctor-detail" component={DoctorDetail} options={{ title: "Thông tin bác sĩ" }} />
+        <Stack.Screen name="book-appointment" component={BookAppointment} options={{ title: "Đặt lịch khám" }} />
+        <Stack.Screen name="my-appointments" component={MyAppointments} options={{ title: "Lịch hẹn của tôi" }} />
+        <Stack.Screen name="appointment-detail" component={AppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
     </Stack.Navigator>
 );
 
+// Tab 3: Thông báo
+const NotifStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="notif-main" component={Notifications} options={{ headerShown: false }} />
+    </Stack.Navigator>
+);
+
+// Tab 4: Cá nhân
 const ProfileStack = () => (
     <Stack.Navigator screenOptions={HS}>
-        <Stack.Screen name="profile-main" component={Profile} options={{ title: "Hồ sơ cá nhân" }} />
+        <Stack.Screen name="profile-main" component={Profile} options={{ headerShown: false }} />
         <Stack.Screen name="medical-records" component={MedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
         <Stack.Screen name="medical-record-detail" component={MedicalRecordDetail} options={{ title: "Chi tiết bệnh án" }} />
         <Stack.Screen name="prescriptions" component={Prescriptions} options={{ title: "Đơn thuốc" }} />
-        <Stack.Screen name="payments" component={Payments} options={{ title: "Thanh toán" }} />
+        <Stack.Screen name="prescription-detail" component={Prescriptions} options={{ title: "Chi tiết đơn thuốc" }} />
+        <Stack.Screen name="payments" component={Payments} options={{ title: "Lịch sử thanh toán" }} />
         <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
     </Stack.Navigator>
 );
@@ -74,28 +89,60 @@ const AuthStack = () => (
     </Stack.Navigator>
 );
 
+const TAB_STYLE = {
+    headerShown: false,
+    tabBarActiveTintColor: COLORS.primary,
+    tabBarInactiveTintColor: COLORS.textLight,
+    tabBarStyle: {
+        height: Platform.OS === "ios" ? 84 : 72,
+        paddingBottom: Platform.OS === "ios" ? 28 : 14,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.border,
+        backgroundColor: "#fff",
+        elevation: 12,
+        shadowColor: "#1565c0",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+    },
+    tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
+};
+
 const AppTabs = () => (
-    <Tab.Navigator
-        screenOptions={{
-            headerShown: false,
-            tabBarActiveTintColor: "#1565c0",
-            tabBarInactiveTintColor: "#9e9e9e",
-            tabBarStyle: { elevation: 8, height: 60, paddingBottom: 8 },
-        }}
-    >
-        <Tab.Screen name="home-tab" component={HomeStack}
-            options={{ title: "Trang chủ", tabBarIcon: ({ color, size }) => <Icon source="home" size={size} color={color} /> }} />
-        <Tab.Screen name="appointments-tab" component={AppointmentsStack}
-            options={{ title: "Lịch hẹn", tabBarIcon: ({ color, size }) => <Icon source="calendar-clock" size={size} color={color} /> }} />
-        <Tab.Screen name="notifications-tab" component={Notifications}
+    <Tab.Navigator screenOptions={TAB_STYLE}>
+        <Tab.Screen
+            name="home-tab"
+            component={HomeStack}
+            options={{
+                title: "Trang chủ",
+                tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🏠</Text>,
+            }}
+        />
+        <Tab.Screen
+            name="booking-tab"
+            component={BookingStack}
+            options={{
+                title: "Đặt khám",
+                tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>📅</Text>,
+            }}
+        />
+        <Tab.Screen
+            name="notifications-tab"
+            component={NotifStack}
             options={{
                 title: "Thông báo",
-                tabBarIcon: ({ color, size }) => <Icon source="bell" size={size} color={color} />,
-                headerShown: true, headerTitle: "Thông báo",
-                headerStyle: { backgroundColor: "#1565c0" }, headerTintColor: "#fff",
-            }} />
-        <Tab.Screen name="profile-tab" component={ProfileStack}
-            options={{ title: "Hồ sơ", tabBarIcon: ({ color, size }) => <Icon source="account" size={size} color={color} /> }} />
+                tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🔔</Text>,
+            }}
+        />
+        <Tab.Screen
+            name="profile-tab"
+            component={ProfileStack}
+            options={{
+                title: "Cá nhân",
+                tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>👤</Text>,
+            }}
+        />
     </Tab.Navigator>
 );
 
@@ -122,7 +169,7 @@ const App = () => {
 
     if (initializing) {
         return (
-            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1565c0" }}>
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.primaryDark }}>
                 <ActivityIndicator size="large" color="#fff" />
             </View>
         );

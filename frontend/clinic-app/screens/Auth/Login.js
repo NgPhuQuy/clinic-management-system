@@ -1,6 +1,6 @@
 import { View, ScrollView, Image, StyleSheet } from "react-native";
 import { Button, HelperText, Text, TextInput } from "react-native-paper";
-import { useState, useReducer } from "react";
+import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Apis, { authApis, endpoints } from "../../configs/Apis";
 import { useNavigation } from "@react-navigation/native";
@@ -32,24 +32,36 @@ const Login = () => {
         try {
             setLoading(true);
             setErr(null);
-
-            // gửi request lên APIs trung gian, sau đó lấy Client_ID, Client_Secret từ server
             const res = await Apis.post(endpoints["login"], {
                 username: user.username,
                 password: user.password,
             });
-
             await AsyncStorage.setItem("token", res.data.access_token);
-
             const currentUser = await authApis(res.data.access_token).get(endpoints["current-user"]);
             dispatch({ type: "login", payload: { ...currentUser.data, token: res.data.access_token } });
-
         } catch (ex) {
             console.error(ex);
             setErr("Đăng nhập thất bại. Kiểm tra lại tên đăng nhập và mật khẩu!");
         } finally {
             setLoading(false);
         }
+    };
+
+    // DEMO: bỏ qua đăng nhập để xem giao diện
+    const loginDemo = () => {
+        dispatch({
+            type: "login",
+            payload: {
+                id: 1,
+                username: "demo_patient",
+                first_name: "Nguyễn",
+                last_name: "Demo",
+                email: "demo@phongkham.vn",
+                role: "patient",
+                avatar: null,
+                token: "demo_token",
+            },
+        });
     };
 
     return (
@@ -95,6 +107,15 @@ const Login = () => {
                     buttonColor="#1565c0"
                 >
                     Đăng nhập
+                </Button>
+
+                <Button
+                    mode="outlined"
+                    onPress={loginDemo}
+                    style={[styles.btn, { marginTop: 10, borderColor: "#f57c00" }]}
+                    textColor="#f57c00"
+                >
+                    🎭  Xem Demo (không cần đăng nhập)
                 </Button>
 
                 <Button

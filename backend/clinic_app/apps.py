@@ -7,4 +7,5 @@ class ClinicAppConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
-        import clinic_app.signals
+        # Kết nối signals — phải import ở đây để tránh circular import
+        import clinic_app.signals  # noqa: F401

@@ -1,255 +1,122 @@
 {% extends "admin/base_site.html" %}
 
-{% block title %}Báo cáo & Thống kê — {{ site_title }}{% endblock %}
-
 {% block content %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-.rpt-page  { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
-.rpt-back  { display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;
-             text-decoration:none;color:#417690;font-size:13px;font-weight:600; }
-.rpt-back:hover { text-decoration:underline; }
-.section-title { font-size:15px;font-weight:700;color:#333;
-                 border-left:4px solid #417690;padding-left:10px;margin:28px 0 14px; }
-/* KPI */
-.kpi-row { display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:28px; }
-.kpi { background:#fff;border-radius:8px;padding:14px 16px;
-       border-left:5px solid var(--c);box-shadow:0 2px 6px rgba(0,0,0,.07); }
-.kpi-lbl { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888; }
-.kpi-val { font-size:26px;font-weight:800;color:var(--c);line-height:1.1;margin-top:2px; }
-.kpi-sub { font-size:10px;color:#bbb;margin-top:2px; }
-/* Charts */
-.chart-grid-2 { display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-bottom:20px; }
-.chart-grid-3 { display:grid;grid-template-columns:repeat(auto-fit,minmax(295px,1fr));gap:16px;margin-bottom:20px; }
-.chart-card   { background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,.07); }
-.chart-card h3 { margin:0 0 12px;font-size:13px;font-weight:700;color:#444;
-                 border-bottom:1px solid #f0f0f0;padding-bottom:8px; }
-.chart-wrap   { position:relative;width:100%;height:240px; }
-/* Table */
-.inv-table { width:100%;border-collapse:collapse;font-size:13px; }
-.inv-table th { background:#f8f8f8;padding:8px 10px;text-align:left;
-                border-bottom:2px solid #e8e8e8;font-size:11px;text-transform:uppercase;color:#666; }
-.inv-table td { padding:8px 10px;border-bottom:1px solid #f0f0f0; }
-.inv-table tr:hover td { background:#fafafa; }
-.badge-danger  { background:#fef2f2;color:#ef4444;border:1px solid #fecaca;
-                 border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700; }
-.badge-warning { background:#fffbeb;color:#d97706;border:1px solid #fde68a;
-                 border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700; }
+    .dashboard-container { font-family: Arial, sans-serif; padding: 5px; box-sizing: border-box; width: 100%; color: #f4f4f4; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .chart-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 25px; }
+    .chart-card { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); box-sizing: border-box; }
+    .chart-title { margin-top:0; margin-bottom: 15px; color: #333; font-size: 15px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    .chart-wrapper { position: relative; width: 100%; height: 260px; }
 </style>
 
-<div class="rpt-page">
-<a class="rpt-back" href="{% url 'clinic_admin:index' %}">&#8592; Quay về bảng điều khiển</a>
-<h1 style="margin:0 0 20px;font-size:22px;color:#333">&#128202; Báo cáo &amp; Thống kê Toàn Diện</h1>
+<div class="dashboard-container">
+    <h1 style="margin-bottom: 20px; color: #fff;">Trang Báo Cáo Thống Kê Phòng Khám</h1>
 
-<!-- KPI -->
-<div class="kpi-row">
-  <div class="kpi" style="--c:#3b82f6"><div class="kpi-lbl">Bác sĩ</div><div class="kpi-val">{{ total_doctors }}</div></div>
-  <div class="kpi" style="--c:#10b981"><div class="kpi-lbl">Bệnh nhân</div><div class="kpi-val">{{ total_patients }}</div></div>
-  <div class="kpi" style="--c:#8b5cf6"><div class="kpi-lbl">Lịch hẹn tổng</div><div class="kpi-val">{{ total_appts }}</div><div class="kpi-sub">{{ pending_appts }} chờ xác nhận</div></div>
-  <div class="kpi" style="--c:#f59e0b"><div class="kpi-lbl">Doanh thu tháng</div><div class="kpi-val" style="font-size:18px">{{ month_revenue|floatformat:"0" }}</div><div class="kpi-sub">VND</div></div>
-  <div class="kpi" style="--c:#06b6d4"><div class="kpi-lbl">Doanh thu 7 ngày</div><div class="kpi-val" style="font-size:18px">{{ week_revenue|floatformat:"0" }}</div><div class="kpi-sub">VND</div></div>
-  <div class="kpi" style="--c:#e11d48"><div class="kpi-lbl">Kho sắp hết</div><div class="kpi-val">{{ low_stock }}</div><div class="kpi-sub">mặt hàng ≤ 10</div></div>
-</div>
+    <div class="card-grid">
+        <div style="background: #e1f5fe; padding: 15px; border-radius: 6px; border-left: 5px solid #0288d1;">
+            <div style="font-size: 12px; color: #555; font-weight: bold; text-transform: uppercase;">Tổng số Bác sĩ</div>
+            <div style="font-size: 26px; font-weight: bold; margin-top: 5px; color: #0288d1;">{{ total_doctors }}</div>
+        </div>
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; border-left: 5px solid #388e3c;">
+            <div style="font-size: 12px; color: #555; font-weight: bold; text-transform: uppercase;">Tổng số Bệnh nhân</div>
+            <div style="font-size: 26px; font-weight: bold; margin-top: 5px; color: #388e3c;">{{ total_patients }}</div>
+        </div>
+        <div style="background: #fff3e0; padding: 15px; border-radius: 6px; border-left: 5px solid #f57c00;">
+            <div style="font-size: 12px; color: #555; font-weight: bold; text-transform: uppercase;">Tổng doanh thu phòng khám</div>
+            <div style="font-size: 26px; font-weight: bold; margin-top: 5px; color: #e65100;">{{ total_revenue|floatformat:"0" }} VND</div>
+        </div>
+    </div>
 
-<!-- Doanh thu -->
-<div class="section-title">&#128176; Doanh Thu</div>
-<div class="chart-grid-2">
-  <div class="chart-card"><h3>Doanh thu 7 ngày gần nhất</h3><div class="chart-wrap"><canvas id="rev7dChart"></canvas></div></div>
-  <div class="chart-card"><h3>Doanh thu 30 ngày gần nhất</h3><div class="chart-wrap"><canvas id="rev30dChart"></canvas></div></div>
-</div>
-<div class="chart-grid-3">
-  <div class="chart-card"><h3>Phân bổ phương thức thanh toán</h3><div class="chart-wrap"><canvas id="methodChart"></canvas></div></div>
-  <div class="chart-card"><h3>Trạng thái lịch hẹn</h3><div class="chart-wrap"><canvas id="apptStatusChart"></canvas></div></div>
-</div>
+    <div class="chart-grid-2">
+        <div class="chart-card">
+            <div class="chart-title">Mục 4: Chi tiết Doanh thu 7 ngày gần nhất</div>
+            <div class="chart-wrapper"><canvas id="revenueChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Mục 1: Cơ cấu Bệnh nhân theo Giới tính & Tuổi</div>
+            <div class="chart-wrapper"><canvas id="patientChart"></canvas></div>
+        </div>
+    </div>
 
-<!-- Bệnh nhân -->
-<div class="section-title">&#128101; Cơ Cấu Bệnh Nhân</div>
-<div class="chart-grid-3">
-  <div class="chart-card"><h3>Theo giới tính</h3><div class="chart-wrap"><canvas id="genderChart"></canvas></div></div>
-  <div class="chart-card"><h3>Theo nhóm tuổi</h3><div class="chart-wrap"><canvas id="ageChart"></canvas></div></div>
-  <div class="chart-card"><h3>Theo chuyên khoa</h3><div class="chart-wrap"><canvas id="specialtyChart"></canvas></div></div>
+    <div class="chart-grid-2">
+        <div class="chart-card">
+            <div class="chart-title">Mục 2: Top Dịch vụ Y tế được sử dụng nhiều nhất</div>
+            <div class="chart-wrapper"><canvas id="serviceChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">Mục 3: Tình hình Bệnh lý phổ biến trong cộng đồng</div>
+            <div class="chart-wrapper"><canvas id="diseaseChart"></canvas></div>
+        </div>
+    </div>
 </div>
-
-<!-- Dịch vụ -->
-<div class="section-title">&#127973; Dịch Vụ Y Tế Được Sử Dụng</div>
-<div class="chart-grid-2">
-  <div class="chart-card"><h3>Top 10 dịch vụ</h3><div class="chart-wrap" style="height:280px"><canvas id="serviceChart"></canvas></div></div>
-</div>
-
-<!-- Bệnh lý -->
-<div class="section-title">&#129658; Bệnh Lý Phổ Biến</div>
-<div class="chart-grid-2">
-  <div class="chart-card"><h3>Top 10 chẩn đoán</h3><div class="chart-wrap"><canvas id="diseaseChart"></canvas></div></div>
-  <div class="chart-card"><h3>Top 10 chẩn đoán</h3><div class="chart-wrap"><canvas id="diseaseBarChart"></canvas></div></div>
-</div>
-
-<!-- Kho thuốc -->
-{% if low_stock_list %}
-<div class="section-title">&#9888;&#65039; Cảnh Báo Kho Thuốc Sắp Hết</div>
-<div class="chart-card" style="margin-bottom:28px">
-  <table class="inv-table">
-    <thead><tr><th>#</th><th>Tên thuốc</th><th>Tồn kho</th><th>Hạn sử dụng</th><th>Trạng thái</th></tr></thead>
-    <tbody>
-      {% for item in low_stock_list %}
-      <tr>
-        <td>{{ forloop.counter }}</td>
-        <td><strong>{{ item.medicine.name }}</strong></td>
-        <td>{{ item.quantity }}</td>
-        <td>{{ item.expiry_date|default:"—" }}</td>
-        <td>{% if item.quantity <= 0 %}<span class="badge-danger">Hết hàng</span>{% else %}<span class="badge-warning">Sắp hết ({{ item.quantity }})</span>{% endif %}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-
-</div>
-
-<script id="chart-data" type="application/json">
-{
-  "rev7d_labels":      {{ rev7d_labels_json|safe }},
-  "rev7d_data":        {{ rev7d_data_json|safe }},
-  "rev30d_labels":     {{ rev30d_labels_json|safe }},
-  "rev30d_data":       {{ rev30d_data_json|safe }},
-  "method_labels":     {{ method_labels_json|safe }},
-  "method_data":       {{ method_data_json|safe }},
-  "appt_status_labels":{{ appt_status_labels_json|safe }},
-  "appt_status_data":  {{ appt_status_data_json|safe }},
-  "gender_labels":     {{ gender_labels_json|safe }},
-  "gender_data":       {{ gender_data_json|safe }},
-  "age_labels":        {{ age_labels_json|safe }},
-  "age_data":          {{ age_data_json|safe }},
-  "specialty_labels":  {{ specialty_labels_json|safe }},
-  "specialty_data":    {{ specialty_data_json|safe }},
-  "service_labels":    {{ service_labels_json|safe }},
-  "service_data":      {{ service_data_json|safe }},
-  "disease_labels":    {{ disease_labels_json|safe }},
-  "disease_data":      {{ disease_data_json|safe }}
-}
-</script>
 
 <script>
-const D = JSON.parse(document.getElementById('chart-data').textContent);
+    const baseOptions = { responsive: true, maintainAspectRatio: false };
 
-const PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#e11d48','#f97316','#14b8a6','#6366f1'];
-const base    = { responsive: true, maintainAspectRatio: false };
-function pal(n) { return Array.from({length: n}, (_, i) => PALETTE[i % PALETTE.length]); }
+    // 1. Biểu đồ đường Doanh Thu (Mục 4)
+    new Chart(document.getElementById('revenueChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [{% for r in revenue_by_day %}"{{ r.day }}",{% endfor %}],
+            datasets: [{
+                label: 'Doanh thu ngày (VND)',
+                data: [{% for r in revenue_by_day %}{{ r.total }},{% endfor %}],
+                borderColor: '#0288d1', backgroundColor: 'rgba(2, 136, 209, 0.1)',
+                borderWidth: 2, fill: true, tension: 0.2
+            }]
+        },
+        options: baseOptions
+    });
 
-/* 4a — Doanh thu 7 ngày */
-new Chart('rev7dChart', {
-  type: 'line',
-  data: {
-    labels: D.rev7d_labels,
-    datasets: [{ label: 'VND', data: D.rev7d_data,
-      borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)',
-      borderWidth: 2, fill: true, tension: .3, pointRadius: 4 }]
-  },
-  options: { ...base, plugins: { legend: { display: false } },
-             scales: { y: { ticks: { callback: v => v.toLocaleString('vi') } } } }
-});
+    // 2. Biểu đồ Cột nhóm Bệnh Nhân (Mục 1)
+    new Chart(document.getElementById('patientChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: ["Nam", "Nữ", "Nhi khoa", "Thanh niên", "Trung niên", "Cao tuổi"],
+            datasets: [{
+                label: 'Số lượng người',
+                data: [
+                    {% for r in patient_gender_stats %}{% if r.gender == 'male' %}{{ r.total }}{% endif %}{% endfor %}0,
+                    {% for r in patient_gender_stats %}{% if r.gender == 'female' %}{{ r.total }}{% endif %}{% endfor %}0,
+                    {{ age_groups_list.0}},
+                    {{ age_groups_list.1}},
+                    {{ age_groups_list.2}},
+                    {{ age_groups_list.3}}
+                ],
+                backgroundColor: ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#34495e']
+            }]
+        },
+        options: baseOptions
+    });
 
-/* 4b — Doanh thu 30 ngày */
-new Chart('rev30dChart', {
-  type: 'bar',
-  data: {
-    labels: D.rev30d_labels,
-    datasets: [{ label: 'VND', data: D.rev30d_data,
-      backgroundColor: 'rgba(16,185,129,.7)', borderRadius: 3 }]
-  },
-  options: { ...base, plugins: { legend: { display: false } },
-             scales: { y: { ticks: { callback: v => v.toLocaleString('vi') } },
-                       x: { ticks: { maxTicksLimit: 10 } } } }
-});
+    // 3. Biểu đồ Cột ngang Dịch vụ (Mục 2)
+    new Chart(document.getElementById('serviceChart').getContext('2d'), {
+        type: 'indexAxis' in Chart ? 'bar' : 'bar',
+        data: {
+            labels: [{% for r in service_usage_stats %}"{{ r.service__name }}",{% endfor %}],
+            datasets: [{
+                label: 'Số lượt sử dụng',
+                data: [{% for r in service_usage_stats %}{{ r.usage_count }},{% endfor %}],
+                backgroundColor: '#16a085'
+            }]
+        },
+        options: { ...baseOptions, indexAxis: 'y' } // Xoay ngang cột sang trục Y cho đẹp
+    });
 
-/* 4c — Phương thức thanh toán */
-const mMap = { momo:'MoMo', vnpay:'VNPay', credit_card:'Thẻ tín dụng', cash:'Tiền mặt', banking:'Chuyển khoản' };
-new Chart('methodChart', {
-  type: 'pie',
-  data: {
-    labels: D.method_labels.map(l => mMap[l] || l),
-    datasets: [{ data: D.method_data, backgroundColor: pal(D.method_labels.length) }]
-  },
-  options: { ...base, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
-});
-
-/* 5 — Trạng thái lịch hẹn */
-new Chart('apptStatusChart', {
-  type: 'doughnut',
-  data: {
-    labels: D.appt_status_labels,
-    datasets: [{ data: D.appt_status_data,
-      backgroundColor: ['#f59e0b','#3b82f6','#8b5cf6','#10b981','#ef4444','#6b7280'] }]
-  },
-  options: { ...base, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
-});
-
-/* 1a — Giới tính */
-new Chart('genderChart', {
-  type: 'pie',
-  data: {
-    labels: D.gender_labels,
-    datasets: [{ data: D.gender_data, backgroundColor: ['#3b82f6','#f472b6','#a78bfa'] }]
-  },
-  options: { ...base, plugins: { legend: { position: 'bottom' } } }
-});
-
-/* 1b — Nhóm tuổi */
-new Chart('ageChart', {
-  type: 'bar',
-  data: {
-    labels: D.age_labels,
-    datasets: [{ label: 'Bệnh nhân', data: D.age_data, backgroundColor: pal(4), borderRadius: 4 }]
-  },
-  options: { ...base, plugins: { legend: { display: false } },
-             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-});
-
-/* 1c — Chuyên khoa */
-new Chart('specialtyChart', {
-  type: 'bar',
-  data: {
-    labels: D.specialty_labels,
-    datasets: [{ label: 'Bệnh nhân', data: D.specialty_data,
-      backgroundColor: 'rgba(139,92,246,.75)', borderRadius: 4 }]
-  },
-  options: { ...base, indexAxis: 'y', plugins: { legend: { display: false } },
-             scales: { x: { beginAtZero: true } } }
-});
-
-/* 2 — Dịch vụ */
-new Chart('serviceChart', {
-  type: 'bar',
-  data: {
-    labels: D.service_labels,
-    datasets: [{ label: 'Lượt sử dụng', data: D.service_data,
-      backgroundColor: 'rgba(16,185,129,.75)', borderRadius: 4 }]
-  },
-  options: { ...base, indexAxis: 'y', plugins: { legend: { display: false } },
-             scales: { x: { beginAtZero: true } } }
-});
-
-/* 3a — Bệnh lý (doughnut) */
-new Chart('diseaseChart', {
-  type: 'doughnut',
-  data: {
-    labels: D.disease_labels,
-    datasets: [{ data: D.disease_data, backgroundColor: pal(D.disease_labels.length) }]
-  },
-  options: { ...base, plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 12 } } } }
-});
-
-/* 3b — Bệnh lý (cột) */
-new Chart('diseaseBarChart', {
-  type: 'bar',
-  data: {
-    labels: D.disease_labels,
-    datasets: [{ label: 'Số ca', data: D.disease_data,
-      backgroundColor: pal(D.disease_labels.length), borderRadius: 4 }]
-  },
-  options: { ...base, plugins: { legend: { display: false } },
-             scales: { y: { beginAtZero: true },
-                       x: { ticks: { maxRotation: 35, font: { size: 10 } } } } }
-});
+    // 4. Biểu đồ Tròn bệnh lý cộng đồng (Mục 3)
+    new Chart(document.getElementById('diseaseChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: [{% for r in disease_stats %}"{{ r.diagnosis }}",{% endfor %}],
+            datasets: [{
+                data: [{% for r in disease_stats %}{{ r.count }},{% endfor %}],
+                backgroundColor: ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c','#3498db','#9b59b6','#34495e','#16a085','#7f8c8d']
+            }]
+        },
+        options: { ...baseOptions, plugins: { legend: { position: 'right' } } }
+    });
 </script>
 {% endblock %}

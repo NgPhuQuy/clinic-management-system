@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -29,18 +30,18 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'dev-fallback-key-change-in-prod')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-
+# ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'clinic_app.apps.ClinicAppConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'clinic_app.apps.ClinicAppConfig',
     'rest_framework',
     'django_filters',
     'ckeditor',
@@ -105,38 +106,50 @@ REST_FRAMEWORK = {
 }
 
 OAUTH2_PROVIDER = {
+    "HASH_CLIENT_SECRETS": False,
+
     "OAUTH2_BACKEND_CLASS": "oauth2_provider.oauth2_backends.JSONOAuthLibCore",
 
-    # Scopes hiển thị khi user grant permission
     "SCOPES": {
-        "admin": "Toàn quyền quản trị hệ thống",
-        "doctor": "Quyền bác sĩ — hồ sơ bệnh án, đơn thuốc, lịch khám",
+        "admin":   "Toàn quyền quản trị hệ thống",
+        "doctor":  "Quyền bác sĩ — hồ sơ bệnh án, đơn thuốc, lịch khám",
         "patient": "Quyền bệnh nhân — đặt lịch, xem hồ sơ cá nhân, thanh toán",
-        "read": "Chỉ đọc",
+        "read":    "Chỉ đọc",
     },
 
-    # Scopes mặc định nếu client không yêu cầu cụ thể
     "DEFAULT_SCOPES": ["read"],
 
-    # Access token hết hạn sau 1 giờ
+    "SCOPES_BACKEND_CLASS": "oauth2_provider.scopes.SettingsScopes",
+
+    "ALLOWED_GRANT_TYPES": [
+        "password",
+        "authorization_code",
+        "client_credentials",
+        "refresh_token",
+    ],
+
     "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
 
-    # Refresh token hết hạn sau 30 ngày
     "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 30,
 
-    # Cho phép refresh token
     "ROTATE_REFRESH_TOKEN": True,
 }
 
 # ─────────────────────────────────────────────
 # CORS
 # ─────────────────────────────────────────────
+CSRF_TRUSTED_ORIGINS = [
+    "http://192.168.1.4:8000",
+    "http://localhost:19006",
+    "http://localhost:8081",
+]
+
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOWED_ORIGINS = os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "http://localhost:19006,http://localhost:8081",
+        "http://localhost:19006,http://192.168.1.4:8000,http://localhost:8081",
     ).split(",")
 
 CORS_ALLOW_HEADERS = [
@@ -145,20 +158,18 @@ CORS_ALLOW_HEADERS = [
     "user-agent", "x-csrftoken", "x-requested-with",
 ]
 
+
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv("DB_NAME"),
-        'USER': os.getenv("DB_USER"),
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': '',
-        'OPTIONS': {
-            'init_command': "SET time_zone='+07:00'",
-            'charset': 'utf8mb4',
-        },
+        'NAME': 'clinic_db',
+        'USER': 'root',
+        'PASSWORD': '*mai27082005*',
+        'HOST': '127.0.0.1',
+        'PORT': '2005',
     }
 }
 
@@ -240,9 +251,7 @@ if DEBUG:
 # ─────────────────────────────────────────────
 # OAUTH2 (CLIENT_ID, CLIENT_SECRET)
 # ─────────────────────────────────────────────
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
-# agora settings (video call real time)
-AGORA_APP_ID = os.getenv("AGORA_APP_ID")
-AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE")
+#
+# CLIENT_ID = os.getenv("CLIENT_ID")
+# CLIENT_SECRET = os.getenv("CLIENT_SECRET")

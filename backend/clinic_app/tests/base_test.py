@@ -3,6 +3,14 @@ base_test.py — Lớp nền và các factory dùng chung cho toàn bộ test su
 
 Mỗi test module import BaseAPITestCase thay vì viết lại setup.
 
+BUG ĐÃ SỬA:
+  1. get_oauth2_token_for_user() trả về token string — nhưng test_auth.py dùng
+     tokens["refresh"] / tokens["access"] → TypeError: string indices must be integers.
+     Fix: hàm vẫn trả về string (dùng cho Bearer), thêm hàm riêng cho test auth flows.
+  2. Scope mặc định "read" không thực sự hữu ích — auto-map từ user.role để test
+     permission đúng. Ví dụ: patient_user → scope="patient", admin → scope="admin".
+  3. make_user với role="staff" → role không hợp lệ sau migration 0003.
+     Fix: xóa mọi tham chiếu role="staff" ra khỏi test infrastructure.
 """
 
 from datetime import timedelta

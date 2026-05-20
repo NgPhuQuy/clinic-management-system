@@ -8,7 +8,7 @@ class TestResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestResult
         fields = "__all__"
-        read_only_fields = ("id", "medical_record", "entered_by")
+        read_only_fields = ("id", "medical_record")
 
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
