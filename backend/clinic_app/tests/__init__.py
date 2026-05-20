@@ -1,7 +1,3 @@
-# clinic_app/tests/__init__.py
-# Test suite cho Phòng Khám Đa Khoa
-# Chạy toàn bộ:  python manage.py test clinic_app.tests
-# Chạy 1 module: python manage.py test clinic_app.tests.test_auth
 from .test_auth import (
     RegisterTests,
     LoginTests,
