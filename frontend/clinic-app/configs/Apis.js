@@ -1,11 +1,14 @@
 import axios from "axios";
 
-const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
+// Thay IP này bằng IP máy tính đang chạy Django (xem bằng ipconfig/ifconfig)
+// Android Emulator dùng: http://10.0.2.2:8000
+// Thiết bị thật: dùng IP WiFi của máy tính, ví dụ: http://192.168.1.x:8000
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || "http://192.168.1.4:8000";
 
 export const endpoints = {
     // Auth
     'register': '/auth/register/',
-    'login': 'auth/login/',
+    'login': '/auth/login/',
     'current-user': '/auth/me/',
     'change-password': '/auth/change-password/',
 
@@ -21,7 +24,7 @@ export const endpoints = {
     // Appointments
     'appointments': '/appointments/',
     'appointment-detail': (id) => `/appointments/${id}/`,
-    'appointment-status': (id) => `/appointments/${id}/update_status/`,
+    'appointment-status': (id) => `/appointments/${id}/status/`,
 
     // Medical Records
     'medical-records': '/medical-records/',
@@ -39,7 +42,7 @@ export const endpoints = {
     // Notifications
     'notifications': '/notifications/',
     'notification-read': (id) => `/notifications/${id}/read/`,
-    'notification-read-all': '/notifications/read-all/',
+    'notification-read-all': '/notifications/read_all/',
 
     // Patients
     'patients': '/patients/',

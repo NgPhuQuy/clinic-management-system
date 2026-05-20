@@ -10,7 +10,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("email", "username", "password", "password_confirm", "role")
+        fields = ("email", "username", "first_name", "last_name", "password", "password_confirm", "role")
 
     def validate(self, data):
         if data["password"] != data.pop("password_confirm"):
@@ -27,7 +27,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "email", "username", "role", "avatar", "is_active", "created_at")
+        fields = ("id", "email", "username", "first_name", "last_name", "role", "avatar", "is_active", "created_at")
         read_only_fields = ("id", "created_at", "is_active")
 
 

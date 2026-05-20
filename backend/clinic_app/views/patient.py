@@ -3,17 +3,14 @@ clinic_app/views/patient.py
 
 Endpoints:
   GET   /api/patients/              — Danh sách           [admin scope]
+  GET   /api/patients/me/           — Profile của tôi     [patient scope]
   GET   /api/patients/{id}/         — Chi tiết            [owner or admin]
   PATCH /api/patients/{id}/         — Cập nhật profile    [owner or admin]
   GET   /api/patients/{id}/appointments/   — Lịch sử khám [owner or admin]
   GET   /api/patients/{id}/medical_records/ — Hồ sơ bệnh  [owner or admin]
-
-BUG ĐÃ SỬA:
-  - Dùng IsAuthenticated (Django session) → thay bằng IsAuthenticatedWithValidToken (OAuth2)
-  - Docstring cũ "admin/staff" → chỉ còn "admin"
 """
 
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -25,6 +22,7 @@ from ..permissions import HasAdminScope, IsOwnerOrAdmin, IsAuthenticatedWithVali
 class PatientViewSet(viewsets.ModelViewSet):
     """
     GET   /api/patients/        — Danh sách [admin]
+    GET   /api/patients/me/     — Profile của tôi [patient]
     GET   /api/patients/{id}/   — Chi tiết  [owner or admin]
     PATCH /api/patients/{id}/   — Cập nhật  [owner or admin]
     """
@@ -34,14 +32,27 @@ class PatientViewSet(viewsets.ModelViewSet):
     search_fields = ["full_name", "phone", "insurance_number"]
 
     def get_permissions(self):
+        if self.action == "me":
+            return [IsAuthenticatedWithValidToken()]
         if self.action in ("retrieve", "update", "partial_update"):
-            # BUG FIX: IsAuthenticated → IsAuthenticatedWithValidToken
             return [IsAuthenticatedWithValidToken(), IsOwnerOrAdmin()]
         if self.action in ("appointments", "medical_records"):
-            # BUG FIX: IsAuthenticated → IsAuthenticatedWithValidToken
             return [IsAuthenticatedWithValidToken()]
         # list, create, destroy → admin only
         return [HasAdminScope()]
+
+    @action(detail=False, methods=["get"])
+    def me(self, request):
+        """GET /api/patients/me/ — Lấy profile patient của user đang đăng nhập."""
+        try:
+            patient = request.user.patient_profile
+            serializer = PatientSerializer(patient)
+            return Response(serializer.data)
+        except Patient.DoesNotExist:
+            return Response(
+                {"detail": "Chưa có hồ sơ bệnh nhân."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     @action(detail=True, methods=["get"])
     def appointments(self, request, pk=None):

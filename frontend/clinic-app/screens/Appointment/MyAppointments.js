@@ -54,7 +54,11 @@ const MyAppointments = () => {
             if (f) url += `&status=${f}`;
             const res = await authApis(user.token).get(url);
             const data = res.data.results || res.data;
-            setAppointments(p === 1 ? data : (prev) => [...prev, ...data]);
+            if (p === 1) {
+                setAppointments(data);
+            } else {
+                setAppointments(prev => [...prev, ...data]);
+            }
             setHasMore(!!res.data.next);
         } catch (e) {
             console.error(e);

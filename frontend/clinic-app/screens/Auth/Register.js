@@ -1,9 +1,11 @@
 import { View, ScrollView, TouchableOpacity, Image, StyleSheet } from "react-native";
 import { Button, HelperText, Text, TextInput, RadioButton } from "react-native-paper";
 import * as ImgPicker from "expo-image-picker";
-import { useState } from "react";
-import Apis, { endpoints } from "../../configs/Apis";
+import { useState, useContext } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Apis, { authApis, endpoints } from "../../configs/Apis";
 import { useNavigation } from "@react-navigation/native";
+import { MyDispatchContext } from "../../contexts/MyContext";
 import Styles from "../../styles/Styles";
 
 const Register = () => {
@@ -21,11 +23,15 @@ const Register = () => {
     const [loading, setLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
     const nav = useNavigation();
+    const dispatch = useContext(MyDispatchContext);
 
     const pickAvatar = async () => {
         const { status } = await ImgPicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") { alert("Cần quyền truy cập thư viện ảnh!"); return; }
-        const result = await ImgPicker.launchImageLibraryAsync({ mediaTypes: ImgPicker.MediaTypeOptions.Images, quality: 0.7 });
+        const result = await ImgPicker.launchImageLibraryAsync({
+            mediaTypes: ImgPicker.MediaType ? [ImgPicker.MediaType.Images] : ImgPicker.MediaTypeOptions.Images,
+            quality: 0.7
+        });
         if (!result.canceled) setUser({ ...user, avatar: result.assets[0] });
     };
 
@@ -56,18 +62,31 @@ const Register = () => {
                     form.append(key, user[key]);
                 }
             }
+            form.append("password_confirm", user.confirm);
 
             const res = await Apis.post(endpoints["register"], form, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
             if (res.status === 201) {
-                alert("Đăng ký thành công! Vui lòng đăng nhập.");
-                nav.navigate("login");
+                // Backend trả token luôn sau khi đăng ký
+                if (res.data.access_token) {
+                    await AsyncStorage.setItem("token", res.data.access_token);
+                    const currentUser = await authApis(res.data.access_token).get(endpoints["current-user"]);
+                    dispatch({ type: "login", payload: { ...currentUser.data, token: res.data.access_token } });
+                } else {
+                    alert("Đăng ký thành công! Vui lòng đăng nhập.");
+                    nav.navigate("login");
+                }
             }
         } catch (ex) {
-            console.error(ex);
-            setErr("Đăng ký thất bại. Vui lòng thử lại!");
+            console.error(ex?.response?.data || ex);
+            const msg = ex?.response?.data?.username?.[0]
+                || ex?.response?.data?.email?.[0]
+                || ex?.response?.data?.password?.[0]
+                || ex?.response?.data?.detail
+                || "Đăng ký thất bại. Vui lòng thử lại!";
+            setErr(msg);
         } finally {
             setLoading(false);
         }
@@ -100,12 +119,8 @@ const Register = () => {
                     />
                 ))}
 
-                {/* Role selection */}
                 <Text style={[Styles.sectionHeader, { marginTop: 4 }]}>Vai trò</Text>
-                <RadioButton.Group
-                    onValueChange={(v) => setUser({ ...user, role: v })}
-                    value={user.role}
-                >
+                <RadioButton.Group onValueChange={(v) => setUser({ ...user, role: v })} value={user.role}>
                     <View style={Styles.row}>
                         <RadioButton value="patient" color="#1565c0" />
                         <Text>Bệnh nhân</Text>
@@ -114,7 +129,6 @@ const Register = () => {
                     </View>
                 </RadioButton.Group>
 
-                {/* Avatar picker */}
                 <TouchableOpacity onPress={pickAvatar} style={styles.avatarPicker}>
                     <Text style={{ color: "#1565c0" }}>📷  Chọn ảnh đại diện...</Text>
                 </TouchableOpacity>

@@ -46,8 +46,9 @@ const AppointmentDetail = () => {
                         setAppt({ ...appt, status: "cancelled" });
                         alert("Đã hủy lịch hẹn.");
                     } catch (e) {
-                        console.error(e);
-                        alert("Không thể hủy. Vui lòng thử lại!");
+                        console.error(e?.response?.data || e);
+                        const msg = e?.response?.data?.status?.[0] || e?.response?.data?.detail || "Không thể hủy. Vui lòng thử lại!";
+                        alert(msg);
                     } finally {
                         setCancelling(false);
                     }

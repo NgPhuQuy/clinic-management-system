@@ -21,6 +21,7 @@ const BookAppointment = () => {
     const [err, setErr] = useState(null);
 
     const validate = () => {
+        if (!doctorId) { setErr("Vui lòng chọn bác sĩ trước khi đặt lịch!"); return false; }
         if (!form.appointment_date) { setErr("Vui lòng nhập ngày giờ khám!"); return false; }
         if (!form.reason) { setErr("Vui lòng nhập lý do khám!"); return false; }
         return true;
