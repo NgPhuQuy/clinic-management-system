@@ -14,17 +14,12 @@ import Styles, { COLORS } from "../../styles/Styles";
 // ─── Danh sách tính năng nhanh ────────────────────────────────────────────────
 const QUICK_ACTIONS = [
     { icon: "calendar-check-outline", label: "Đặt khám", screen: "doctor-list", bg: "#e3f2fd", color: "#1565c0" },
-    { icon: "clipboard-text-clock-outline", label: "Lịch sử
-đặt khám", screen: "my-appointments", bg: "#f3e5f5", color: "#7b1fa2" },
-    { icon: "credit-card-outline", label: "Thanh toán
-viện phí", screen: "payments", bg: "#fff3e0", color: "#ef6c00" },
+    { icon: "clipboard-text-clock-outline", label: "Lịch sử đặt khám", screen: "my-appointments", bg: "#f3e5f5", color: "#7b1fa2" },
+    { icon: "credit-card-outline", label: "Thanh toán viện phí", screen: "payments", bg: "#fff3e0", color: "#ef6c00" },
     { icon: "receipt-text-outline", label: "Hoá đơn", screen: "payments", bg: "#e8f5e9", color: "#2e7d32" },
-    { icon: "heart-pulse", label: "Hồ sơ
-sức khoẻ", screen: "medical-records", bg: "#e0f7fa", color: "#00838f" },
-    { icon: "flask-outline", label: "Kết quả
-cận lâm sàng", screen: "medical-records", bg: "#fce4ec", color: "#c2185b" },
-    { icon: "hospital-building", label: "Đăng ký
-nhập viện", screen: "doctor-list", bg: "#e8eaf6", color: "#3949ab" },
+    { icon: "heart-pulse", label: "Hồ sơ sức khoẻ", screen: "medical-records", bg: "#e0f7fa", color: "#00838f" },
+    { icon: "flask-outline", label: "Kết quả cận lâm sàng", screen: "medical-records", bg: "#fce4ec", color: "#c2185b" },
+    { icon: "hospital-building", label: "Đăng ký nhập viện", screen: "doctor-list", bg: "#e8eaf6", color: "#3949ab" },
     { icon: "pill", label: "Đơn thuốc", screen: "prescriptions", bg: "#fff8e1", color: "#f9a825" },
 ];
 
