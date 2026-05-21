@@ -1,12 +1,3 @@
-"""
-admin.py — Trang quản trị phòng khám tích hợp đầy đủ
-======================================================
-• Dùng ClinicAdminSite (custom site) — đăng ký tại urls.py với path("admin/", admin_site.urls)
-• Đăng ký tất cả model clinic_app + oauth2_provider (Application, AccessToken…)
-• Override index() để trang chủ /admin/ hiện dashboard KPI ngay
-• Trang /admin/clinic-stats/ có biểu đồ Chart.js chi tiết
-"""
-
 import json
 from datetime import timedelta
 
@@ -253,7 +244,6 @@ class ClinicAdminSite(admin.AdminSite):
             **self.each_context(request),
             "title": "Báo Cáo & Thống Kê Toàn Diện",
             **_quick_stats(),
-            # Charts JSON
             "gender_labels_json":      json.dumps(["Nam", "Nữ", "Khác"]),
             "gender_data_json":        json.dumps([gender_map["male"], gender_map["female"], gender_map["other"]]),
             "age_labels_json":         json.dumps(list(age_groups.keys())),
@@ -277,16 +267,8 @@ class ClinicAdminSite(admin.AdminSite):
         return TemplateResponse(request, "admin/stats.html", context)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# KHỞI TẠO
-# ─────────────────────────────────────────────────────────────────────────────
-
 admin_site = ClinicAdminSite(name="clinic_admin")
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# MODEL ADMINS — clinic_app
-# ─────────────────────────────────────────────────────────────────────────────
 
 @admin.register(User, site=admin_site)
 class UserAdmin(BaseUserAdmin):
@@ -354,8 +336,6 @@ class InventoryAdmin(admin.ModelAdmin):
     ordering      = ("quantity",)
 
     def stock_badge(self, obj):
-        # FIX: Django 6+ yêu cầu format_html() phải có ít nhất 1 arg/kwarg.
-        # Với chuỗi HTML tĩnh (không có {}), dùng mark_safe() thay vì format_html().
         if obj.quantity <= 0:
             return mark_safe('<span style="color:red;font-weight:bold">⛔ Hết hàng</span>')
         if obj.quantity <= 10:
@@ -417,12 +397,8 @@ class DoctorScheduleAdmin(admin.ModelAdmin):
 @admin.register(Appointment, site=admin_site)
 class AppointmentAdmin(admin.ModelAdmin):
     list_display        = ("id", "patient_name", "doctor_name", "appointment_date", "status_badge")
-    # FIX: Tách list_filter datetime ra khỏi DateTimeField để tránh lỗi CONVERT_TZ.
-    # appointment_date là DateTimeField — bỏ khỏi list_filter, giữ search bằng status.
     list_filter         = ("status",)
     search_fields       = ("patient__user__email", "doctor__user__email")
-    # FIX: Bỏ date_hierarchy trên DateTimeField. Nếu muốn giữ, cần đảm bảo
-    # settings.py đã thêm OPTIONS init_command (xem hướng dẫn fix).
     ordering            = ("-appointment_date",)
     list_select_related = ("patient__user", "doctor__user")
 
@@ -461,9 +437,6 @@ class AppointmentServiceAdmin(admin.ModelAdmin):
 @admin.register(MedicalRecord, site=admin_site)
 class MedicalRecordAdmin(admin.ModelAdmin):
     list_display        = ("id", "patient_name", "doctor_name", "diagnosis", "created_at")
-    # FIX: Dùng follow_up_date (DateField) thay vì created_at (DateTimeField)
-    # cho date_hierarchy và list_filter để tránh lỗi CONVERT_TZ khi MySQL
-    # chưa cài timezone tables. Xem thêm: settings.py → DATABASES → OPTIONS.
     list_filter         = ("follow_up_date",)
     search_fields       = ("diagnosis", "patient__user__email", "doctor__user__email")
     date_hierarchy      = "follow_up_date"
@@ -474,7 +447,6 @@ class MedicalRecordAdmin(admin.ModelAdmin):
     patient_name.short_description = "Bệnh nhân"
 
     def doctor_name(self, obj):
-        # doctor có thể null (SET_NULL) khi bác sĩ bị xóa
         if obj.doctor is None:
             return "—"
         return obj.doctor.user.get_full_name() or obj.doctor.user.email
@@ -483,7 +455,6 @@ class MedicalRecordAdmin(admin.ModelAdmin):
 
 @admin.register(TestResult, site=admin_site)
 class TestResultAdmin(admin.ModelAdmin):
-    # Sau khi chạy migration 0005, test_type và entered_by đã có trong DB.
     list_display  = ("id", "medical_record", "test_type", "test_name", "test_date", "entered_by")
     list_filter   = ("test_type", "test_date")
     search_fields = ("test_name", "medical_record__patient__user__email")
@@ -504,12 +475,8 @@ class PrescriptionDetailAdmin(admin.ModelAdmin):
 @admin.register(Payment, site=admin_site)
 class PaymentAdmin(admin.ModelAdmin):
     list_display        = ("id", "patient_name", "amount_display", "payment_method", "status_badge", "paid_at")
-    # FIX: Bỏ created_at (DateTimeField) ra khỏi list_filter để tránh lỗi CONVERT_TZ.
     list_filter         = ("status", "payment_method")
     search_fields       = ("patient__user__email", "transaction_id")
-    # FIX: Bỏ date_hierarchy vì created_at là DateTimeField — MySQL cần timezone
-    # tables để xử lý, mà mặc định trên Windows chưa cài. Sau khi đã thêm
-    # OPTIONS init_command vào settings.py thì có thể bật lại.
     ordering            = ("-created_at",)
     list_select_related = ("patient__user",)
 
@@ -518,9 +485,6 @@ class PaymentAdmin(admin.ModelAdmin):
     patient_name.short_description = "Bệnh nhân"
 
     def amount_display(self, obj):
-        # FIX: Django 6 gọi conditional_escape() trên args trước khi format,
-        # làm Decimal bị chuyển thành SafeString → {:,.0f} không áp dụng được.
-        # Giải pháp: format số trước, rồi truyền chuỗi đã format vào format_html.
         return format_html("<strong>{} đ</strong>", f"{obj.amount:,.0f}")
     amount_display.short_description = "Số tiền"
 
@@ -555,7 +519,7 @@ class NotificationAdmin(admin.ModelAdmin):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# OAUTH2 PROVIDER — giữ đầy đủ Application / AccessToken / RefreshToken / Grant
+# OAUTH2 PROVIDER
 # ─────────────────────────────────────────────────────────────────────────────
 
 try:
