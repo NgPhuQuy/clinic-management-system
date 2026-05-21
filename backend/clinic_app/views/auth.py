@@ -52,8 +52,6 @@ class LoginView(APIView):
     Mobile app gửi username + password.
     Backend authenticate user, lấy role → gọi /o/token/ với scope đúng.
 
-    BUG FIX: trước đây dùng User.role (class attribute) → crash.
-    Giờ authenticate user instance trước rồi mới lấy user.role.
     """
     permission_classes = [AllowAny]
 
@@ -66,16 +64,8 @@ class LoginView(APIView):
                 {"detail": "Vui lòng nhập username và password."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        # BUG FIX: authenticate trước để lấy instance user
+        
         user = authenticate(request, username=username, password=password)
-        if user is None:
-            # Thử authenticate bằng email (vì project dùng email làm username)
-            try:
-                user_obj = User.objects.get(email=username)
-                user = authenticate(request, username=user_obj.username, password=password)
-            except User.DoesNotExist:
-                user = None
 
         if user is None:
             return Response(
@@ -89,17 +79,16 @@ class LoginView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # BUG FIX: dùng user.role (instance) thay vì User.role (class)
         token_url = request.build_absolute_uri("/o/token/")
-        token_response = requests.post(token_url, data={
+        data={
             "grant_type":    "password",
             "username":      user.username,
             "password":      password,
-            "client_id":     settings.OAUTH2_CLIENT_ID,
-            "client_secret": settings.OAUTH2_CLIENT_SECRET,
-            "scope":         user.role,   # ← FIX: instance attribute
-        })
-
+            "client_id":     settings.CLIENT_ID,
+            "client_secret": settings.CLIENT_SECRET,
+            "scope":         user.role,
+        }
+        token_response = requests.post(token_url, data=data)
         if token_response.status_code != 200:
             return Response(
                 {"detail": "Không thể lấy token. Vui lòng thử lại."},
@@ -120,7 +109,7 @@ class RegisterView(generics.CreateAPIView):
     """
     POST /auth/register/
     Đăng ký tài khoản mới.
-    Role hợp lệ: patient, doctor.
+    Role hợp lệ: patient.
     (staff và admin chỉ được tạo bởi admin qua Django Admin hoặc API riêng)
     """
     serializer_class   = RegisterSerializer
@@ -139,14 +128,7 @@ class RegisterView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if user.role == "patient":
-            Patient.objects.create(user=user, full_name=user.username)
-        elif user.role == "doctor":
-            Doctor.objects.create(
-                user=user,
-                full_name=user.username,
-                license_number=f"TEMP-{user.id}",
-            )
+        Patient.objects.create(user=user, full_name=user.username)
 
         return Response(
             {

@@ -33,8 +33,8 @@ const Login = () => {
             setLoading(true);
             setErr(null);
             const res = await Apis.post(endpoints["login"], {
-                username: user.username,
-                password: user.password,
+                username: user.username.trim(),
+                password: user.password.trim(),
             });
             await AsyncStorage.setItem("token", res.data.access_token);
             const currentUser = await authApis(res.data.access_token).get(endpoints["current-user"]);
