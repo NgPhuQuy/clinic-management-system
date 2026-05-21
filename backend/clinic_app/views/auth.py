@@ -47,12 +47,6 @@ def _get_firebase_app():
 # ─────────────────────────────────────────────
 
 class LoginView(APIView):
-    """
-    POST /auth/login/
-    Mobile app gửi username + password.
-    Backend authenticate user, lấy role → gọi /o/token/ với scope đúng.
-
-    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -64,7 +58,7 @@ class LoginView(APIView):
                 {"detail": "Vui lòng nhập username và password."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         user = authenticate(request, username=username, password=password)
 
         if user is None:
@@ -78,17 +72,18 @@ class LoginView(APIView):
                 {"detail": "Tài khoản đã bị vô hiệu hóa."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-
-        token_url = request.build_absolute_uri("/o/token/")
-        data={
-            "grant_type":    "password",
-            "username":      user.username,
-            "password":      password,
-            "client_id":     settings.CLIENT_ID,
-            "client_secret": settings.CLIENT_SECRET,
-            "scope":         user.role,
-        }
-        token_response = requests.post(token_url, data=data)
+        
+        token_response = requests.post(
+            request.build_absolute_uri("/o/token/"),
+            json={
+                "grant_type":    "password",
+                "username":      user.username,
+                "password":      password,
+                "client_id":     settings.CLIENT_ID,
+                "client_secret": settings.CLIENT_SECRET,
+            }
+        )
+        
         if token_response.status_code != 200:
             return Response(
                 {"detail": "Không thể lấy token. Vui lòng thử lại."},
@@ -96,7 +91,6 @@ class LoginView(APIView):
             )
 
         data = token_response.json()
-        # Thêm thông tin user vào response cho tiện FE
         data["user"] = UserSerializer(user).data
         return Response(data, status=status.HTTP_200_OK)
 
