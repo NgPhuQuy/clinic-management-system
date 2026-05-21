@@ -29,7 +29,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'dev-fallback-key-change-in-prod')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 
 # Application definition
 
@@ -111,6 +112,7 @@ OAUTH2_PROVIDER = {
     "SCOPES": {
         "admin": "Toàn quyền quản trị hệ thống",
         "doctor": "Quyền bác sĩ — hồ sơ bệnh án, đơn thuốc, lịch khám",
+        "staff": "Quyền nhân viên y tế — xác nhận thanh toán, cấp thuốc/trừ kho thuốc",
         "patient": "Quyền bệnh nhân — đặt lịch, xem hồ sơ cá nhân, thanh toán",
         "read": "Chỉ đọc",
     },

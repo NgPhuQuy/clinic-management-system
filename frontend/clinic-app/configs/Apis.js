@@ -3,7 +3,7 @@ import axios from "axios";
 // Thay IP này bằng IP máy tính đang chạy Django (xem bằng ipconfig/ifconfig)
 // Android Emulator dùng: http://10.0.2.2:8000
 // Thiết bị thật: dùng IP WiFi của máy tính, ví dụ: http://192.168.1.x:8000
-const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || "http://192.168.1.4:8000";
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 
 export const endpoints = {
     // Auth
