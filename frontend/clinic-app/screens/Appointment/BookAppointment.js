@@ -47,7 +47,16 @@ const BookAppointment = () => {
             }
         } catch (ex) {
             console.error(ex);
-            setErr("Đặt lịch thất bại. Vui lòng thử lại!");
+            const detail = ex?.response?.data;
+            let msg = "Đặt lịch thất bại. Vui lòng thử lại!";
+            if (detail) {
+                if (typeof detail === "string") msg = detail;
+                else if (detail.detail) msg = detail.detail;
+                else msg = Object.entries(detail)
+                    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+                    .join("\n");
+            }
+            setErr(msg);
         } finally {
             setLoading(false);
         }

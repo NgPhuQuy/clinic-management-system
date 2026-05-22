@@ -18,7 +18,6 @@ const METHODS = [
         icon: "wallet",
         iconBg: "#ae2070",
         iconColor: "#fff",
-        emoji: "🟣",
     },
     {
         key: "vnpay",
@@ -27,7 +26,6 @@ const METHODS = [
         icon: "qrcode-scan",
         iconBg: "#005baf",
         iconColor: "#fff",
-        emoji: "🔵",
     },
     {
         key: "cash",
@@ -36,7 +34,6 @@ const METHODS = [
         icon: "cash",
         iconBg: COLORS.greenPale,
         iconColor: COLORS.green,
-        emoji: "💵",
     },
 ];
 
@@ -45,7 +42,6 @@ const PaymentScreen = () => {
     const route = useRoute();
     const user = useContext(MyUserContext);
 
-    // params từ AppointmentDetail
     const { appointmentId, doctorName, appointmentDate, amount } = route.params;
 
     const [selectedMethod, setSelectedMethod] = useState(null);
@@ -57,17 +53,6 @@ const PaymentScreen = () => {
             return;
         }
 
-        if (selectedMethod === "cash") {
-            Alert.alert(
-                "Thanh toán tiền mặt",
-                "Vui lòng đến quầy thu ngân khi đến khám để hoàn tất thanh toán.",
-                [
-                    { text: "Đóng", onPress: () => nav.goBack() },
-                ]
-            );
-            return;
-        }
-
         try {
             setLoading(true);
             const res = await authApis(user.token).post(endpoints["payment-init"], {
@@ -75,22 +60,40 @@ const PaymentScreen = () => {
                 payment_method: selectedMethod,
             });
 
-            const { payment_url, payment_id } = res.data;
+            const { payment_url, payment_id, message } = res.data;
 
-            if (!payment_url) {
-                Alert.alert("Lỗi", "Không nhận được đường dẫn thanh toán.");
+            // BUG FIX: Tiền mặt → chuyển thẳng tới màn kết quả
+            if (selectedMethod === "cash") {
+                nav.replace("payment-result", {
+                    success: false,
+                    paymentId: payment_id,
+                    method: selectedMethod,
+                    isCash: true,
+                    message: message || "Vui lòng đến quầy thu ngân khi đến khám.",
+                });
                 return;
             }
 
-            // Chuyển sang WebView
+            // BUG FIX: Kiểm tra payment_url trước khi navigate
+            if (!payment_url) {
+                Alert.alert(
+                    "Lỗi",
+                    res.data.detail || "Không nhận được đường dẫn thanh toán."
+                );
+                return;
+            }
+
             nav.navigate("payment-webview", {
                 paymentUrl: payment_url,
                 paymentId: payment_id,
                 method: selectedMethod,
             });
         } catch (e) {
-            const msg = e?.response?.data?.detail || "Không thể tạo thanh toán, thử lại sau.";
-            Alert.alert("Lỗi", msg);
+            const msg =
+                e?.response?.data?.detail ||
+                e?.response?.data?.error ||
+                "Không thể tạo thanh toán, thử lại sau.";
+            Alert.alert("Lỗi thanh toán", msg);
         } finally {
             setLoading(false);
         }
@@ -112,7 +115,7 @@ const PaymentScreen = () => {
                         {new Date(appointmentDate).toLocaleString("vi-VN")}
                     </Text>
                 </View>
-                <View style={[styles.divider]} />
+                <View style={styles.divider} />
                 <View style={[styles.infoRow, { marginTop: 4 }]}>
                     <Text style={[styles.infoLabel, { fontWeight: "700", color: COLORS.text }]}>
                         Tổng tiền
@@ -162,7 +165,9 @@ const PaymentScreen = () => {
                     {loading
                         ? <ActivityIndicator color="#fff" />
                         : <Text style={Styles.btnPrimaryText}>
-                            {selectedMethod === "cash" ? "Xác nhận thanh toán tiền mặt" : "Tiến hành thanh toán →"}
+                            {selectedMethod === "cash"
+                                ? "Xác nhận thanh toán tiền mặt"
+                                : "Tiến hành thanh toán →"}
                         </Text>
                     }
                 </TouchableOpacity>
@@ -196,10 +201,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingVertical: 5,
     },
-    infoLabel: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-    },
+    infoLabel: { fontSize: 12, color: COLORS.textMuted },
     infoValue: {
         fontSize: 13,
         color: COLORS.text,
@@ -207,16 +209,8 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: "right",
     },
-    divider: {
-        height: 1,
-        backgroundColor: COLORS.border,
-        marginVertical: 10,
-    },
-    amountText: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: COLORS.primary,
-    },
+    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 10 },
+    amountText: { fontSize: 20, fontWeight: "800", color: COLORS.primary },
     methodCard: {
         flexDirection: "row",
         alignItems: "center",
@@ -245,34 +239,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
-    methodLabel: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: COLORS.text,
-    },
-    methodSub: {
-        fontSize: 11,
-        color: COLORS.textMuted,
-        marginTop: 2,
-    },
+    methodLabel: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+    methodSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
     radio: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: COLORS.border,
-        alignItems: "center",
-        justifyContent: "center",
+        width: 20, height: 20, borderRadius: 10,
+        borderWidth: 2, borderColor: COLORS.border,
+        alignItems: "center", justifyContent: "center",
     },
-    radioSelected: {
-        borderColor: COLORS.primary,
-    },
-    radioDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: COLORS.primary,
-    },
+    radioSelected: { borderColor: COLORS.primary },
+    radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
 });
 
 export default PaymentScreen;

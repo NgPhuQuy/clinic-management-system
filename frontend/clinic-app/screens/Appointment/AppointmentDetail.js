@@ -96,7 +96,7 @@ const AppointmentDetail = () => {
 
     const payment = appt.payment;
     const total = calcTotal(appt);
-    const canPay = (appt.status === "confirmed" || appt.status === "completed")
+    const canPay = (appt.status === "pending" || appt.status === "confirmed" || appt.status === "completed")
         && (!payment || payment.status === "pending" || payment.status === "failed");
     const alreadyPaid = payment?.status === "success";
 
@@ -118,8 +118,7 @@ const AppointmentDetail = () => {
                     <Text style={[Styles.textSmall, { marginTop: 8 }]}>Đặt lúc: {new Date(appt.created_at).toLocaleString("vi-VN")}</Text>
                 </View>
 
-                {/* Dịch vụ */}
-                {appt.appointment_services?.length > 0 && (
+                {(appt.appointment_services?.length > 0 || appt.doctor_info?.consultation_fee > 0) && (
                     <View style={Styles.card}>
                         <Text style={Styles.sectionHeader}>Chi phí khám</Text>
 
