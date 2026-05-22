@@ -10,11 +10,11 @@ import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
 const TYPE_MAP = {
-    appointment_reminder: { icon: "📅", bg: "#e8f5e9" },
-    prescription:         { icon: "💊", bg: "#fff3e0" },
-    payment:              { icon: "💳", bg: "#f3e5f5" },
-    lab_result:           { icon: "🔬", bg: "#e0f7fa" },
-    general:              { icon: "🔔", bg: "#e3f2fd" },
+    appointment_reminder: { icon: "calendar-clock",    bg: "#e8f5e9", color: COLORS.green },
+    prescription:         { icon: "pill",               bg: "#fff3e0", color: COLORS.orange },
+    payment:              { icon: "credit-card-outline",bg: "#f3e5f5", color: COLORS.purple },
+    lab_result:           { icon: "flask-outline",      bg: "#e0f7fa", color: COLORS.teal },
+    general:              { icon: "bell-outline",       bg: "#e3f2fd", color: COLORS.primary },
 };
 
 const Notifications = () => {
@@ -30,7 +30,7 @@ const Notifications = () => {
             if (!user?.token) return;
             const res = await authApis(user.token).get(endpoints["notifications"]);
             setNotifications(res.data.results || res.data);
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Notifications error:", e); }
         finally { setLoading(false); }
     };
 
@@ -70,7 +70,7 @@ const Notifications = () => {
                     <Text style={styles.nMsg} numberOfLines={2}>{item.message}</Text>
                     <Text style={styles.nTime}>{new Date(item.created_at).toLocaleString("vi-VN")}</Text>
                 </View>
-                <Text style={styles.arrow}>›</Text>
+                <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.textLight} />
             </TouchableOpacity>
         );
     };
@@ -81,10 +81,14 @@ const Notifications = () => {
 
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Thông báo</Text>
+                <View style={styles.headerLeft}>
+                    <MaterialCommunityIcons name="bell" size={22} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.headerTitle}>Thông báo</Text>
+                </View>
                 {unreadCount > 0 && (
                     <TouchableOpacity style={styles.readAllBtn} onPress={markAllRead}>
-                        <Text style={styles.readAllText}>✔ Đọc tất cả</Text>
+                        <MaterialCommunityIcons name="check-all" size={14} color="#fff" />
+                        <Text style={styles.readAllText}> Đọc tất cả</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -101,9 +105,14 @@ const Notifications = () => {
                     style={[styles.tabItem, tab === "unread" && styles.tabActive]}
                     onPress={() => setTab("unread")}
                 >
-                    <Text style={[styles.tabText, tab === "unread" && styles.tabTextActive]}>
-                        Chưa đọc{unreadCount > 0 ? `  ${unreadCount}` : ""}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Text style={[styles.tabText, tab === "unread" && styles.tabTextActive]}>Chưa đọc</Text>
+                        {unreadCount > 0 && (
+                            <View style={styles.unreadBadge}>
+                                <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+                            </View>
+                        )}
+                    </View>
                 </TouchableOpacity>
             </View>
 
@@ -113,9 +122,14 @@ const Notifications = () => {
                 </View>
             ) : displayed.length === 0 ? (
                 <View style={[Styles.center, { flex: 1 }]}>
-                    <Text style={{ fontSize: 52, marginBottom: 12 }}>🔔</Text>
-                    <Text style={Styles.text}>
+                    <View style={styles.emptyIcon}>
+                        <MaterialCommunityIcons name="bell-off-outline" size={48} color={COLORS.textLight} />
+                    </View>
+                    <Text style={[Styles.text, { marginTop: 12, fontWeight: "600" }]}>
                         {tab === "unread" ? "Không có thông báo chưa đọc" : "Chưa có thông báo nào"}
+                    </Text>
+                    <Text style={[Styles.textSmall, { marginTop: 6, textAlign: "center", paddingHorizontal: 40 }]}>
+                        Các thông báo lịch hẹn, đơn thuốc và kết quả xét nghiệm sẽ hiển thị tại đây
                     </Text>
                 </View>
             ) : (
@@ -125,6 +139,8 @@ const Notifications = () => {
                     renderItem={renderItem}
                     contentContainerStyle={{ paddingVertical: 8 }}
                     ItemSeparatorComponent={() => <View style={styles.sep} />}
+                    onRefresh={load}
+                    refreshing={loading}
                 />
             )}
         </View>
@@ -141,12 +157,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
     },
+    headerLeft: { flexDirection: "row", alignItems: "center" },
     headerTitle: { color: "#fff", fontSize: 20, fontWeight: "800" },
     readAllBtn: {
         backgroundColor: "rgba(255,255,255,0.15)",
         borderRadius: 20,
         paddingHorizontal: 14,
         paddingVertical: 7,
+        flexDirection: "row",
+        alignItems: "center",
     },
     readAllText: { color: "#fff", fontSize: 11, fontWeight: "700" },
     tabs: {
@@ -165,6 +184,15 @@ const styles = StyleSheet.create({
     tabActive: { borderBottomColor: COLORS.primary },
     tabText: { fontSize: 13, fontWeight: "600", color: COLORS.textMuted },
     tabTextActive: { color: COLORS.primary },
+    unreadBadge: {
+        backgroundColor: COLORS.redLight,
+        borderRadius: 8,
+        minWidth: 18,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+        alignItems: "center",
+    },
+    unreadBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
     item: {
         backgroundColor: "#fff",
         flexDirection: "row",
@@ -190,7 +218,12 @@ const styles = StyleSheet.create({
     nTitle: { fontSize: 13, fontWeight: "700", color: COLORS.text },
     nMsg: { fontSize: 11, color: COLORS.textMuted, marginTop: 3, lineHeight: 16 },
     nTime: { fontSize: 10, color: COLORS.textLight, marginTop: 5 },
-    arrow: { color: COLORS.textLight, fontSize: 18, alignSelf: "center" },
+    emptyIcon: {
+        width: 88, height: 88,
+        borderRadius: 24,
+        backgroundColor: COLORS.primaryPale,
+        alignItems: "center", justifyContent: "center",
+    },
 });
 
 export default Notifications;

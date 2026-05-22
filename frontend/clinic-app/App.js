@@ -4,7 +4,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { PaperProvider } from "react-native-paper";
 import { useReducer, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ActivityIndicator, View, Text, Platform } from "react-native";
+import { ActivityIndicator, View, Platform } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { MyUserContext, MyDispatchContext, MyReducer } from "./contexts/MyContext";
 import Login from "./screens/Auth/Login";
@@ -35,7 +36,6 @@ const HS = {
     headerShadowVisible: false,
 };
 
-// Tab 1: Trang chủ
 const HomeStack = () => (
     <Stack.Navigator screenOptions={HS}>
         <Stack.Screen name="home-main" component={Home} options={{ headerShown: false }} />
@@ -57,7 +57,6 @@ const HomeStack = () => (
     </Stack.Navigator>
 );
 
-// Tab 2: Đặt khám
 const BookingStack = () => (
     <Stack.Navigator screenOptions={HS}>
         <Stack.Screen name="booking-main" component={DoctorList} options={{ title: "Chọn bác sĩ để đặt khám" }} />
@@ -68,14 +67,12 @@ const BookingStack = () => (
     </Stack.Navigator>
 );
 
-// Tab 3: Thông báo
 const NotifStack = () => (
     <Stack.Navigator screenOptions={HS}>
         <Stack.Screen name="notif-main" component={Notifications} options={{ headerShown: false }} />
     </Stack.Navigator>
 );
 
-// Tab 4: Cá nhân
 const ProfileStack = () => (
     <Stack.Navigator screenOptions={HS}>
         <Stack.Screen name="profile-main" component={Profile} options={{ headerShown: false }} />
@@ -125,7 +122,9 @@ const AppTabs = () => (
             component={HomeStack}
             options={{
                 title: "Trang chủ",
-                tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🏠</Text>,
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="home-variant" size={size ?? 24} color={color} />
+                ),
             }}
         />
         <Tab.Screen
@@ -133,7 +132,9 @@ const AppTabs = () => (
             component={BookingStack}
             options={{
                 title: "Đặt khám",
-                tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>📅</Text>,
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="calendar-plus" size={size ?? 24} color={color} />
+                ),
             }}
         />
         <Tab.Screen
@@ -141,7 +142,9 @@ const AppTabs = () => (
             component={NotifStack}
             options={{
                 title: "Thông báo",
-                tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🔔</Text>,
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="bell-outline" size={size ?? 24} color={color} />
+                ),
             }}
         />
         <Tab.Screen
@@ -149,7 +152,9 @@ const AppTabs = () => (
             component={ProfileStack}
             options={{
                 title: "Cá nhân",
-                tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>👤</Text>,
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="account-circle-outline" size={size ?? 24} color={color} />
+                ),
             }}
         />
     </Tab.Navigator>

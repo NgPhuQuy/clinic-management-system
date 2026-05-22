@@ -1,10 +1,29 @@
-import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from "react-native";
 import { Text, Button } from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+
+const DoctorAvatarLarge = ({ uri }) => {
+    const [error, setError] = useState(false);
+    if (uri && !error) {
+        return (
+            <Image
+                source={{ uri }}
+                style={styles.avatarCircle}
+                onError={() => setError(true)}
+            />
+        );
+    }
+    return (
+        <View style={[styles.avatarCircle, { alignItems: "center", justifyContent: "center" }]}>
+            <MaterialCommunityIcons name="doctor" size={52} color="#fff" />
+        </View>
+    );
+};
 
 const DoctorDetail = () => {
     const nav = useNavigation();
@@ -50,9 +69,7 @@ const DoctorDetail = () => {
         <ScrollView style={Styles.container}>
             {/* Doctor Header */}
             <View style={styles.header}>
-                <View style={styles.avatarCircle}>
-                    <Text style={{ fontSize: 48 }}>👨‍⚕️</Text>
-                </View>
+                <DoctorAvatarLarge uri={doctor.avatar || doctor.avatar_url} />
                 <Text style={styles.name}>BS. {doctor.full_name}</Text>
                 <Text style={styles.specialty}>{doctor.specialty_name || "Đa khoa"}</Text>
                 <View style={styles.statsRow}>
