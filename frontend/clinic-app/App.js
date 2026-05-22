@@ -19,6 +19,9 @@ import AppointmentDetail from "./screens/Appointment/AppointmentDetail";
 import { Profile, Prescriptions, Payments } from "./screens/Profile/Profile";
 import { MedicalRecords, MedicalRecordDetail } from "./screens/Profile/MedicalRecords";
 import Notifications from "./screens/Notification/Notifications";
+import PaymentScreen from "./screens/Payment/PaymentScreen";
+import PaymentWebView from "./screens/Payment/PaymentWebView";
+import PaymentResult from "./screens/Payment/PaymentResult";
 import { authApis, endpoints } from "./configs/Apis";
 import { COLORS } from "./styles/Styles";
 
@@ -46,6 +49,9 @@ const HomeStack = () => (
         <Stack.Screen name="prescriptions" component={Prescriptions} options={{ title: "Đơn thuốc" }} />
         <Stack.Screen name="prescription-detail" component={Prescriptions} options={{ title: "Chi tiết đơn thuốc" }} />
         <Stack.Screen name="payments" component={Payments} options={{ title: "Thanh toán" }} />
+        <Stack.Screen name="payment-screen" component={PaymentScreen} options={{ title: "Chọn phương thức thanh toán" }} />
+        <Stack.Screen name="payment-webview" component={PaymentWebView} options={{ headerShown: false }} />
+        <Stack.Screen name="payment-result" component={PaymentResult} options={{ headerShown: false }} />
         <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
         <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
     </Stack.Navigator>
@@ -78,6 +84,9 @@ const ProfileStack = () => (
         <Stack.Screen name="prescriptions" component={Prescriptions} options={{ title: "Đơn thuốc" }} />
         <Stack.Screen name="prescription-detail" component={Prescriptions} options={{ title: "Chi tiết đơn thuốc" }} />
         <Stack.Screen name="payments" component={Payments} options={{ title: "Lịch sử thanh toán" }} />
+        <Stack.Screen name="payment-screen" component={PaymentScreen} options={{ title: "Chọn phương thức thanh toán" }} />
+        <Stack.Screen name="payment-webview" component={PaymentWebView} options={{ headerShown: false }} />
+        <Stack.Screen name="payment-result" component={PaymentResult} options={{ headerShown: false }} />
         <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
     </Stack.Navigator>
 );

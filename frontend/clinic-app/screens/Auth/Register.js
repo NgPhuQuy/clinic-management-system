@@ -1,5 +1,5 @@
 import { View, ScrollView, TouchableOpacity, Image, StyleSheet } from "react-native";
-import { Button, HelperText, Text, TextInput, RadioButton } from "react-native-paper";
+import { Button, HelperText, Text, TextInput } from "react-native-paper";
 import * as ImgPicker from "expo-image-picker";
 import { useState, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,7 +18,7 @@ const Register = () => {
         { field: "confirm", title: "Xác nhận mật khẩu", icon: "eye", secureTextEntry: true },
     ];
 
-    const [user, setUser] = useState({ role: "patient" });
+    const [user, setUser] = useState({ role: "patient" }); // hardcode patient
     const [err, setErr] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
@@ -30,17 +30,17 @@ const Register = () => {
         if (status !== "granted") { alert("Cần quyền truy cập thư viện ảnh!"); return; }
         const result = await ImgPicker.launchImageLibraryAsync({
             mediaTypes: ImgPicker.MediaType ? [ImgPicker.MediaType.Images] : ImgPicker.MediaTypeOptions.Images,
-            quality: 0.7
+            quality: 0.7,
         });
         if (!result.canceled) setUser({ ...user, avatar: result.assets[0] });
     };
 
     const validate = () => {
         if (!user.first_name) { setErr("Vui lòng nhập tên!"); return false; }
-        if (!user.username) { setErr("Vui lòng nhập tên đăng nhập!"); return false; }
-        if (!user.email) { setErr("Vui lòng nhập email!"); return false; }
+        if (!user.username)   { setErr("Vui lòng nhập tên đăng nhập!"); return false; }
+        if (!user.email)      { setErr("Vui lòng nhập email!"); return false; }
         if (!user.password || !user.confirm) { setErr("Vui lòng nhập mật khẩu!"); return false; }
-        if (user.password !== user.confirm) { setErr("Mật khẩu không khớp!"); return false; }
+        if (user.password !== user.confirm)  { setErr("Mật khẩu không khớp!"); return false; }
         return true;
     };
 
@@ -49,6 +49,7 @@ const Register = () => {
         try {
             setLoading(true);
             setErr(null);
+
             const form = new FormData();
             for (const key of Object.keys(user)) {
                 if (key === "confirm") continue;
@@ -64,28 +65,26 @@ const Register = () => {
             }
             form.append("password_confirm", user.confirm);
 
-            const res = await Apis.post(endpoints["register"], form, {
+            await Apis.post(endpoints["register"], form, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            if (res.status === 201) {
-                // Backend trả token luôn sau khi đăng ký
-                if (res.data.access_token) {
-                    await AsyncStorage.setItem("token", res.data.access_token);
-                    const currentUser = await authApis(res.data.access_token).get(endpoints["current-user"]);
-                    dispatch({ type: "login", payload: { ...currentUser.data, token: res.data.access_token } });
-                } else {
-                    alert("Đăng ký thành công! Vui lòng đăng nhập.");
-                    nav.navigate("login");
-                }
-            }
+            const loginRes = await Apis.post(endpoints["login"], {
+                username: user.username.trim(),
+                password: user.password.trim(),
+            });
+            await AsyncStorage.setItem("token", loginRes.data.access_token);
+            const currentUser = await authApis(loginRes.data.access_token).get(endpoints["current-user"]);
+            dispatch({ type: "login", payload: { ...currentUser.data, token: loginRes.data.access_token } });
+
         } catch (ex) {
             console.error(ex?.response?.data || ex);
-            const msg = ex?.response?.data?.username?.[0]
-                || ex?.response?.data?.email?.[0]
-                || ex?.response?.data?.password?.[0]
-                || ex?.response?.data?.detail
-                || "Đăng ký thất bại. Vui lòng thử lại!";
+            const msg =
+                ex?.response?.data?.username?.[0] ||
+                ex?.response?.data?.email?.[0] ||
+                ex?.response?.data?.password?.[0] ||
+                ex?.response?.data?.detail ||
+                "Đăng ký thất bại. Vui lòng thử lại!";
             setErr(msg);
         } finally {
             setLoading(false);
@@ -97,7 +96,9 @@ const Register = () => {
             <View style={[Styles.padding, styles.form]}>
                 <Text style={Styles.title}>Tạo tài khoản</Text>
 
-                <HelperText type="error" visible={!!err} style={Styles.margin}>{err}</HelperText>
+                <HelperText type="error" visible={!!err} style={Styles.margin}>
+                    {err}
+                </HelperText>
 
                 {fields.map((f) => (
                     <TextInput
@@ -119,21 +120,15 @@ const Register = () => {
                     />
                 ))}
 
-                <Text style={[Styles.sectionHeader, { marginTop: 4 }]}>Vai trò</Text>
-                <RadioButton.Group onValueChange={(v) => setUser({ ...user, role: v })} value={user.role}>
-                    <View style={Styles.row}>
-                        <RadioButton value="patient" color="#1565c0" />
-                        <Text>Bệnh nhân</Text>
-                        <RadioButton value="doctor" color="#1565c0" style={{ marginLeft: 16 }} />
-                        <Text>Bác sĩ</Text>
-                    </View>
-                </RadioButton.Group>
-
+                {/* Avatar picker */}
                 <TouchableOpacity onPress={pickAvatar} style={styles.avatarPicker}>
                     <Text style={{ color: "#1565c0" }}>📷  Chọn ảnh đại diện...</Text>
                 </TouchableOpacity>
                 {user.avatar && (
-                    <Image source={{ uri: user.avatar.uri }} style={[Styles.avatarLarge, Styles.margin, { alignSelf: "center" }]} />
+                    <Image
+                        source={{ uri: user.avatar.uri }}
+                        style={[Styles.avatarLarge, Styles.margin, { alignSelf: "center" }]}
+                    />
                 )}
 
                 <Button
