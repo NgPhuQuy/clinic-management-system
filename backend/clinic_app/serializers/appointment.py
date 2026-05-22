@@ -59,6 +59,8 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
     payment_method = serializers.ChoiceField(
         choices=Payment.Method.choices,
         write_only=True,
+        required=False,
+        default=Payment.Method.CASH,
     )
 
     class Meta:

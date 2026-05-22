@@ -39,35 +39,39 @@ def _get_client_ip(request) -> str:
     return request.META.get("REMOTE_ADDR", "127.0.0.1")
 
 
+def _get_setting(name: str, fallback: str) -> str:
+    """Lấy setting, trả về fallback nếu None hoặc rỗng."""
+    val = getattr(settings, name, None)
+    return val if val else fallback
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MoMo Integration
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _create_momo_payment_url(payment: Payment, request) -> dict:
     """
-    Tạo URL thanh toán MoMo.
-    Sử dụng MoMo Payment Gateway v2 — captureWallet (ví MoMo).
+    Tạo URL thanh toán MoMo (sandbox/production).
     Docs: https://developers.momo.vn/#/docs/en/aiov2/?id=payment-method
     """
-    partner_code = getattr(settings, "MOMO_PARTNER_CODE", "MOMO_PARTNER_CODE")
-    access_key   = getattr(settings, "MOMO_ACCESS_KEY",   "MOMO_ACCESS_KEY")
-    secret_key   = getattr(settings, "MOMO_SECRET_KEY",   "MOMO_SECRET_KEY")
-    endpoint     = getattr(
-        settings, "MOMO_ENDPOINT",
+    partner_code = _get_setting("MOMO_PARTNER_CODE", "MOMOBKUN20180529")
+    access_key   = _get_setting("MOMO_ACCESS_KEY",   "klm05TvNBzhg7h7j")
+    secret_key   = _get_setting("MOMO_SECRET_KEY",   "at67qH6mk8w5Y1nAyMoTkqIxteL4MR11")
+    endpoint     = _get_setting(
+        "MOMO_ENDPOINT",
         "https://test-payment.momo.vn/v2/gateway/api/create"
     )
 
-    base_url    = getattr(settings, "BACKEND_BASE_URL", "http://localhost:8000")
-    request_id  = str(uuid.uuid4())
-    order_id    = f"CLINIC-{payment.id}-{int(time.time())}"
-    amount      = int(payment.amount)
-    order_info  = f"Thanh toan lich kham #{payment.appointment_id}"
+    base_url     = _get_setting("BACKEND_BASE_URL", "http://localhost:8000")
+    request_id   = str(uuid.uuid4())
+    order_id     = f"CLINIC-{payment.id}-{int(time.time())}"
+    amount       = int(payment.amount)
+    order_info   = f"Thanh toan lich kham #{payment.appointment_id}"
     redirect_url = f"{base_url}/api/payments/momo/return/"
     ipn_url      = f"{base_url}/api/payments/momo/ipn/"
     extra_data   = ""
     request_type = "captureWallet"
 
-    # Tạo chữ ký HMAC-SHA256
     raw_sig = (
         f"accessKey={access_key}"
         f"&amount={amount}"
@@ -108,7 +112,6 @@ def _create_momo_payment_url(payment: Payment, request) -> dict:
         return {"error": str(exc)}
 
     if data.get("resultCode") == 0:
-        # Lưu orderId để đối chiếu khi IPN callback về
         payment.transaction_id = order_id
         payment.save(update_fields=["transaction_id"])
         return {"payment_url": data.get("payUrl", ""), "order_id": order_id}
@@ -121,9 +124,9 @@ def _create_momo_payment_url(payment: Payment, request) -> dict:
 
 def _verify_momo_ipn(data: dict) -> bool:
     """Xác thực chữ ký IPN từ MoMo."""
-    secret_key   = getattr(settings, "MOMO_SECRET_KEY",   "MOMO_SECRET_KEY")
-    access_key   = getattr(settings, "MOMO_ACCESS_KEY",   "MOMO_ACCESS_KEY")
-    partner_code = getattr(settings, "MOMO_PARTNER_CODE", "MOMO_PARTNER_CODE")
+    secret_key   = _get_setting("MOMO_SECRET_KEY",   "at67qH6mk8w5Y1nAyMoTkqIxteL4MR11")
+    access_key   = _get_setting("MOMO_ACCESS_KEY",   "klm05TvNBzhg7h7j")
+    partner_code = _get_setting("MOMO_PARTNER_CODE", "MOMOBKUN20180529")
 
     raw_sig = (
         f"accessKey={access_key}"
@@ -157,14 +160,14 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
     Tạo URL thanh toán VNPay (QR / Internet Banking).
     Docs: https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html
     """
-    tmn_code    = getattr(settings, "VNPAY_TMN_CODE",    "VNPAY_TMN_CODE")
-    hash_secret = getattr(settings, "VNPAY_HASH_SECRET", "VNPAY_HASH_SECRET")
-    vnpay_url   = getattr(
-        settings, "VNPAY_URL",
+    tmn_code    = _get_setting("VNPAY_TMN_CODE",    "VNPAYMENT")
+    hash_secret = _get_setting("VNPAY_HASH_SECRET", "NWNFRSSJLQOCIJXJXSQBSTUGWHGPYQKM")
+    vnpay_url   = _get_setting(
+        "VNPAY_URL",
         "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
     )
-    base_url     = getattr(settings, "BACKEND_BASE_URL", "http://localhost:8000")
-    return_url   = f"{base_url}/api/payments/vnpay/return/"
+    base_url   = _get_setting("BACKEND_BASE_URL", "http://localhost:8000")
+    return_url = f"{base_url}/api/payments/vnpay/return/"
 
     txn_ref  = f"CLINIC{payment.id}{int(time.time())}"
     amount   = int(payment.amount) * 100   # VNPay tính bằng đồng * 100
@@ -172,24 +175,22 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
     ip_addr  = _get_client_ip(request)
 
     vnp_params = {
-        "vnp_Version":   "2.1.0",
-        "vnp_Command":   "pay",
-        "vnp_TmnCode":   tmn_code,
-        "vnp_Amount":    amount,
+        "vnp_Version":    "2.1.0",
+        "vnp_Command":    "pay",
+        "vnp_TmnCode":    tmn_code,
+        "vnp_Amount":     amount,
         "vnp_CreateDate": now_str,
-        "vnp_CurrCode":  "VND",
-        "vnp_IpAddr":    ip_addr,
-        "vnp_Locale":    "vn",
-        "vnp_OrderInfo": f"Thanh toan lich kham #{payment.appointment_id}",
-        "vnp_OrderType": "other",
-        "vnp_ReturnUrl": return_url,
-        "vnp_TxnRef":    txn_ref,
+        "vnp_CurrCode":   "VND",
+        "vnp_IpAddr":     ip_addr,
+        "vnp_Locale":     "vn",
+        "vnp_OrderInfo":  f"Thanh toan lich kham #{payment.appointment_id}",
+        "vnp_OrderType":  "other",
+        "vnp_ReturnUrl":  return_url,
+        "vnp_TxnRef":     txn_ref,
     }
 
-    # Sắp xếp tham số theo thứ tự alphabet (bắt buộc để tạo hash đúng)
+    # Sắp xếp alphabet → bắt buộc để hash đúng
     sorted_params = sorted(vnp_params.items())
-
-    # Tạo chuỗi hash (không encode giá trị)
     hash_data = "&".join(f"{k}={v}" for k, v in sorted_params)
     signature = hmac.new(
         hash_secret.encode("utf-8"),
@@ -197,13 +198,11 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
         hashlib.sha512,
     ).hexdigest()
 
-    # Tạo query string (encode giá trị cho URL)
     query_string = "&".join(
         f"{k}={urllib.parse.quote_plus(str(v))}" for k, v in sorted_params
     )
     payment_url = f"{vnpay_url}?{query_string}&vnp_SecureHash={signature}"
 
-    # Lưu txn_ref để đối chiếu khi VNPay redirect về
     payment.transaction_id = txn_ref
     payment.save(update_fields=["transaction_id"])
 
@@ -212,14 +211,13 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
 
 def _verify_vnpay_return(params: dict) -> bool:
     """Xác thực chữ ký VNPay trả về."""
-    hash_secret    = getattr(settings, "VNPAY_HASH_SECRET", "VNPAY_HASH_SECRET")
-    received_hash  = params.get("vnp_SecureHash", "")
-    # Loại bỏ vnp_SecureHash & vnp_SecureHashType khỏi params trước khi verify
-    verify_params  = {k: v for k, v in params.items()
-                      if k not in ("vnp_SecureHash", "vnp_SecureHashType")}
-    sorted_params  = sorted(verify_params.items())
-    hash_data      = "&".join(f"{k}={v}" for k, v in sorted_params)
-    expected       = hmac.new(
+    hash_secret   = _get_setting("VNPAY_HASH_SECRET", "NWNFRSSJLQOCIJXJXSQBSTUGWHGPYQKM")
+    received_hash = params.get("vnp_SecureHash", "")
+    verify_params = {k: v for k, v in params.items()
+                     if k not in ("vnp_SecureHash", "vnp_SecureHashType")}
+    sorted_params = sorted(verify_params.items())
+    hash_data     = "&".join(f"{k}={v}" for k, v in sorted_params)
+    expected      = hmac.new(
         hash_secret.encode("utf-8"),
         hash_data.encode("utf-8"),
         hashlib.sha512,
@@ -242,14 +240,13 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         scopes = _get_token_scopes(self.request)
 
         if "admin"   in scopes: return qs
-        if "staff"   in scopes: return qs          # thu ngân thấy tất cả
-        if "doctor"  in scopes: return qs          # bác sĩ cần biết BN đã trả chưa
+        if "staff"   in scopes: return qs
+        if "doctor"  in scopes: return qs
         if "patient" in scopes:
             return qs.filter(patient__user=self.request.user)
         return qs.none()
 
     def get_permissions(self):
-        # Các callback từ cổng thanh toán không cần xác thực Bearer
         if self.action in ("momo_ipn", "momo_return", "vnpay_return"):
             return [AllowAny()]
         if self.action == "init":
@@ -264,13 +261,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     def init(self, request):
         """
         POST /payments/init/
-        Bệnh nhân khởi tạo thanh toán → trả về payment_url thật.
-
-        Body:
-          {
-            "appointment_id": 42,
-            "payment_method": "momo" | "vnpay" | "cash"
-          }
+        Body: { "appointment_id": 42, "payment_method": "momo"|"vnpay"|"cash" }
         """
         serializer = PaymentInitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -286,30 +277,42 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         for svc in appointment.appointment_services.all():
             total += svc.get_subtotal()
 
+        method = serializer.validated_data["payment_method"]
+
         payment, created = Payment.objects.get_or_create(
             appointment=appointment,
             defaults={
                 "patient":        request.user.patient_profile,
                 "amount":         total,
-                "payment_method": serializer.validated_data["payment_method"],
+                "payment_method": method,
                 "status":         Payment.Status.PENDING,
             },
         )
 
-        # Nếu đã thanh toán rồi, không tạo URL mới
+        # Đã thanh toán thành công → không cho tạo lại
         if payment.status == Payment.Status.SUCCESS:
             return Response(
                 {"detail": "Lịch hẹn này đã được thanh toán.", "payment_id": payment.id},
                 status=status.HTTP_200_OK,
             )
 
-        method = serializer.validated_data["payment_method"]
+        # BUG FIX: Nếu thanh toán trước thất bại → reset để thử lại
+        if not created and payment.status == Payment.Status.FAILED:
+            payment.status         = Payment.Status.PENDING
+            payment.payment_method = method
+            payment.transaction_id = ""
+            payment.save(update_fields=["status", "payment_method", "transaction_id"])
 
-        # ── Tiền mặt: không cần URL cổng TT ──────────────────────────────
+        # BUG FIX: Cập nhật method nếu user đổi phương thức (trạng thái PENDING)
+        elif not created and payment.payment_method != method:
+            payment.payment_method = method
+            payment.save(update_fields=["payment_method"])
+
+        # ── Tiền mặt ─────────────────────────────────────────────────────
         if method == Payment.Method.CASH:
             return Response({
                 "payment_id":     payment.id,
-                "amount":         total,
+                "amount":         str(total),
                 "payment_method": method,
                 "payment_url":    None,
                 "message":        "Vui lòng thanh toán tại quầy thu ngân khi đến khám.",
@@ -325,7 +328,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 )
             return Response({
                 "payment_id":     payment.id,
-                "amount":         total,
+                "amount":         str(total),
                 "payment_method": method,
                 "payment_url":    result["payment_url"],
                 "order_id":       result.get("order_id"),
@@ -336,7 +339,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             result = _create_vnpay_payment_url(payment, request)
             return Response({
                 "payment_id":     payment.id,
-                "amount":         total,
+                "amount":         str(total),
                 "payment_method": method,
                 "payment_url":    result["payment_url"],
                 "txn_ref":        result.get("txn_ref"),
@@ -348,17 +351,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def confirm(self, request, pk=None):
-        """
-        POST /payments/{id}/confirm/
-        Nhân viên thu ngân xác nhận đã nhận tiền (dùng cho tiền mặt hoặc
-        bất kỳ phương thức nào cần xác nhận thủ công).
-
-        Body (optional):
-          {
-            "transaction_id": "CASH-2025-001",
-            "notes": "Thu tiền mặt tại quầy"
-          }
-        """
+        """POST /payments/{id}/confirm/ — Thu ngân xác nhận đã nhận tiền."""
         payment = self.get_object()
 
         if payment.status == Payment.Status.SUCCESS:
@@ -378,18 +371,13 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             "transaction_id", f"MANUAL-{payment.pk}-{int(time.time())}"
         )
         payment.save()
-
         return Response(PaymentSerializer(payment).data)
 
-    # ── 3. MoMo IPN callback (server-to-server, AllowAny) ────────────────
+    # ── 3. MoMo IPN callback ─────────────────────────────────────────────
 
     @action(detail=False, methods=["post"], url_path="momo/ipn")
     def momo_ipn(self, request):
-        """
-        POST /payments/momo/ipn/
-        MoMo gọi endpoint này sau khi thanh toán xong.
-        Xác thực chữ ký → cập nhật trạng thái payment.
-        """
+        """POST /payments/momo/ipn/ — MoMo gọi sau khi thanh toán."""
         data = request.data
 
         if not _verify_momo_ipn(data):
@@ -404,7 +392,8 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         except Payment.DoesNotExist:
             return Response({"message": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        if payment.status != Payment.Status.PENDING:
+        # BUG FIX: chỉ bỏ qua nếu đã SUCCESS, không bỏ qua FAILED (để IPN retry hoạt động)
+        if payment.status == Payment.Status.SUCCESS:
             return Response({"message": "Already processed"}, status=status.HTTP_200_OK)
 
         if result_code == 0:
@@ -415,35 +404,32 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             payment.status = Payment.Status.FAILED
 
         payment.save()
-        # MoMo yêu cầu response 200 ngay cả khi thất bại
         return Response({"message": "Received", "resultCode": 0}, status=status.HTTP_200_OK)
 
-    # ── 4. MoMo return URL (deep-link về app) ────────────────────────────
+    # ── 4. MoMo return URL ───────────────────────────────────────────────
 
     @action(detail=False, methods=["get"], url_path="momo/return")
     def momo_return(self, request):
-        """
-        GET /payments/momo/return/
-        MoMo redirect người dùng về URL này sau khi thanh toán.
-        App bắt deep-link và xử lý tiếp; endpoint này chỉ trả HTML đơn giản.
-        """
+        """GET /payments/momo/return/ — MoMo redirect sau khi thanh toán."""
         result_code = request.query_params.get("resultCode")
         order_id    = request.query_params.get("orderId", "")
 
         success = result_code == "0"
         try:
             payment = Payment.objects.get(transaction_id=order_id)
-            if success and payment.status != Payment.Status.SUCCESS:
+            # BUG FIX: update dù status là gì (kể cả FAILED từ lần thử trước)
+            if success:
                 payment.status  = Payment.Status.SUCCESS
                 payment.paid_at = timezone.now()
-                payment.save()
+            else:
+                payment.status  = Payment.Status.FAILED
+            payment.save(update_fields=["status", "paid_at"])
         except Payment.DoesNotExist:
             pass
 
-        # Redirect sang deep-link app hoặc trả JSON (React Native WebView dùng onNavigationStateChange)
         return Response({
-            "success": success,
-            "message": "Thanh toán thành công" if success else "Thanh toán thất bại",
+            "success":  success,
+            "message":  "Thanh toán thành công" if success else "Thanh toán thất bại",
             "order_id": order_id,
         })
 
@@ -451,11 +437,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="vnpay/return")
     def vnpay_return(self, request):
-        """
-        GET /payments/vnpay/return/
-        VNPay redirect người dùng về URL này sau khi thanh toán.
-        React Native WebView theo dõi URL này để đóng WebView.
-        """
+        """GET /payments/vnpay/return/ — VNPay redirect sau khi thanh toán."""
         params = request.query_params.dict()
 
         if not _verify_vnpay_return(params):
@@ -464,27 +446,27 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        txn_ref     = params.get("vnp_TxnRef", "")
+        txn_ref       = params.get("vnp_TxnRef", "")
         response_code = params.get("vnp_ResponseCode")
-        trans_no    = params.get("vnp_TransactionNo", "")
-        success     = response_code == "00"
+        trans_no      = params.get("vnp_TransactionNo", "")
+        success       = response_code == "00"
 
         try:
             payment = Payment.objects.get(transaction_id=txn_ref)
-            if payment.status == Payment.Status.PENDING:
-                if success:
-                    payment.status         = Payment.Status.SUCCESS
-                    payment.paid_at        = timezone.now()
-                    payment.transaction_id = trans_no or txn_ref
-                else:
-                    payment.status = Payment.Status.FAILED
-                payment.save()
+            # BUG FIX: update dù status là gì
+            if success:
+                payment.status         = Payment.Status.SUCCESS
+                payment.paid_at        = timezone.now()
+                payment.transaction_id = trans_no or txn_ref
+            else:
+                payment.status = Payment.Status.FAILED
+            payment.save()
         except Payment.DoesNotExist:
             pass
 
         return Response({
-            "success":    success,
-            "message":    "Thanh toán thành công" if success else f"Thanh toán thất bại (mã: {response_code})",
-            "txn_ref":    txn_ref,
-            "trans_no":   trans_no,
+            "success":  success,
+            "message":  "Thanh toán thành công" if success else f"Thanh toán thất bại (mã: {response_code})",
+            "txn_ref":  txn_ref,
+            "trans_no": trans_no,
         })

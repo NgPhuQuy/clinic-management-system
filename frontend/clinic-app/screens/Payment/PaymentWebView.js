@@ -1,99 +1,113 @@
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import {
+    View, StyleSheet, ActivityIndicator,
+    TouchableOpacity, Alert, Platform
+} from "react-native";
 import { Text } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { WebView } from "react-native-webview";
 import { COLORS } from "../../styles/Styles";
 
-// Base URL của backend — phải khớp với EXPO_PUBLIC_BASE_URL
-const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
+const MOMO_RETURN_PATH  = "/api/payments/momo/return/";
+const VNPAY_RETURN_PATH = "/api/payments/vnpay/return/";
 
-// URL mà backend redirect về sau khi MoMo/VNPay xong
-const MOMO_RETURN_PATH   = "/api/payments/momo/return/";
-const VNPAY_RETURN_PATH  = "/api/payments/vnpay/return/";
-
-/**
- * Parse query string thành object.
- * "?foo=1&bar=2" → { foo: "1", bar: "2" }
- */
 const parseQuery = (search = "") => {
     const q = search.startsWith("?") ? search.slice(1) : search;
-    return Object.fromEntries(q.split("&").map(p => p.split("=").map(decodeURIComponent)));
+    if (!q) return {};
+    return Object.fromEntries(
+        q.split("&").map(p => {
+            const [k, ...v] = p.split("=");
+            return [decodeURIComponent(k), decodeURIComponent(v.join("="))];
+        })
+    );
 };
 
 const PaymentWebView = () => {
-    const nav = useNavigation();
+    const nav   = useNavigation();
     const route = useRoute();
     const { paymentUrl, paymentId, method } = route.params;
 
     const webViewRef = useRef(null);
     const [loadingPage, setLoadingPage] = useState(true);
-    const handled = useRef(false); // tránh xử lý hai lần
+    // BUG FIX: dùng ref thay vì state để tránh re-render và race condition
+    const handled = useRef(false);
 
-    const handleReturn = (url) => {
+    const handleReturnUrl = useCallback((url) => {
         if (handled.current) return false;
 
-        const urlObj = (() => {
-            try { return new URL(url); } catch { return null; }
-        })();
-        if (!urlObj) return false;
+        let urlObj;
+        try { urlObj = new URL(url); } catch { return false; }
 
         const path = urlObj.pathname;
+        const isMoMoReturn  = path.includes("momo/return");
+        const isVNPayReturn = path.includes("vnpay/return");
 
-        if (!path.includes("momo/return") && !path.includes("vnpay/return")) return false;
+        if (!isMoMoReturn && !isVNPayReturn) return false;
 
         handled.current = true;
 
-        const params = parseQuery(urlObj.search);
-        let success = false;
+        const params  = parseQuery(urlObj.search);
+        let success   = false;
+        let errorCode = "?";
 
-        if (path.includes("momo/return")) {
-            success = params.resultCode === "0";
+        if (isMoMoReturn) {
+            success   = params.resultCode === "0";
+            errorCode = params.resultCode ?? "?";
         } else {
-            success = params.vnp_ResponseCode === "00";
+            success   = params.vnp_ResponseCode === "00";
+            errorCode = params.vnp_ResponseCode ?? "?";
         }
 
-        // Chuyển về PaymentResult, xóa WebView khỏi stack
+        // BUG FIX: dùng replace để xóa WebView khỏi history
         nav.replace("payment-result", {
             success,
             paymentId,
             method,
             message: success
                 ? "Thanh toán thành công!"
-                : `Thanh toán thất bại (${params.resultCode ?? params.vnp_ResponseCode ?? "?"})`,
+                : `Thanh toán thất bại (mã: ${errorCode})`,
         });
 
-        return true; // block WebView khỏi tiếp tục load URL return
-    };
+        return true;
+    }, [nav, paymentId, method]);
 
-    // Gọi khi WebView chuẩn bị load một URL mới
-    const onShouldStartLoadWithRequest = (request) => {
-        const blocked = handleReturn(request.url);
-        return !blocked; // true = cho phép load, false = chặn
-    };
+    // iOS: intercept trước khi load
+    const onShouldStartLoadWithRequest = useCallback((request) => {
+        const blocked = handleReturnUrl(request.url);
+        return !blocked;
+    }, [handleReturnUrl]);
 
-    // Fallback: theo dõi khi navigation state thay đổi
-    const onNavigationStateChange = (navState) => {
-        handleReturn(navState.url);
-    };
+    // Android + iOS fallback: theo dõi navigation state
+    const onNavigationStateChange = useCallback((navState) => {
+        handleReturnUrl(navState.url);
+    }, [handleReturnUrl]);
+
+    // BUG FIX: thêm onLoadStart để bắt redirect trên một số Android WebView
+    const onLoadStart = useCallback(({ nativeEvent }) => {
+        setLoadingPage(true);
+        handleReturnUrl(nativeEvent.url);
+    }, [handleReturnUrl]);
+
+    const onLoadEnd = useCallback(() => setLoadingPage(false), []);
+
+    const handleClose = () =>
+        Alert.alert(
+            "Hủy thanh toán?",
+            "Giao dịch chưa hoàn tất. Bạn có muốn quay lại không?",
+            [
+                { text: "Tiếp tục thanh toán", style: "cancel" },
+                {
+                    text: "Hủy giao dịch",
+                    style: "destructive",
+                    onPress: () => nav.goBack(),
+                },
+            ]
+        );
 
     return (
         <View style={{ flex: 1 }}>
-            {/* Header tối giản */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.closeBtn}
-                    onPress={() =>
-                        Alert.alert(
-                            "Hủy thanh toán?",
-                            "Bạn có muốn hủy và quay lại không?",
-                            [
-                                { text: "Tiếp tục thanh toán", style: "cancel" },
-                                { text: "Hủy", style: "destructive", onPress: () => nav.goBack() },
-                            ]
-                        )
-                    }
-                >
+                <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
                     <Text style={styles.closeText}>✕  Đóng</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>
@@ -111,13 +125,13 @@ const PaymentWebView = () => {
             <WebView
                 ref={webViewRef}
                 source={{ uri: paymentUrl }}
-                onLoadStart={() => setLoadingPage(true)}
-                onLoadEnd={() => setLoadingPage(false)}
+                onLoadStart={onLoadStart}
+                onLoadEnd={onLoadEnd}
                 onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
                 onNavigationStateChange={onNavigationStateChange}
                 javaScriptEnabled
                 domStorageEnabled
-                startInLoadingState={false}
+                mixedContentMode="always"
                 style={{ flex: 1 }}
             />
         </View>
@@ -127,31 +141,19 @@ const PaymentWebView = () => {
 const styles = StyleSheet.create({
     header: {
         backgroundColor: COLORS.primaryDark,
-        paddingTop: 48,
+        paddingTop: Platform.OS === "ios" ? 52 : 36,
         paddingBottom: 14,
         paddingHorizontal: 16,
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
     },
-    closeBtn: {
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-    },
-    closeText: {
-        color: "rgba(255,255,255,0.7)",
-        fontSize: 13,
-        fontWeight: "600",
-    },
-    headerTitle: {
-        color: "#fff",
-        fontSize: 15,
-        fontWeight: "800",
-        flex: 1,
-    },
+    closeBtn: { paddingVertical: 4, paddingHorizontal: 8 },
+    closeText: { color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: "600" },
+    headerTitle: { color: "#fff", fontSize: 15, fontWeight: "800", flex: 1 },
     loadingOverlay: {
         position: "absolute",
-        top: 110,
+        top: Platform.OS === "ios" ? 110 : 90,
         left: 0, right: 0, bottom: 0,
         zIndex: 10,
         backgroundColor: COLORS.bg,
@@ -159,10 +161,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         gap: 14,
     },
-    loadingText: {
-        color: COLORS.textMuted,
-        fontSize: 13,
-    },
+    loadingText: { color: COLORS.textMuted, fontSize: 13 },
 });
 
 export default PaymentWebView;
