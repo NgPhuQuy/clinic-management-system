@@ -1,12 +1,3 @@
-"""
-clinic_app/serializers/appointment.py
-
-BUG ĐÃ SỬA:
-  1. validate_status() dùng `user.role` → thay bằng token scope (OAuth2-consistent)
-  2. Xóa key "staff" trong allowed_transitions (role staff đã bị loại)
-  3. Comment cũ ám chỉ "staff" đã được cập nhật
-"""
-
 from django.utils import timezone
 from rest_framework import serializers
 from ..models import Appointment, AppointmentService, Service, Payment
@@ -28,17 +19,27 @@ class AppointmentServiceSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class PaymentSummarySerializer(serializers.ModelSerializer):
+    """Inline payment tóm tắt — nhúng vào AppointmentSerializer."""
+    class Meta:
+        model  = Payment
+        fields = ("id", "amount", "payment_method", "status", "paid_at", "transaction_id")
+        read_only_fields = fields
+
+
 class AppointmentSerializer(serializers.ModelSerializer):
-    patient_info = PatientSummarySerializer(source="patient", read_only=True)
-    doctor_info = DoctorSummarySerializer(source="doctor", read_only=True)
+    patient_info         = PatientSummarySerializer(source="patient", read_only=True)
+    doctor_info          = DoctorSummarySerializer(source="doctor", read_only=True)
     appointment_services = AppointmentServiceSerializer(many=True, read_only=True)
+    # BUG FIX: thêm payment inline để FE (MyAppointments, AppointmentDetail) thấy TT
+    payment              = PaymentSummarySerializer(read_only=True)
 
     class Meta:
-        model = Appointment
+        model  = Appointment
         fields = (
             "id", "patient", "patient_info", "doctor", "doctor_info",
             "schedule", "appointment_date", "status", "reason", "notes",
-            "appointment_services", "created_at", "updated_at",
+            "appointment_services", "payment", "created_at", "updated_at",
         )
         read_only_fields = ("id", "status", "created_at", "updated_at")
 
@@ -56,23 +57,25 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         required=False,
     )
     payment_method = serializers.ChoiceField(
-        choices=Payment.Method.choices, write_only=True
+        choices=Payment.Method.choices,
+        write_only=True,
     )
-    payment_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model = Appointment
-        fields = ("doctor", "schedule", "appointment_date", "reason", "notes",
-                  "services", "payment_method", "payment_url")
-        
-    def get_payment_url(self, obj):
-        return getattr(obj, "_payment_url", None)
-    
+        model  = Appointment
+        fields = (
+            "id", "doctor", "schedule", "appointment_date", "reason", "notes",
+            "services", "payment_method",
+        )
+        read_only_fields = ("id",)
+
     def create(self, validated_data):
-        services = validated_data.pop("services", [])
+        services       = validated_data.pop("services", [])
         payment_method = validated_data.pop("payment_method")
-        patient = self.context["request"].user.patient_profile
+        patient        = self.context["request"].user.patient_profile
+
         appointment = Appointment.objects.create(patient=patient, **validated_data)
+
         for service in services:
             AppointmentService.objects.create(
                 appointment=appointment,
@@ -80,6 +83,20 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
                 quantity=1,
                 price_at_time=service.price,
             )
+
+        # Tạo Payment PENDING ngay khi đặt lịch
+        total = appointment.doctor.consultation_fee
+        for svc in appointment.appointment_services.all():
+            total += svc.get_subtotal()
+
+        Payment.objects.create(
+            appointment    = appointment,
+            patient        = patient,
+            amount         = total,
+            payment_method = payment_method,
+            status         = Payment.Status.PENDING,
+        )
+
         return appointment
 
     def validate(self, data):
@@ -90,60 +107,60 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Ca khám này đã đủ số lượng.")
         return data
 
+    def to_representation(self, instance):
+        """Sau khi create, trả về AppointmentSerializer đầy đủ."""
+        return AppointmentSerializer(instance, context=self.context).data
+
 
 class AppointmentStatusSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Appointment
+        model  = Appointment
         fields = ("status",)
 
     def validate_status(self, value):
         """
         Kiểm tra chuyển trạng thái dựa trên OAuth2 token scope.
 
-        BUG FIX (2 lỗi):
-          1. Trước: dùng user.role → không nhất quán với OAuth2; nếu token scope khác role
-             thì sẽ authorize sai.
-          2. Trước: có key "staff" trong allowed_transitions → staff đã bị loại khỏi hệ thống.
-
-        Quy tắc chuyển trạng thái theo scope:
-          patient : pending→cancelled, confirmed→cancelled
-          doctor  : pending→confirmed|cancelled, confirmed→completed|no_show
+        Quy tắc:
+          patient : pending → cancelled, confirmed → cancelled
+          doctor  : pending → confirmed | cancelled, confirmed → in_progress → completed | no_show
+          staff   : pending → confirmed | no_show, any → cancelled
           admin   : không giới hạn
         """
-        instance = self.instance
-        request = self.context.get("request")
-
-        # Lấy scope từ OAuth2 token
-        token = getattr(request, "auth", None) if request else None
+        instance     = self.instance
+        request      = self.context.get("request")
+        token        = getattr(request, "auth", None) if request else None
         token_scopes = set(token.scope.split()) if token else set()
 
-        # Admin scope: không giới hạn
         if "admin" in token_scopes:
             return value
 
-        # Map scope → quy tắc chuyển trạng thái
         ALLOWED_TRANSITIONS = {
             "patient": {
                 "pending":   ["cancelled"],
                 "confirmed": ["cancelled"],
             },
             "doctor": {
-                "pending":   ["confirmed", "cancelled"],
-                "confirmed": ["completed", "no_show"],
+                "pending":      ["confirmed", "cancelled"],
+                "confirmed":    ["in_progress", "completed", "no_show"],
+                "in_progress":  ["completed", "no_show"],
             },
-            # "staff" đã bị loại — không còn trong hệ thống
+            "staff": {
+                "pending":      ["confirmed", "cancelled", "no_show"],
+                "confirmed":    ["in_progress", "cancelled", "no_show"],
+                "in_progress":  ["completed", "cancelled"],
+            },
         }
 
-        # Xác định scope hiện tại
         active_scope = None
-        if "doctor" in token_scopes:
-            active_scope = "doctor"
-        elif "patient" in token_scopes:
-            active_scope = "patient"
+        for scope in ("doctor", "staff", "patient"):
+            if scope in token_scopes:
+                active_scope = scope
+                break
 
         if active_scope:
             role_rules = ALLOWED_TRANSITIONS.get(active_scope, {})
-            permitted = role_rules.get(instance.status, [])
+            permitted  = role_rules.get(instance.status, [])
             if value not in permitted:
                 raise serializers.ValidationError(
                     f"Không thể chuyển từ '{instance.status}' → '{value}'."
