@@ -1,4 +1,7 @@
-import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, StatusBar } from "react-native";
+import {
+    View, ScrollView, StyleSheet, TouchableOpacity,
+    FlatList, ActivityIndicator, StatusBar, Image,
+} from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
@@ -8,14 +11,44 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
-const ROLE_LABELS = { patient: "Bệnh nhân", doctor: "Bác sĩ", staff: "Nhân viên", admin: "Quản trị viên" };
+const ROLE_LABELS = {
+    patient: "Bệnh nhân",
+    doctor: "Bác sĩ",
+    staff: "Nhân viên",
+    admin: "Quản trị viên",
+};
+
+// Component avatar dùng lại được cho cả Profile và DoctorDetail
+export const UserAvatar = ({ uri, size = 80, iconName = "account", borderRadius }) => {
+    const [error, setError] = useState(false);
+    const br = borderRadius ?? size / 2;
+    if (uri && !error) {
+        return (
+            <Image
+                source={{ uri }}
+                style={{ width: size, height: size, borderRadius: br }}
+                onError={() => setError(true)}
+            />
+        );
+    }
+    return (
+        <View style={{
+            width: size, height: size, borderRadius: br,
+            backgroundColor: "rgba(255,255,255,0.2)",
+            alignItems: "center", justifyContent: "center",
+            borderWidth: 2.5, borderColor: "rgba(255,255,255,0.4)",
+        }}>
+            <MaterialCommunityIcons name={iconName} size={size * 0.52} color="#fff" />
+        </View>
+    );
+};
 
 export const Profile = () => {
     const user = useContext(MyUserContext);
     const dispatch = useContext(MyDispatchContext);
     const nav = useNavigation();
     const [patient, setPatient] = useState(null);
-    const [stats, setStats] = useState({ appointments: 0, prescriptions: 0, blood_type: "--" });
+    const [stats, setStats] = useState({ appointments: 0, prescriptions: 0 });
 
     useEffect(() => {
         const load = async () => {
@@ -26,7 +59,6 @@ export const Profile = () => {
             } catch (e) {
                 if (e?.response?.status !== 404) console.error(e);
             }
-            // Lấy stats
             try {
                 const [aRes, prRes] = await Promise.all([
                     authApis(user.token).get(endpoints["appointments"]),
@@ -35,7 +67,6 @@ export const Profile = () => {
                 setStats({
                     appointments: (aRes.data.results || aRes.data).length,
                     prescriptions: (prRes.data.results || prRes.data).length,
-                    blood_type: "--",
                 });
             } catch (e) { /* ignore */ }
         };
@@ -47,15 +78,21 @@ export const Profile = () => {
         dispatch({ type: "logout" });
     };
 
+    // Lấy avatar URL từ user hoặc patient object
+    const avatarUri = user?.avatar || user?.avatar_url || patient?.avatar || patient?.avatar_url || null;
+
     return (
         <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} showsVerticalScrollIndicator={false}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.avatarCircle}>
-                    <Text style={{ fontSize: 44 }}>👤</Text>
-                </View>
+                <UserAvatar
+                    uri={avatarUri}
+                    size={84}
+                    iconName="account"
+                    borderRadius={24}
+                />
                 <Text style={styles.name}>{user?.first_name} {user?.last_name}</Text>
                 <View style={styles.roleBadge}>
                     <Text style={styles.roleText}>{ROLE_LABELS[user?.role] || user?.role}</Text>
@@ -85,10 +122,15 @@ export const Profile = () => {
                     <Text style={styles.sectionTitle}>THÔNG TIN BỆNH NHÂN</Text>
                     <View style={styles.card}>
                         <InfoRow icon="phone-outline" label="Điện thoại" value={patient.phone || "Chưa cập nhật"} />
-                        <InfoRow icon="cake-variant-outline" label="Ngày sinh" value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString("vi-VN") : "Chưa cập nhật"} />
-                        <InfoRow icon="human-male-female" label="Giới tính" value={patient.gender === "male" ? "Nam" : patient.gender === "female" ? "Nữ" : "Chưa cập nhật"} last />
+                        <InfoRow icon="cake-variant-outline" label="Ngày sinh"
+                            value={patient.date_of_birth
+                                ? new Date(patient.date_of_birth).toLocaleDateString("vi-VN")
+                                : "Chưa cập nhật"} />
+                        <InfoRow icon="gender-male-female" label="Giới tính"
+                            value={patient.gender === "male" ? "Nam" : patient.gender === "female" ? "Nữ" : "Chưa cập nhật"} />
                         <InfoRow icon="map-marker-outline" label="Địa chỉ" value={patient.address || "Chưa cập nhật"} />
-                        <InfoRow icon="card-account-details-outline" label="Số BHYT" value={patient.insurance_number || "Chưa cập nhật"} last />
+                        <InfoRow icon="card-account-details-outline" label="Số BHYT"
+                            value={patient.insurance_number || "Chưa cập nhật"} last />
                     </View>
                 </View>
             )}
@@ -97,11 +139,17 @@ export const Profile = () => {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>TÀI KHOẢN</Text>
                 <View style={styles.card}>
-                    <MenuRow icon="folder-account-outline" bg="#e3f2fd" label="Hồ sơ bệnh án" sub="Xem lịch sử khám bệnh" onPress={() => nav.navigate("medical-records")} />
-                    <MenuRow icon="pill" bg="#fff3e0" label="Đơn thuốc của tôi" sub={`${stats.prescriptions} đơn thuốc`} badge={stats.prescriptions} onPress={() => nav.navigate("prescriptions")} />
-                    <MenuRow icon="flask-outline" bg="#f3e5f5" label="Kết quả cận lâm sàng" sub="Xét nghiệm, chẩn đoán hình ảnh" onPress={() => nav.navigate("medical-records")} />
-                    <MenuRow icon="credit-card-outline" bg="#e8f5e9" label="Lịch sử thanh toán" sub="Xem hoá đơn và giao dịch" onPress={() => nav.navigate("payments")} />
-                    <MenuRow icon="lock-outline" bg="#fce4ec" label="Đổi mật khẩu" sub="Bảo mật tài khoản" onPress={() => nav.navigate("change-password")} last />
+                    <MenuRow icon="folder-account-outline" bg="#e3f2fd" label="Hồ sơ bệnh án"
+                        sub="Xem lịch sử khám bệnh" onPress={() => nav.navigate("medical-records")} />
+                    <MenuRow icon="pill" bg="#fff3e0" label="Đơn thuốc của tôi"
+                        sub={`${stats.prescriptions} đơn thuốc`} badge={stats.prescriptions}
+                        onPress={() => nav.navigate("prescriptions")} />
+                    <MenuRow icon="flask-outline" bg="#f3e5f5" label="Kết quả cận lâm sàng"
+                        sub="Xét nghiệm, chẩn đoán hình ảnh" onPress={() => nav.navigate("medical-records")} />
+                    <MenuRow icon="credit-card-outline" bg="#e8f5e9" label="Lịch sử thanh toán"
+                        sub="Xem hoá đơn và giao dịch" onPress={() => nav.navigate("payments")} />
+                    <MenuRow icon="lock-outline" bg="#fce4ec" label="Đổi mật khẩu"
+                        sub="Bảo mật tài khoản" onPress={() => nav.navigate("change-password")} last />
                 </View>
             </View>
 
@@ -110,13 +158,14 @@ export const Profile = () => {
                 <Text style={styles.sectionTitle}>HỖ TRỢ</Text>
                 <View style={styles.card}>
                     <MenuRow icon="book-open-page-variant-outline" bg="#e3f2fd" label="Hướng dẫn sử dụng" onPress={() => {}} />
-                    <MenuRow icon="phone-outline" bg="#fff3e0" label="Liên hệ hỗ trợ" sub="Hotline: 1900 1234" onPress={() => {}} last />
+                    <MenuRow icon="phone-in-talk-outline" bg="#fff3e0" label="Liên hệ hỗ trợ"
+                        sub="Hotline: 1900 1234" onPress={() => {}} last />
                 </View>
             </View>
 
             {/* Logout */}
             <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-                <Text style={{ fontSize: 18 }}>🚪</Text>
+                <MaterialCommunityIcons name="logout" size={20} color={COLORS.redLight} />
                 <Text style={styles.logoutText}>Đăng xuất</Text>
             </TouchableOpacity>
             <View style={{ height: 24 }} />
@@ -133,7 +182,11 @@ const InfoRow = ({ icon, label, value, last }) => (
 );
 
 const MenuRow = ({ icon, bg, label, sub, badge, onPress, last }) => (
-    <TouchableOpacity style={[styles.menuRow, last && { borderBottomWidth: 0 }]} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+        style={[styles.menuRow, last && { borderBottomWidth: 0 }]}
+        onPress={onPress}
+        activeOpacity={0.7}
+    >
         <View style={[styles.menuIcon, { backgroundColor: bg }]}>
             <MaterialCommunityIcons name={icon} size={20} color={COLORS.primaryDark} />
         </View>
@@ -146,13 +199,12 @@ const MenuRow = ({ icon, bg, label, sub, badge, onPress, last }) => (
                 <Text style={styles.badgeText}>{badge}</Text>
             </View>
         )}
-        <Text style={{ color: COLORS.textLight, fontSize: 18 }}>›</Text>
+        <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.textLight} />
     </TouchableOpacity>
 );
 
-// Prescriptions Screen
+// ─── Prescriptions Screen ────────────────────────────────────────────────────
 export const Prescriptions = () => {
-    const nav = useNavigation();
     const user = useContext(MyUserContext);
     const [prescriptions, setPrescriptions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -164,14 +216,18 @@ export const Prescriptions = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+    if (loading) return (
+        <View style={[Styles.center, { flex: 1 }]}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+    );
 
     return (
         <View style={Styles.container}>
             {prescriptions.length === 0 ? (
                 <View style={[Styles.center, { flex: 1 }]}>
-                    <Text style={{ fontSize: 48 }}>💊</Text>
-                    <Text style={[Styles.text, { marginTop: 8 }]}>Chưa có đơn thuốc nào</Text>
+                    <MaterialCommunityIcons name="pill" size={64} color={COLORS.textLight} />
+                    <Text style={[Styles.text, { marginTop: 12, fontWeight: "600" }]}>Chưa có đơn thuốc nào</Text>
                 </View>
             ) : (
                 <FlatList
@@ -181,12 +237,19 @@ export const Prescriptions = () => {
                     renderItem={({ item }) => (
                         <TouchableOpacity style={Styles.card}>
                             <View style={[Styles.row, { justifyContent: "space-between" }]}>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={Styles.subtitle}>💊 Đơn thuốc #{item.id}</Text>
-                                    <Text style={Styles.text}>BS. {item.doctor_name || item.doctor}</Text>
-                                    <Text style={Styles.textSmall}>{new Date(item.created_at).toLocaleDateString("vi-VN")}</Text>
+                                <View style={[styles.menuIcon, { backgroundColor: "#fff3e0", marginRight: 12 }]}>
+                                    <MaterialCommunityIcons name="pill" size={22} color={COLORS.orange} />
                                 </View>
-                                <View style={[Styles.badge, { backgroundColor: item.is_dispensed ? "#4caf50" : "#ff9800" }]}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={Styles.subtitle}>Đơn thuốc #{item.id}</Text>
+                                    <Text style={Styles.text}>BS. {item.doctor_name || item.doctor}</Text>
+                                    <Text style={Styles.textSmall}>
+                                        {new Date(item.created_at).toLocaleDateString("vi-VN")}
+                                    </Text>
+                                </View>
+                                <View style={[Styles.badge, {
+                                    backgroundColor: item.is_dispensed ? COLORS.greenLight : COLORS.orangeLight,
+                                }]}>
                                     <Text style={Styles.badgeText}>{item.is_dispensed ? "Đã cấp" : "Chờ cấp"}</Text>
                                 </View>
                             </View>
@@ -198,14 +261,24 @@ export const Prescriptions = () => {
     );
 };
 
-// Payments Screen
+// ─── Payments Screen ─────────────────────────────────────────────────────────
 export const Payments = () => {
     const user = useContext(MyUserContext);
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const PAYMENT_COLORS = { pending: "#ff9800", completed: "#4caf50", failed: "#f44336", refunded: "#9c27b0" };
-    const PAYMENT_LABELS = { pending: "Chờ thanh toán", completed: "Đã thanh toán", failed: "Thất bại", refunded: "Hoàn tiền" };
+    const PAYMENT_COLORS = {
+        pending: COLORS.orangeLight,
+        completed: COLORS.greenLight,
+        failed: COLORS.redLight,
+        refunded: COLORS.purpleLight,
+    };
+    const PAYMENT_LABELS = {
+        pending: "Chờ thanh toán",
+        completed: "Đã thanh toán",
+        failed: "Thất bại",
+        refunded: "Hoàn tiền",
+    };
 
     useEffect(() => {
         authApis(user.token).get(endpoints["payments"])
@@ -214,14 +287,18 @@ export const Payments = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+    if (loading) return (
+        <View style={[Styles.center, { flex: 1 }]}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+    );
 
     return (
         <View style={Styles.container}>
             {payments.length === 0 ? (
                 <View style={[Styles.center, { flex: 1 }]}>
-                    <Text style={{ fontSize: 48 }}>💳</Text>
-                    <Text style={[Styles.text, { marginTop: 8 }]}>Chưa có giao dịch nào</Text>
+                    <MaterialCommunityIcons name="credit-card-outline" size={64} color={COLORS.textLight} />
+                    <Text style={[Styles.text, { marginTop: 12, fontWeight: "600" }]}>Chưa có giao dịch nào</Text>
                 </View>
             ) : (
                 <FlatList
@@ -231,12 +308,23 @@ export const Payments = () => {
                     renderItem={({ item }) => (
                         <View style={Styles.card}>
                             <View style={[Styles.row, { justifyContent: "space-between" }]}>
-                                <View>
-                                    <Text style={Styles.subtitle}>{Number(item.amount).toLocaleString("vi-VN")}đ</Text>
-                                    <Text style={Styles.textSmall}>{new Date(item.created_at).toLocaleDateString("vi-VN")}</Text>
+                                <View style={[styles.menuIcon, { backgroundColor: "#e8f5e9", marginRight: 12 }]}>
+                                    <MaterialCommunityIcons name="credit-card-outline" size={22} color={COLORS.green} />
                                 </View>
-                                <View style={[Styles.badge, { backgroundColor: PAYMENT_COLORS[item.status] || "#9e9e9e" }]}>
-                                    <Text style={Styles.badgeText}>{PAYMENT_LABELS[item.status] || item.status}</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={Styles.subtitle}>
+                                        {Number(item.amount).toLocaleString("vi-VN")}đ
+                                    </Text>
+                                    <Text style={Styles.textSmall}>
+                                        {new Date(item.created_at).toLocaleDateString("vi-VN")}
+                                    </Text>
+                                </View>
+                                <View style={[Styles.badge, {
+                                    backgroundColor: PAYMENT_COLORS[item.status] || "#9e9e9e",
+                                }]}>
+                                    <Text style={Styles.badgeText}>
+                                        {PAYMENT_LABELS[item.status] || item.status}
+                                    </Text>
                                 </View>
                             </View>
                         </View>
@@ -247,6 +335,7 @@ export const Payments = () => {
     );
 };
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     header: {
         backgroundColor: COLORS.primaryDark,
@@ -254,22 +343,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 36,
         alignItems: "center",
+        gap: 6,
     },
-    avatarCircle: {
-        width: 84, height: 84,
-        borderRadius: 24,
-        backgroundColor: "rgba(255,255,255,0.2)",
-        alignItems: "center", justifyContent: "center",
-        marginBottom: 12,
-        borderWidth: 2.5, borderColor: "rgba(255,255,255,0.4)",
-    },
-    name: { color: "#fff", fontSize: 20, fontWeight: "800" },
+    name: { color: "#fff", fontSize: 20, fontWeight: "800", marginTop: 6 },
     roleBadge: {
         backgroundColor: "rgba(255,255,255,0.2)",
-        borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4, marginTop: 6,
+        borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4,
     },
     roleText: { color: "#fff", fontSize: 11, fontWeight: "600" },
-    email: { color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 5 },
+    email: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
 
     statsRow: {
         flexDirection: "row",
@@ -286,9 +368,7 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     statItem: { flex: 1, paddingVertical: 16, alignItems: "center" },
-    statBorder: {
-        borderLeftWidth: 1, borderRightWidth: 1, borderColor: COLORS.border,
-    },
+    statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: COLORS.border },
     statNum: { fontSize: 22, fontWeight: "800", color: COLORS.primary },
     statLabel: { fontSize: 10, color: COLORS.textMuted, marginTop: 2 },
 

@@ -1,84 +1,117 @@
-import { View, ScrollView, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import {
+    View, ScrollView, TouchableOpacity, StyleSheet,
+    FlatList, ActivityIndicator, Image,
+} from "react-native";
 import { Text, TextInput, Chip } from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+
+// Avatar bác sĩ: ưu tiên ảnh API, fallback về icon
+const DoctorAvatar = ({ uri, size = 56 }) => {
+    const [error, setError] = useState(false);
+    if (uri && !error) {
+        return (
+            <Image
+                source={{ uri }}
+                style={{ width: size, height: size, borderRadius: size / 2 }}
+                onError={() => setError(true)}
+            />
+        );
+    }
+    return (
+        <View style={[styles.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
+            <MaterialCommunityIcons name="doctor" size={size * 0.52} color={COLORS.primary} />
+        </View>
+    );
+};
 
 const DoctorList = () => {
     const nav = useNavigation();
     const route = useRoute();
     const user = useContext(MyUserContext);
-    const { specialtyId, specialtyName } = route.params || {};
+    const { specialtyId } = route.params || {};
 
     const [doctors, setDoctors] = useState([]);
     const [specialties, setSpecialties] = useState([]);
-    const [selectedSpecialty, setSelectedSpecialty] = useState(specialtyId || null);
+    const [selectedSpecialty, setSelectedSpecialty] = useState(specialtyId ?? null);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadSpecialties();
-    }, []);
+    useEffect(() => { loadSpecialties(); }, []);
 
     useEffect(() => {
-        loadDoctors();
+        const timer = setTimeout(() => { loadDoctors(); }, 300);
+        return () => clearTimeout(timer);
     }, [selectedSpecialty, search]);
 
     const loadSpecialties = async () => {
         try {
             const res = await authApis(user?.token).get(endpoints["specialties"]);
             setSpecialties(res.data.results || res.data);
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Specialties:", e); }
     };
 
     const loadDoctors = async () => {
         try {
             setLoading(true);
-            let url = endpoints["doctors"] + "?";
-            if (selectedSpecialty) url += `specialty=${selectedSpecialty}&`;
-            if (search) url += `search=${search}&`;
+            const params = new URLSearchParams();
+            if (selectedSpecialty != null) params.append("specialty", selectedSpecialty);
+            if (search.trim()) params.append("search", search.trim());
+            const url = `${endpoints["doctors"]}?${params.toString()}`;
             const res = await authApis(user?.token).get(url);
             setDoctors(res.data.results || res.data);
         } catch (e) {
-            console.error(e);
+            console.error("Doctors:", e);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleSelectSpecialty = (id) => {
+        setSelectedSpecialty(prev => (prev === id ? null : id));
+    };
+
     const renderDoctor = ({ item }) => (
         <TouchableOpacity
             style={Styles.card}
+            activeOpacity={0.8}
             onPress={() => nav.navigate("doctor-detail", { doctorId: item.id })}
         >
             <View style={Styles.row}>
-                <View style={styles.doctorAvatar}>
-                    <Text style={{ fontSize: 28 }}>👨‍⚕️</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                    <Text style={Styles.subtitle}>BS. {item.full_name}</Text>
-                    <Text style={Styles.text}>{item.specialty_name || "Đa khoa"}</Text>
-                    <Text style={Styles.textSmall}>{item.experience_years} năm kinh nghiệm</Text>
-                    <View style={Styles.row}>
-                        <Text style={[Styles.textSmall, { color: "#1565c0", fontWeight: "600" }]}>
-                            Phí khám: {Number(item.consultation_fee || 0).toLocaleString("vi-VN")}đ
+                <DoctorAvatar uri={item.avatar || item.avatar_url} size={56} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={Styles.subtitle} numberOfLines={1}>
+                        BS. {item.full_name}
+                    </Text>
+                    <Text style={[Styles.text, { marginTop: 1 }]}>
+                        {item.specialty_name || "Đa khoa"}
+                    </Text>
+                    <Text style={Styles.textSmall}>
+                        {item.experience_years} năm kinh nghiệm
+                    </Text>
+                    <View style={[Styles.row, { marginTop: 4, gap: 8 }]}>
+                        <Text style={[Styles.textSmall, { color: COLORS.primary, fontWeight: "700" }]}>
+                            {Number(item.consultation_fee || 0).toLocaleString("vi-VN")}đ
                         </Text>
                         {item.is_available && (
-                            <View style={[Styles.badge, { backgroundColor: "#4caf50", marginLeft: 8 }]}>
-                                <Text style={Styles.badgeText}>Đang nhận bệnh</Text>
+                            <View style={[Styles.badge, { backgroundColor: COLORS.greenLight, paddingVertical: 2 }]}>
+                                <Text style={[Styles.badgeText, { fontSize: 10 }]}>Đang nhận bệnh</Text>
                             </View>
                         )}
                     </View>
                 </View>
-                <Text style={{ fontSize: 20, color: "#1565c0" }}>›</Text>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={COLORS.primary} />
             </View>
         </TouchableOpacity>
     );
 
     return (
         <View style={Styles.container}>
+            {/* Search bar */}
             <View style={styles.searchBar}>
                 <TextInput
                     placeholder="Tìm bác sĩ..."
@@ -86,44 +119,59 @@ const DoctorList = () => {
                     onChangeText={setSearch}
                     mode="outlined"
                     left={<TextInput.Icon icon="magnify" />}
+                    right={search ? <TextInput.Icon icon="close" onPress={() => setSearch("")} /> : null}
                     outlineColor="#90caf9"
-                    activeOutlineColor="#1565c0"
+                    activeOutlineColor={COLORS.primary}
                     style={{ backgroundColor: "#fff" }}
                 />
             </View>
 
-            {/* Specialty filter chips */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips} contentContainerStyle={{ paddingHorizontal: 16 }}>
-                <Chip
-                    selected={!selectedSpecialty}
-                    onPress={() => setSelectedSpecialty(null)}
-                    style={[styles.chip, !selectedSpecialty && styles.chipSelected]}
-                    textStyle={!selectedSpecialty ? { color: "#fff" } : {}}
+            <View style={styles.chipsContainer}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipsContent}
                 >
-                    Tất cả
-                </Chip>
-                {specialties.map((s) => (
                     <Chip
-                        key={s.id}
-                        selected={selectedSpecialty === s.id}
-                        onPress={() => setSelectedSpecialty(s.id)}
-                        style={[styles.chip, selectedSpecialty === s.id && styles.chipSelected]}
-                        textStyle={selectedSpecialty === s.id ? { color: "#fff" } : {}}
+                        selected={selectedSpecialty === null}
+                        onPress={() => setSelectedSpecialty(null)}
+                        style={[styles.chip, selectedSpecialty === null && styles.chipSelected]}
+                        textStyle={[styles.chipText, selectedSpecialty === null && styles.chipTextSelected]}
+                        icon={selectedSpecialty === null ? "check" : undefined}
                     >
-                        {s.name}
+                        Tất cả
                     </Chip>
-                ))}
-            </ScrollView>
+                    {specialties.map((s) => {
+                        const isSelected = selectedSpecialty === s.id;
+                        return (
+                            <Chip
+                                key={s.id}
+                                selected={isSelected}
+                                onPress={() => handleSelectSpecialty(s.id)}
+                                style={[styles.chip, isSelected && styles.chipSelected]}
+                                textStyle={[styles.chipText, isSelected && styles.chipTextSelected]}
+                                icon={isSelected ? "check" : undefined}
+                            >
+                                {s.name}
+                            </Chip>
+                        );
+                    })}
+                </ScrollView>
+            </View>
 
+            {/* List */}
             {loading ? (
                 <View style={[Styles.center, { flex: 1 }]}>
-                    <ActivityIndicator size="large" color="#1565c0" />
+                    <ActivityIndicator size="large" color={COLORS.primary} />
                     <Text style={[Styles.text, { marginTop: 12 }]}>Đang tải danh sách bác sĩ...</Text>
                 </View>
             ) : doctors.length === 0 ? (
                 <View style={[Styles.center, { flex: 1 }]}>
-                    <Text style={{ fontSize: 48 }}>🏥</Text>
-                    <Text style={Styles.text}>Không tìm thấy bác sĩ</Text>
+                    <MaterialCommunityIcons name="doctor" size={64} color={COLORS.textLight} />
+                    <Text style={[Styles.text, { marginTop: 12, fontWeight: "600" }]}>
+                        Không tìm thấy bác sĩ
+                    </Text>
+                    <Text style={[Styles.textSmall, { marginTop: 4 }]}>Thử thay đổi bộ lọc hoặc từ khoá</Text>
                 </View>
             ) : (
                 <FlatList
@@ -131,6 +179,8 @@ const DoctorList = () => {
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={renderDoctor}
                     contentContainerStyle={{ padding: 16 }}
+                    onRefresh={loadDoctors}
+                    refreshing={loading}
                 />
             )}
         </View>
@@ -139,29 +189,47 @@ const DoctorList = () => {
 
 const styles = StyleSheet.create({
     searchBar: {
-        padding: 16,
+        padding: 12,
+        paddingHorizontal: 16,
         backgroundColor: "#fff",
         elevation: 2,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
     },
-    chips: {
-        paddingVertical: 10,
+    chipsContainer: {
+        height: 52,
         backgroundColor: "#f5f6fa",
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    chipsContent: {
+        alignItems: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        gap: 8,
     },
     chip: {
-        marginRight: 8,
-        backgroundColor: "#e3f2fd",
+        backgroundColor: COLORS.primaryPale,
+        borderRadius: 20,
+        height: 34,
     },
     chipSelected: {
-        backgroundColor: "#1565c0",
+        backgroundColor: COLORS.primary,
     },
-    doctorAvatar: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: "#e3f2fd",
+    chipText: {
+        fontSize: 12,
+        color: COLORS.primary,
+        fontWeight: "600",
+    },
+    chipTextSelected: {
+        color: "#fff",
+    },
+    avatarFallback: {
+        backgroundColor: COLORS.primaryPale,
         alignItems: "center",
         justifyContent: "center",
-        marginRight: 12,
     },
 });
 
