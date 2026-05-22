@@ -1,6 +1,6 @@
 import { View, ScrollView, Image, StyleSheet } from "react-native";
 import { Button, HelperText, Text, TextInput } from "react-native-paper";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Apis, { authApis, endpoints } from "../../configs/Apis";
 import { useNavigation } from "@react-navigation/native";
@@ -9,21 +9,18 @@ import { useContext } from "react";
 import Styles from "../../styles/Styles";
 
 const Login = () => {
-    const fields = [
-        { field: "username", title: "Tên đăng nhập", icon: "account" },
-        { field: "password", title: "Mật khẩu", icon: "eye", secureTextEntry: true },
-    ];
-
-    const [user, setUser] = useState({});
-    const [err, setErr] = useState(null);
+    const [user, setUser]       = useState({});
+    const [err, setErr]         = useState(null);
     const [loading, setLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
-    const nav = useNavigation();
+    const nav      = useNavigation();
     const dispatch = useContext(MyDispatchContext);
+
+    const passwordRef = useRef(null);
 
     const validate = () => {
         if (!user.username) { setErr("Vui lòng nhập tên đăng nhập!"); return false; }
-        if (!user.password) { setErr("Vui lòng nhập mật khẩu!"); return false; }
+        if (!user.password) { setErr("Vui lòng nhập mật khẩu!");      return false; }
         return true;
     };
 
@@ -47,23 +44,6 @@ const Login = () => {
         }
     };
 
-    // DEMO: bỏ qua đăng nhập để xem giao diện
-    const loginDemo = () => {
-        dispatch({
-            type: "login",
-            payload: {
-                id: 1,
-                username: "demo_patient",
-                first_name: "Nguyễn",
-                last_name: "Demo",
-                email: "demo@phongkham.vn",
-                role: "patient",
-                avatar: null,
-                token: "demo_token",
-            },
-        });
-    };
-
     return (
         <ScrollView style={Styles.container}>
             <View style={styles.header}>
@@ -79,24 +59,44 @@ const Login = () => {
                     {err}
                 </HelperText>
 
-                {fields.map((f) => (
-                    <TextInput
-                        key={f.field}
-                        label={f.title}
-                        value={user[f.field] || ""}
-                        onChangeText={(t) => setUser({ ...user, [f.field]: t })}
-                        style={Styles.margin}
-                        mode="outlined"
-                        secureTextEntry={f.secureTextEntry && !showPass}
-                        right={
-                            f.secureTextEntry
-                                ? <TextInput.Icon icon={showPass ? "eye-off" : "eye"} onPress={() => setShowPass(!showPass)} />
-                                : <TextInput.Icon icon={f.icon} />
-                        }
-                        outlineColor="#1565c0"
-                        activeOutlineColor="#1565c0"
-                    />
-                ))}
+                {/* Tên đăng nhập */}
+                <TextInput
+                    label="Tên đăng nhập"
+                    value={user.username || ""}
+                    onChangeText={(t) => setUser({ ...user, username: t })}
+                    style={[Styles.margin, loading && { opacity: 0.5 }]}
+                    mode="outlined"
+                    autoCapitalize="none"
+                    editable={!loading}
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    blurOnSubmit={false}
+                    right={<TextInput.Icon icon="account" />}
+                    outlineColor="#1565c0"
+                    activeOutlineColor="#1565c0"
+                />
+
+                {/* Mật khẩu */}
+                <TextInput
+                    ref={passwordRef}
+                    label="Mật khẩu"
+                    value={user.password || ""}
+                    onChangeText={(t) => setUser({ ...user, password: t })}
+                    style={[Styles.margin, loading && { opacity: 0.5 }]}
+                    mode="outlined"
+                    secureTextEntry={!showPass}
+                    editable={!loading}
+                    returnKeyType="done"
+                    onSubmitEditing={login}
+                    right={
+                        <TextInput.Icon
+                            icon={showPass ? "eye-off" : "eye"}
+                            onPress={() => setShowPass(!showPass)}
+                        />
+                    }
+                    outlineColor="#1565c0"
+                    activeOutlineColor="#1565c0"
+                />
 
                 <Button
                     mode="contained"
@@ -107,15 +107,6 @@ const Login = () => {
                     buttonColor="#1565c0"
                 >
                     Đăng nhập
-                </Button>
-
-                <Button
-                    mode="outlined"
-                    onPress={loginDemo}
-                    style={[styles.btn, { marginTop: 10, borderColor: "#f57c00" }]}
-                    textColor="#f57c00"
-                >
-                    🎭  Xem Demo (không cần đăng nhập)
                 </Button>
 
                 <Button
