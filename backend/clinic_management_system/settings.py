@@ -239,3 +239,21 @@ CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 # agora settings (video call real time)
 AGORA_APP_ID = os.getenv("AGORA_APP_ID")
 AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE")
+
+# ─────────────────────────────────────────────
+# PAYMENT GATEWAYS
+# ─────────────────────────────────────────────
+
+# URL backend 
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8000")
+
+# MoMo
+MOMO_PARTNER_CODE = os.getenv("MOMO_PARTNER_CODE")
+MOMO_ACCESS_KEY   = os.getenv("MOMO_ACCESS_KEY")
+MOMO_SECRET_KEY   = os.getenv("MOMO_SECRET_KEY")
+MOMO_ENDPOINT     = os.getenv("MOMO_ENDPOINT")
+
+# VNPay
+VNPAY_TMN_CODE    = os.getenv("VNPAY_TMN_CODE")
+VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET")
+VNPAY_URL         = os.getenv("VNPAY_URL")
