@@ -48,7 +48,7 @@ urlpatterns = [
 #  admin      admin    Toàn quyền + báo cáo thống kê
 #
 # ─────────────────────────────────────────────────────────────────────────────
-# CLINIC WORKFLOW (BV Đại học Y Dược style)
+# CLINIC WORKFLOW 
 # ─────────────────────────────────────────────────────────────────────────────
 #
 #  1. Patient đặt lịch      → POST /appointments/               [patient]

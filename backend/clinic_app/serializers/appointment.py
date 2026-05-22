@@ -9,7 +9,7 @@ BUG ĐÃ SỬA:
 
 from django.utils import timezone
 from rest_framework import serializers
-from ..models import Appointment, AppointmentService, Service
+from ..models import Appointment, AppointmentService, Service, Payment
 from .patient import PatientSummarySerializer
 from .doctor import DoctorSummarySerializer
 
@@ -55,13 +55,22 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False,
     )
+    payment_method = serializers.ChoiceField(
+        choices=Payment.Method.choices, write_only=True
+    )
+    payment_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Appointment
-        fields = ("doctor", "schedule", "appointment_date", "reason", "notes", "services")
-
+        fields = ("doctor", "schedule", "appointment_date", "reason", "notes",
+                  "services", "payment_method", "payment_url")
+        
+    def get_payment_url(self, obj):
+        return getattr(obj, "_payment_url", None)
+    
     def create(self, validated_data):
         services = validated_data.pop("services", [])
+        payment_method = validated_data.pop("payment_method")
         patient = self.context["request"].user.patient_profile
         appointment = Appointment.objects.create(patient=patient, **validated_data)
         for service in services:
