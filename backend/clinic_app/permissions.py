@@ -14,7 +14,6 @@ Phân cấp quyền:
   admin > (doctor | staff) > patient
 """
 
-from oauth2_provider.contrib.rest_framework import TokenHasScope
 from rest_framework.permissions import BasePermission
 
 
@@ -22,27 +21,27 @@ from rest_framework.permissions import BasePermission
 # Single-scope permissions
 # ─────────────────────────────────────────────
 
-class HasAdminScope(TokenHasScope):
+class HasAdminScope(BasePermission):
     """Yêu cầu scope 'admin'."""
     required_scopes = ["admin"]
 
 
-class HasDoctorScope(TokenHasScope):
+class HasDoctorScope(BasePermission):
     """Yêu cầu scope 'doctor'."""
     required_scopes = ["doctor"]
 
 
-class HasStaffScope(TokenHasScope):
+class HasStaffScope(BasePermission):
     """Yêu cầu scope 'staff'. Nhân viên y tế: lễ tân, điều dưỡng, dược sĩ, thu ngân."""
     required_scopes = ["staff"]
 
 
-class HasPatientScope(TokenHasScope):
+class HasPatientScope(BasePermission):
     """Yêu cầu scope 'patient'."""
     required_scopes = ["patient"]
 
 
-class HasReadScope(TokenHasScope):
+class HasReadScope(BasePermission):
     """Yêu cầu ít nhất scope 'read'."""
     required_scopes = ["read"]
 

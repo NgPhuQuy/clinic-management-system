@@ -29,8 +29,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'dev-fallback-key-change-in-prod')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-# ALLOWED_HOSTS = ['*']
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
+ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 
 # Application definition
 
@@ -108,25 +108,16 @@ REST_FRAMEWORK = {
 OAUTH2_PROVIDER = {
     "OAUTH2_BACKEND_CLASS": "oauth2_provider.oauth2_backends.JSONOAuthLibCore",
 
-    # Scopes hiển thị khi user grant permission
     "SCOPES": {
-        "admin": "Toàn quyền quản trị hệ thống",
-        "doctor": "Quyền bác sĩ — hồ sơ bệnh án, đơn thuốc, lịch khám",
-        "staff": "Quyền nhân viên y tế — xác nhận thanh toán, cấp thuốc/trừ kho thuốc",
+        "admin":   "Toàn quyền quản trị hệ thống",
+        "doctor":  "Quyền bác sĩ — hồ sơ bệnh án, đơn thuốc, lịch khám",
+        "staff":   "Quyền nhân viên y tế — xác nhận thanh toán, cấp thuốc/trừ kho thuốc",
         "patient": "Quyền bệnh nhân — đặt lịch, xem hồ sơ cá nhân, thanh toán",
-        "read": "Chỉ đọc",
+        "read":    "Chỉ đọc",
     },
-
-    # Scopes mặc định nếu client không yêu cầu cụ thể
     "DEFAULT_SCOPES": ["read"],
-
-    # Access token hết hạn sau 1 giờ
     "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
-
-    # Refresh token hết hạn sau 30 ngày
     "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 30,
-
-    # Cho phép refresh token
     "ROTATE_REFRESH_TOKEN": True,
 }
 

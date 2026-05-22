@@ -61,13 +61,10 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "create":
-            # Chỉ bệnh nhân đặt lịch
             return [HasPatientScope()]
         if self.action == "update_status":
-            # Staff lễ tân, bác sĩ, admin đều confirm/update được
             return [HasStaffDoctorOrAdminScope()]
         if self.action == "add_service":
-            # Bác sĩ chỉ định thêm dịch vụ/xét nghiệm; staff cũng có thể thêm
             return [HasStaffDoctorOrAdminScope()]
         return [IsAuthenticatedWithValidToken()]
 
@@ -78,7 +75,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         scopes = set(token.scope.split()) if token else set()
 
         if "admin"  in scopes: return qs
-        if "staff"  in scopes: return qs          # staff thấy tất cả để quản lý
+        if "staff"  in scopes: return qs
         if "doctor" in scopes: return qs.filter(doctor__user=user)
         if "patient" in scopes: return qs.filter(patient__user=user)
         return qs.none()

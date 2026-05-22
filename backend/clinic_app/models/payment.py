@@ -17,9 +17,7 @@ class Payment(models.Model):
         FAILED = "failed", "Thất bại"
         REFUNDED = "refunded", "Đã hoàn tiền"
 
-    appointment = models.OneToOneField(
-        Appointment, on_delete=models.CASCADE, related_name="payment"
-    )
+    appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, related_name="payment")
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="payments")
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=Method)
