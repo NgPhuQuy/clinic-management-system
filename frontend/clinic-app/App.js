@@ -64,6 +64,9 @@ const BookingStack = () => (
         <Stack.Screen name="book-appointment" component={BookAppointment} options={{ title: "Đặt lịch khám" }} />
         <Stack.Screen name="my-appointments" component={MyAppointments} options={{ title: "Lịch hẹn của tôi" }} />
         <Stack.Screen name="appointment-detail" component={AppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
+        <Stack.Screen name="payment-screen" component={PaymentScreen} options={{ title: "Chọn phương thức thanh toán" }} />
+        <Stack.Screen name="payment-webview" component={PaymentWebView} options={{ headerShown: false }} />
+        <Stack.Screen name="payment-result" component={PaymentResult} options={{ headerShown: false }} />
     </Stack.Navigator>
 );
 
