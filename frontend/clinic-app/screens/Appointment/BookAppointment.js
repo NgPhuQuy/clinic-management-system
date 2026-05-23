@@ -41,9 +41,21 @@ const BookAppointment = () => {
             if (scheduleId) payload.schedule = scheduleId;
 
             const res = await authApis(user.token).post(endpoints["appointments"], payload);
+
             if (res.status === 201) {
-                alert("Đặt lịch hẹn thành công! 🎉");
-                nav.navigate("my-appointments");
+                const appt = res.data;
+
+                const amount = appt.payment?.amount ?? 0;
+                const appointmentId = appt.id;
+                const appointmentDate = appt.appointment_date;
+
+                nav.navigate("payment-screen", {
+                    appointmentId,
+                    doctorName,
+                    appointmentDate,
+                    amount,
+                    fromBooking: true,
+                });
             }
         } catch (ex) {
             console.error(ex);

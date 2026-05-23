@@ -8,10 +8,26 @@ const METHOD_LABELS = { momo: "MoMo", vnpay: "VNPay", cash: "Tiền mặt" };
 const PaymentResult = () => {
     const nav   = useNavigation();
     const route = useRoute();
-    const { success, paymentId, method, message, isCash } = route.params;
+    const { success, paymentId, method, message, isCash, fromBooking = false } = route.params;
 
-    // BUG FIX: isCash là trường hợp đặc biệt → luôn hiển thị màn "chờ thanh toán"
+    // isCash là trường hợp đặc biệt → luôn hiển thị màn "chờ thanh toán tại quầy"
     const isCashPending = isCash && !success;
+
+    const handlePrimaryAction = () => {
+        if (success || isCashPending) {
+            // ✅ Từ luồng đặt lịch → về "Lịch hẹn của tôi"
+            if (fromBooking) {
+                nav.navigate("my-appointments");
+            } else {
+                // Từ AppointmentDetail → pop(2) về AppointmentDetail
+                // Stack: AppointmentDetail → PaymentScreen → PaymentResult (WebView đã bị replace)
+                nav.pop(2);
+            }
+        } else {
+            // Thất bại → quay lại PaymentScreen để chọn lại
+            nav.pop(1);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -54,7 +70,6 @@ const PaymentResult = () => {
                 </View>
             )}
 
-            {/* BUG FIX: Nút phù hợp từng trạng thái */}
             <TouchableOpacity
                 style={[
                     styles.btn,
@@ -64,25 +79,13 @@ const PaymentResult = () => {
                             : isCashPending ? "#f57c00" : COLORS.red
                     }
                 ]}
-                onPress={() => {
-                    if (success) {
-                        // Stack: ...AppointmentDetail → PaymentScreen → PaymentResult (replaced from WebView)
-                        // pop(2) → về AppointmentDetail
-                        nav.pop(2);
-                    } else if (isCashPending) {
-                        // Tiền mặt: về chi tiết lịch hẹn (PaymentScreen → PaymentResult, ko có WebView)
-                        nav.pop(2);
-                    } else {
-                        // Thất bại online: pop(1) về PaymentScreen để chọn lại phương thức
-                        nav.pop(1);
-                    }
-                }}
+                onPress={handlePrimaryAction}
             >
                 <Text style={styles.btnText}>
                     {success
-                        ? "Về chi tiết lịch hẹn"
+                        ? "Xem lịch hẹn của tôi"
                         : isCashPending
-                            ? "Về chi tiết lịch hẹn"
+                            ? "Xem lịch hẹn của tôi"
                             : "Thử lại"}
                 </Text>
             </TouchableOpacity>

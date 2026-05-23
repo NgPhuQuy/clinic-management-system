@@ -86,7 +86,6 @@ const MyAppointments = () => {
 
     return (
         <View style={Styles.container}>
-            {/* Status filter chips */}
             <View style={styles.filterRow}>
                 {STATUS_FILTERS.map((f) => (
                     <Chip
@@ -107,7 +106,6 @@ const MyAppointments = () => {
                 </View>
             ) : appointments.length === 0 ? (
                 <View style={[Styles.center, { flex: 1 }]}>
-                    <Text style={{ fontSize: 48 }}>📅</Text>
                     <Text style={[Styles.text, { marginTop: 8 }]}>Chưa có lịch hẹn nào</Text>
                 </View>
             ) : (

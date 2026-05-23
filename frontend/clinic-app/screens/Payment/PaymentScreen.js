@@ -42,7 +42,8 @@ const PaymentScreen = () => {
     const route = useRoute();
     const user = useContext(MyUserContext);
 
-    const { appointmentId, doctorName, appointmentDate, amount } = route.params;
+    // fromBooking = true khi đến từ BookAppointment, false khi đến từ AppointmentDetail
+    const { appointmentId, doctorName, appointmentDate, amount, fromBooking = false } = route.params;
 
     const [selectedMethod, setSelectedMethod] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -62,31 +63,30 @@ const PaymentScreen = () => {
 
             const { payment_url, payment_id, message } = res.data;
 
-            // BUG FIX: Tiền mặt → chuyển thẳng tới màn kết quả
+            // Tiền mặt → chuyển thẳng tới màn kết quả
             if (selectedMethod === "cash") {
                 nav.replace("payment-result", {
                     success: false,
                     paymentId: payment_id,
                     method: selectedMethod,
                     isCash: true,
+                    fromBooking,
                     message: message || "Vui lòng đến quầy thu ngân khi đến khám.",
                 });
                 return;
             }
 
-            // BUG FIX: Kiểm tra payment_url trước khi navigate
             if (!payment_url) {
-                Alert.alert(
-                    "Lỗi",
-                    res.data.detail || "Không nhận được đường dẫn thanh toán."
-                );
+                Alert.alert("Lỗi", res.data.detail || "Không nhận được đường dẫn thanh toán.");
                 return;
             }
 
+            // MoMo / VNPay → mở WebView
             nav.navigate("payment-webview", {
                 paymentUrl: payment_url,
                 paymentId: payment_id,
                 method: selectedMethod,
+                fromBooking,  // ✅ chuyển tiếp để PaymentResult biết luồng
             });
         } catch (e) {
             const msg =
@@ -126,7 +126,6 @@ const PaymentScreen = () => {
                 </View>
             </View>
 
-            {/* Chọn phương thức */}
             <Text style={styles.sectionLabel}>CHỌN PHƯƠNG THỨC THANH TOÁN</Text>
 
             {METHODS.map((m) => {

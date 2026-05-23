@@ -8,9 +8,6 @@ import { useRef, useState, useCallback } from "react";
 import { WebView } from "react-native-webview";
 import { COLORS } from "../../styles/Styles";
 
-const MOMO_RETURN_PATH  = "/api/payments/momo/return/";
-const VNPAY_RETURN_PATH = "/api/payments/vnpay/return/";
-
 const parseQuery = (search = "") => {
     const q = search.startsWith("?") ? search.slice(1) : search;
     if (!q) return {};
@@ -25,11 +22,10 @@ const parseQuery = (search = "") => {
 const PaymentWebView = () => {
     const nav   = useNavigation();
     const route = useRoute();
-    const { paymentUrl, paymentId, method } = route.params;
+    const { paymentUrl, paymentId, method, fromBooking = false } = route.params;
 
     const webViewRef = useRef(null);
     const [loadingPage, setLoadingPage] = useState(true);
-    // BUG FIX: dùng ref thay vì state để tránh re-render và race condition
     const handled = useRef(false);
 
     const handleReturnUrl = useCallback((url) => {
@@ -58,31 +54,28 @@ const PaymentWebView = () => {
             errorCode = params.vnp_ResponseCode ?? "?";
         }
 
-        // BUG FIX: dùng replace để xóa WebView khỏi history
         nav.replace("payment-result", {
             success,
             paymentId,
             method,
+            fromBooking,
             message: success
                 ? "Thanh toán thành công!"
                 : `Thanh toán thất bại (mã: ${errorCode})`,
         });
 
         return true;
-    }, [nav, paymentId, method]);
+    }, [nav, paymentId, method, fromBooking]);
 
-    // iOS: intercept trước khi load
     const onShouldStartLoadWithRequest = useCallback((request) => {
         const blocked = handleReturnUrl(request.url);
         return !blocked;
     }, [handleReturnUrl]);
 
-    // Android + iOS fallback: theo dõi navigation state
     const onNavigationStateChange = useCallback((navState) => {
         handleReturnUrl(navState.url);
     }, [handleReturnUrl]);
 
-    // BUG FIX: thêm onLoadStart để bắt redirect trên một số Android WebView
     const onLoadStart = useCallback(({ nativeEvent }) => {
         setLoadingPage(true);
         handleReturnUrl(nativeEvent.url);
