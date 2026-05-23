@@ -10,6 +10,17 @@ from .payment import PaymentViewSet
 from .consultation import ConsultationViewSet
 from .notification import NotificationViewSet
 from .dashboard import DashboardView, DashboardReportsView
+# ─── Thêm mới: Doctor & Staff views ─────────────────────────────────────────
+from .staff_doctor import (
+    DoctorDashboardView,
+    StaffDashboardView,
+    StaffPatientListView,
+    StaffPatientDetailView,
+    StaffPaymentListView,
+    DoctorMyScheduleView,
+    DoctorTodayAppointmentsView,
+    StaffInventoryAlertView,
+)
 
 __all__ = [
     "RegisterView", "LoginView", "MeView", "ChangePasswordView", "FirebaseTokenView",
@@ -24,4 +35,10 @@ __all__ = [
     "ConsultationViewSet",
     "NotificationViewSet",
     "DashboardView", "DashboardReportsView",
+    # Doctor & Staff
+    "DoctorDashboardView", "StaffDashboardView",
+    "StaffPatientListView", "StaffPatientDetailView",
+    "StaffPaymentListView",
+    "DoctorMyScheduleView", "DoctorTodayAppointmentsView",
+    "StaffInventoryAlertView",
 ]

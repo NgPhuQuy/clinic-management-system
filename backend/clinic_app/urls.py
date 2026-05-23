@@ -1,6 +1,21 @@
+"""
+clinic_app/urls.py  — PHIÊN BẢN MỞ RỘNG (thêm doctor + staff endpoints)
+
+Thay thế file urls.py hiện tại bằng file này.
+"""
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .views.staff_doctor import (
+    DoctorDashboardView,
+    StaffDashboardView,
+    StaffPatientListView,
+    StaffPatientDetailView,
+    StaffPaymentListView,
+    DoctorMyScheduleView,
+    DoctorTodayAppointmentsView,
+    StaffInventoryAlertView,
+)
 
 router = DefaultRouter()
 router.register(r"specialties",         views.SpecialtyViewSet,        basename="specialty")
@@ -31,6 +46,18 @@ urlpatterns = [
     # ── Admin Dashboard ──────────────────────────────────────────────────
     path("admin/dashboard/",         views.DashboardView.as_view(),        name="dashboard"),
     path("admin/dashboard/reports/", views.DashboardReportsView.as_view(), name="dashboard-reports"),
+
+    # ── Doctor Dashboard & Tools ─────────────────────────────────────────
+    path("doctor/dashboard/",           DoctorDashboardView.as_view(),        name="doctor-dashboard"),
+    path("doctor/my-schedules/",        DoctorMyScheduleView.as_view(),       name="doctor-my-schedules"),
+    path("doctor/today-appointments/",  DoctorTodayAppointmentsView.as_view(), name="doctor-today"),
+
+    # ── Staff Dashboard & Tools ──────────────────────────────────────────
+    path("staff/dashboard/",            StaffDashboardView.as_view(),         name="staff-dashboard"),
+    path("staff/patients/",             StaffPatientListView.as_view(),       name="staff-patients"),
+    path("staff/patients/<int:pk>/",    StaffPatientDetailView.as_view(),     name="staff-patient-detail"),
+    path("staff/payments/",             StaffPaymentListView.as_view(),       name="staff-payments"),
+    path("staff/inventory-alerts/",     StaffInventoryAlertView.as_view(),    name="staff-inventory-alerts"),
 
     # ── Router (CRUD) ────────────────────────────────────────────────────
     path("", include(router.urls)),
