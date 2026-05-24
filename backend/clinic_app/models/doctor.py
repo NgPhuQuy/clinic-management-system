@@ -8,7 +8,6 @@ class Doctor(models.Model):
     specialty = models.ForeignKey(
         Specialty, on_delete=models.SET_NULL, null=True, related_name="doctors"
     )
-    full_name = models.CharField(max_length=255)
     license_number = models.CharField(max_length=100, unique=True)
     experience_years = models.PositiveIntegerField(default=0)
     consultation_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -18,10 +17,11 @@ class Doctor(models.Model):
     class Meta:
         db_table = "doctors"
         verbose_name = "Bác sĩ"
-        ordering = ["full_name"]
+        verbose_name_plural = "Bác sĩ"
+        ordering = ["id"]
 
     def __str__(self):
-        return f"BS. {self.full_name} - {self.specialty}"
+        return f"BS. {self.user.get_full_name()} - {self.specialty}"
 
 
 class DoctorSchedule(models.Model):
@@ -35,6 +35,7 @@ class DoctorSchedule(models.Model):
     class Meta:
         db_table = "doctor_schedules"
         verbose_name = "Lịch làm việc"
+        verbose_name_plural = "Lịch làm việc"
         unique_together = ("doctor", "date", "start_time")
 
     def __str__(self):

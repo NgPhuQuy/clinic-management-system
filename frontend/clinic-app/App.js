@@ -23,6 +23,26 @@ import Notifications from "./screens/Notification/Notifications";
 import PaymentScreen from "./screens/Payment/PaymentScreen";
 import PaymentWebView from "./screens/Payment/PaymentWebView";
 import PaymentResult from "./screens/Payment/PaymentResult";
+
+// Doctor screens
+import DoctorDashboard from "./screens/Doctor/DoctorDashboard";
+import DoctorAppointments from "./screens/Doctor/DoctorAppointments";
+import DoctorAppointmentDetail from "./screens/Doctor/DoctorAppointmentDetail";
+import DoctorMedicalRecords from "./screens/Doctor/DoctorMedicalRecords";
+import DoctorSchedules from "./screens/Doctor/DoctorSchedules";
+
+// Staff screens
+import StaffDashboard from "./screens/Staff/StaffDashboard";
+import StaffAppointments from "./screens/Staff/StaffAppointments";
+import StaffAppointmentDetail from "./screens/Staff/StaffAppointmentDetail";
+import StaffFindPatient from "./screens/Staff/StaffFindPatient";
+import StaffInventory from "./screens/Staff/StaffInventory";
+import StaffPayments from "./screens/Staff/StaffPayments";
+import StaffPrescriptions from "./screens/Staff/StaffPrescriptions";
+
+// Shared
+import StaffDoctorProfile from "./screens/Shared/StaffDoctorProfile";
+
 import { authApis, endpoints } from "./configs/Apis";
 import { COLORS } from "./styles/Styles";
 
@@ -35,6 +55,28 @@ const HS = {
     headerTitleStyle: { fontWeight: "800", fontSize: 17 },
     headerShadowVisible: false,
 };
+
+const TAB_STYLE = {
+    headerShown: false,
+    tabBarActiveTintColor: COLORS.primary,
+    tabBarInactiveTintColor: COLORS.textLight,
+    tabBarStyle: {
+        height: Platform.OS === "ios" ? 84 : 72,
+        paddingBottom: Platform.OS === "ios" ? 28 : 14,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.border,
+        backgroundColor: "#fff",
+        elevation: 12,
+        shadowColor: "#1565c0",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+    },
+    tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
+};
+
+// ─────────────────────────── PATIENT STACKS ───────────────────────────
 
 const HomeStack = () => (
     <Stack.Navigator screenOptions={HS}>
@@ -91,32 +133,7 @@ const ProfileStack = () => (
     </Stack.Navigator>
 );
 
-const AuthStack = () => (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="login" component={Login} />
-        <Stack.Screen name="register" component={Register} />
-    </Stack.Navigator>
-);
-
-const TAB_STYLE = {
-    headerShown: false,
-    tabBarActiveTintColor: COLORS.primary,
-    tabBarInactiveTintColor: COLORS.textLight,
-    tabBarStyle: {
-        height: Platform.OS === "ios" ? 84 : 72,
-        paddingBottom: Platform.OS === "ios" ? 28 : 14,
-        paddingTop: 8,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-        backgroundColor: "#fff",
-        elevation: 12,
-        shadowColor: "#1565c0",
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-    },
-    tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
-};
+// ─────────────────────────── PATIENT TABS ───────────────────────────
 
 const AppTabs = () => (
     <Tab.Navigator screenOptions={TAB_STYLE}>
@@ -163,6 +180,240 @@ const AppTabs = () => (
     </Tab.Navigator>
 );
 
+// ─────────────────────────── DOCTOR STACKS ───────────────────────────
+
+const DoctorHomeStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="doctor-dashboard" component={DoctorDashboard} options={{ headerShown: false }} />
+        <Stack.Screen name="doctor-appointments" component={DoctorAppointments} options={{ title: "Lịch hẹn" }} />
+        <Stack.Screen name="doctor-today-appointments" component={DoctorAppointments} options={{ title: "Lịch hôm nay" }} />
+        <Stack.Screen name="doctor-appointment-detail" component={DoctorAppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
+        <Stack.Screen name="doctor-medical-records" component={DoctorMedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
+        <Stack.Screen name="doctor-medical-record-detail" component={DoctorMedicalRecords} options={{ title: "Chi tiết bệnh án" }} />
+        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
+    </Stack.Navigator>
+);
+
+const DoctorAppointmentsStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="doc-appts-main" component={DoctorAppointments} options={{ title: "Lịch hẹn" }} />
+        <Stack.Screen name="doctor-appointment-detail" component={DoctorAppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
+        <Stack.Screen name="doctor-medical-records" component={DoctorMedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
+        <Stack.Screen name="doctor-medical-record-detail" component={DoctorMedicalRecords} options={{ title: "Chi tiết bệnh án" }} />
+    </Stack.Navigator>
+);
+
+const DoctorSchedulesStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="doctor-schedules" component={DoctorSchedules} options={{ title: "Lịch làm việc" }} />
+        <Stack.Screen name="doctor-my-schedules" component={DoctorSchedules} options={{ title: "Ca trực của tôi" }} />
+    </Stack.Navigator>
+);
+
+const DoctorMedicalStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="doc-records-main" component={DoctorMedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
+        <Stack.Screen name="doctor-medical-record-detail" component={DoctorMedicalRecords} options={{ title: "Chi tiết bệnh án" }} />
+        <Stack.Screen name="doctor-appointment-detail" component={DoctorAppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
+    </Stack.Navigator>
+);
+
+const DoctorProfileStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="doctor-profile" component={StaffDoctorProfile} options={{ headerShown: false }} />
+        <Stack.Screen name="doctor-schedules" component={DoctorSchedules} options={{ title: "Lịch làm việc" }} />
+        <Stack.Screen name="doctor-my-schedules" component={DoctorSchedules} options={{ title: "Ca trực của tôi" }} />
+        <Stack.Screen name="doctor-medical-records" component={DoctorMedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
+        <Stack.Screen name="doctor-prescriptions" component={Prescriptions} options={{ title: "Đơn thuốc" }} />
+        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
+        <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
+    </Stack.Navigator>
+);
+
+// ─────────────────────────── DOCTOR TABS ───────────────────────────
+
+const DoctorTabs = () => (
+    <Tab.Navigator screenOptions={TAB_STYLE}>
+        <Tab.Screen
+            name="doctor-home-tab"
+            component={DoctorHomeStack}
+            options={{
+                title: "Tổng quan",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="view-dashboard-outline" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+        <Tab.Screen
+            name="doctor-appointments-tab"
+            component={DoctorAppointmentsStack}
+            options={{
+                title: "Lịch hẹn",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="calendar-check-outline" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+        <Tab.Screen
+            name="doctor-schedules-tab"
+            component={DoctorSchedulesStack}
+            options={{
+                title: "Ca trực",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="calendar-clock-outline" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+        <Tab.Screen
+            name="doctor-records-tab"
+            component={DoctorMedicalStack}
+            options={{
+                title: "Bệnh án",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="file-document-outline" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+        <Tab.Screen
+            name="doctor-profile-tab"
+            component={DoctorProfileStack}
+            options={{
+                title: "Cá nhân",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="account-circle-outline" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+    </Tab.Navigator>
+);
+
+// ─────────────────────────── STAFF STACKS ───────────────────────────
+
+const StaffHomeStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="staff-dashboard" component={StaffDashboard} options={{ headerShown: false }} />
+        <Stack.Screen name="staff-appointments" component={StaffAppointments} options={{ title: "Lịch hẹn" }} />
+        <Stack.Screen name="staff-appointment-detail" component={StaffAppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
+        <Stack.Screen name="staff-collect-payment" component={StaffPayments} options={{ title: "Thu tiền" }} />
+        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
+    </Stack.Navigator>
+);
+
+const StaffAppointmentsStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="staff-appts-main" component={StaffAppointments} options={{ title: "Lịch hẹn" }} />
+        <Stack.Screen name="staff-appointment-detail" component={StaffAppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
+        <Stack.Screen name="staff-collect-payment" component={StaffPayments} options={{ title: "Thu tiền" }} />
+    </Stack.Navigator>
+);
+
+const StaffPrescriptionsStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="staff-prescriptions-main" component={StaffPrescriptions} options={{ title: "Đơn thuốc" }} />
+    </Stack.Navigator>
+);
+
+const StaffInventoryStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="staff-inventory" component={StaffInventory} options={{ title: "Kho thuốc" }} />
+        <Stack.Screen name="staff-inventory-alerts" component={StaffInventory} options={{ title: "Cảnh báo kho" }} />
+    </Stack.Navigator>
+);
+
+const StaffPaymentsStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="staff-payments-main" component={StaffPayments} options={{ title: "Thanh toán" }} />
+    </Stack.Navigator>
+);
+
+const StaffProfileStack = () => (
+    <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="staff-profile" component={StaffDoctorProfile} options={{ headerShown: false }} />
+        <Stack.Screen name="staff-find-patient" component={StaffFindPatient} options={{ title: "Tìm bệnh nhân" }} />
+        <Stack.Screen name="staff-patients" component={StaffFindPatient} options={{ title: "Danh sách bệnh nhân" }} />
+        <Stack.Screen name="staff-inventory" component={StaffInventory} options={{ title: "Kho thuốc" }} />
+        <Stack.Screen name="staff-payments" component={StaffPayments} options={{ title: "Thanh toán" }} />
+        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
+        <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
+    </Stack.Navigator>
+);
+
+// ─────────────────────────── STAFF TABS ───────────────────────────
+
+const StaffTabs = () => (
+    <Tab.Navigator screenOptions={TAB_STYLE}>
+        <Tab.Screen
+            name="staff-home-tab"
+            component={StaffHomeStack}
+            options={{
+                title: "Tổng quan",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="view-dashboard-outline" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+        <Tab.Screen
+            name="staff-appointments-tab"
+            component={StaffAppointmentsStack}
+            options={{
+                title: "Lịch hẹn",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="calendar-check-outline" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+        <Tab.Screen
+            name="staff-prescriptions-tab"
+            component={StaffPrescriptionsStack}
+            options={{
+                title: "Đơn thuốc",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="pill" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+        <Tab.Screen
+            name="staff-inventory-tab"
+            component={StaffInventoryStack}
+            options={{
+                title: "Kho thuốc",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="package-variant-closed" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+        <Tab.Screen
+            name="staff-profile-tab"
+            component={StaffProfileStack}
+            options={{
+                title: "Cá nhân",
+                tabBarIcon: ({ color, size }) => (
+                    <MaterialCommunityIcons name="account-circle-outline" size={size ?? 24} color={color} />
+                ),
+            }}
+        />
+    </Tab.Navigator>
+);
+
+// ─────────────────────────── AUTH STACK ───────────────────────────
+
+const AuthStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="login" component={Login} />
+        <Stack.Screen name="register" component={Register} />
+    </Stack.Navigator>
+);
+
+// ─────────────────────────── ROOT ───────────────────────────
+
+const getRoleNavigator = (role) => {
+    switch (role) {
+        case "doctor": return <DoctorTabs />;
+        case "staff":  return <StaffTabs />;
+        default:       return <AppTabs />;
+    }
+};
+
 const App = () => {
     const [user, dispatch] = useReducer(MyReducer, null);
     const [initializing, setInitializing] = useState(true);
@@ -197,7 +448,7 @@ const App = () => {
             <MyUserContext.Provider value={user}>
                 <MyDispatchContext.Provider value={dispatch}>
                     <NavigationContainer>
-                        {user ? <AppTabs /> : <AuthStack />}
+                        {user ? getRoleNavigator(user.role) : <AuthStack />}
                     </NavigationContainer>
                 </MyDispatchContext.Provider>
             </MyUserContext.Provider>

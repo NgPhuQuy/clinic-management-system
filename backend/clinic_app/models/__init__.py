@@ -1,4 +1,4 @@
-from .user import UserManager, User
+from .user import User
 from .specialty import Specialty, Service
 from .patient import Patient
 from .doctor import Doctor, DoctorSchedule
