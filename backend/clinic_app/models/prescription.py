@@ -1,50 +1,44 @@
 from django.db import models
-from .patient import Patient
-from .doctor import Doctor
 from .medical_record import MedicalRecord
 from .medicine import Medicine
 
 
 class Prescription(models.Model):
     class Status(models.TextChoices):
-        PENDING = "pending", "Chờ cấp phát"
+        PENDING   = "pending",   "Chờ cấp phát"
         DISPENSED = "dispensed", "Đã cấp phát"
         CANCELLED = "cancelled", "Đã hủy"
 
-    medical_record = models.OneToOneField(
-        MedicalRecord, on_delete=models.CASCADE, related_name="prescription"
-    )
-    doctor = models.ForeignKey(Doctor, on_delete=models.SET_NULL, null=True, related_name="prescriptions")
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="prescriptions")
-    status = models.CharField(max_length=20, choices=Status, default=Status.PENDING)
-    notes = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    medical_record = models.OneToOneField(MedicalRecord, on_delete=models.CASCADE, related_name="prescription")
+    status       = models.CharField(max_length=20, choices=Status, default=Status.PENDING)
+    notes        = models.TextField(blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
     dispensed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        db_table = "prescriptions"
-        verbose_name = "Đơn thuốc"
+        db_table            = "prescriptions"
+        verbose_name        = "Đơn thuốc"
+        verbose_name_plural = "Đơn thuốc"
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Đơn thuốc #{self.pk} - {self.patient}"
+        return f"Đơn thuốc #{self.pk} - {self.medical_record.patient}"
 
 
 class PrescriptionDetail(models.Model):
-    prescription = models.ForeignKey(
-        Prescription, on_delete=models.CASCADE, related_name="details"
-    )
-    medicine = models.ForeignKey(Medicine, on_delete=models.PROTECT, related_name="prescription_details")
-    quantity = models.PositiveIntegerField()
-    dosage = models.CharField(max_length=100, help_text="Liều dùng mỗi lần, vd: 1 viên")
-    frequency = models.CharField(max_length=100, help_text="Số lần/ngày, vd: 3 lần/ngày")
+    prescription  = models.ForeignKey(Prescription, on_delete=models.CASCADE, related_name="details")
+    medicine      = models.ForeignKey(Medicine,     on_delete=models.PROTECT,  related_name="prescription_details")
+    quantity      = models.PositiveIntegerField()
+    dosage        = models.CharField(max_length=100, help_text="Liều dùng mỗi lần")
+    frequency     = models.CharField(max_length=100, help_text="Số lần/ngày")
     duration_days = models.PositiveIntegerField(help_text="Số ngày dùng thuốc")
-    instructions = models.TextField(blank=True, help_text="Hướng dẫn sử dụng")
+    instructions  = models.TextField(blank=True, help_text="Hướng dẫn sử dụng")
     price_at_time = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     class Meta:
-        db_table = "prescription_details"
-        verbose_name = "Chi tiết đơn thuốc"
+        db_table            = "prescription_details"
+        verbose_name        = "Chi tiết đơn thuốc"
+        verbose_name_plural = "Chi tiết đơn thuốc"
 
     def get_subtotal(self):
         return self.quantity * self.price_at_time

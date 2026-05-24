@@ -1,7 +1,8 @@
-from .user import UserManager, User
+from .user import User
 from .specialty import Specialty, Service
 from .patient import Patient
 from .doctor import Doctor, DoctorSchedule
+from .staff import Staff
 from .appointment import Appointment, AppointmentService
 from .medical_record import MedicalRecord, TestResult
 from .medicine import MedicineCategory, Medicine, Inventory, InventoryAlert
@@ -11,10 +12,11 @@ from .consultation import Consultation, ChatMessage
 from .notification import Notification
 
 __all__ = [
-    "UserManager", "User",
+    "User",
     "Specialty", "Service",
     "Patient",
     "Doctor", "DoctorSchedule",
+    "Staff",
     "Appointment", "AppointmentService",
     "MedicalRecord", "TestResult",
     "MedicineCategory", "Medicine", "Inventory", "InventoryAlert",
