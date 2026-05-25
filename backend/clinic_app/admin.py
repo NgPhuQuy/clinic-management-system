@@ -22,6 +22,7 @@ from clinic_app.models import (
     User, Specialty, Service,
     Doctor, DoctorSchedule,
     Patient,
+    Staff,
     Appointment, AppointmentService,
     MedicalRecord, TestResult,
     MedicineCategory, Medicine, Inventory, InventoryAlert,
@@ -115,8 +116,7 @@ class ClinicAdminSite(admin.AdminSite):
             .select_related("patient__user", "doctor__user")
             .order_by("appointment_date")[:10])
 
-        recent_payments = (Payment.objects.select_related("appointment__patient__user")
-                           .order_by("-created_at")[:10])
+        recent_payments = (Payment.objects.select_related("invoice__appointment__patient__user").order_by("-created_at")[:10])
 
 
         # ── Tab 4: Kho thuốc ──────────────────────────────────────────────
@@ -357,6 +357,28 @@ class PatientAdmin(admin.ModelAdmin):
     full_name.short_description = "Họ tên"
 
 
+@admin.register(Staff, site=admin_site)
+class StaffAdmin(admin.ModelAdmin):
+    list_display        = ("id", "employee_id", "full_name", "position", "department", "phone", "avatar_preview")
+    list_filter         = ("position", "department")
+    search_fields       = ("user__first_name", "user__last_name", "user__email", "employee_id")
+    readonly_fields     = ("employee_id", "avatar_preview")
+    list_select_related = ("user", "department")
+
+    def full_name(self, obj):
+        return obj.user.get_full_name() or obj.user.email
+    full_name.short_description = "Họ tên"
+
+    def avatar_preview(self, obj):
+        if obj.user.avatar:
+            return mark_safe(
+                f'<img src="{obj.user.avatar.url}" width="80" '
+                f'style="border-radius:50%;border:2px solid #ddd"/>'
+            )
+        return "Chưa có ảnh"
+    avatar_preview.short_description = "Ảnh đại diện"
+
+
 @admin.register(Doctor, site=admin_site)
 class DoctorAdmin(admin.ModelAdmin):
     list_display        = ("id", "full_name", "specialty", "experience_years", "avatar_preview")
@@ -470,10 +492,11 @@ class PaymentAdmin(admin.ModelAdmin):
     list_filter         = ("status", "payment_method")
     search_fields       = ("patient__user__email", "transaction_id")
     ordering            = ("-created_at",)
-    list_select_related = ("appointment__patient__user",)
+    list_select_related = ("invoice__appointment__patient__user",)
 
     def patient_name(self, obj):
-        return obj.appointment.patient.user.get_full_name()
+        u = obj.invoice.appointment.patient.user
+        return u.get_full_name()
     patient_name.short_description = "Bệnh nhân"
 
     def amount_display(self, obj):

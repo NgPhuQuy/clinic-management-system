@@ -402,6 +402,7 @@ class Command(BaseCommand):
                     "first_name": first,
                     "last_name": last,
                     "role": User.Role.DOCTOR,
+                    "is_staff": True, 
                 },
             )
             if created:
@@ -478,6 +479,7 @@ class Command(BaseCommand):
                     "first_name": first,
                     "last_name": last,
                     "role": User.Role.STAFF,
+                    "is_staff": True,
                 },
             )
             if created:

@@ -24,5 +24,10 @@ class User(AbstractUser):
         verbose_name        = "Người dùng"
         verbose_name_plural = "Người dùng"
 
+    def get_full_name(self):
+        if self.last_name and self.first_name:
+            return f"{self.last_name} {self.first_name}"
+        return self.last_name or self.first_name or self.username
+
     def __str__(self):
         return f"{self.get_full_name()} ({self.get_role_display()})"
