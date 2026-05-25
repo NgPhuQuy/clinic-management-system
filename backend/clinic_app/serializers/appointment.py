@@ -31,7 +31,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
     patient_info         = PatientSummarySerializer(source="patient", read_only=True)
     doctor_info          = DoctorSummarySerializer(source="doctor", read_only=True)
     appointment_services = AppointmentServiceSerializer(many=True, read_only=True)
-    # BUG FIX: thêm payment inline để FE (MyAppointments, AppointmentDetail) thấy TT
     payment              = PaymentSummarySerializer(read_only=True)
 
     class Meta:
