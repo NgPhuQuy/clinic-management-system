@@ -115,10 +115,9 @@ class ClinicAdminSite(admin.AdminSite):
             .select_related("patient__user", "doctor__user")
             .order_by("appointment_date")[:10])
 
-        # ── Tab 3: Thanh toán ─────────────────────────────────────────────
-        recent_payments = (Payment.objects
-            .select_related("patient__user")
-            .order_by("-created_at")[:10])
+        recent_payments = (Payment.objects.select_related("appointment__patient__user")
+                           .order_by("-created_at")[:10])
+
 
         # ── Tab 4: Kho thuốc ──────────────────────────────────────────────
         low_stock_items = (Inventory.objects
@@ -471,10 +470,10 @@ class PaymentAdmin(admin.ModelAdmin):
     list_filter         = ("status", "payment_method")
     search_fields       = ("patient__user__email", "transaction_id")
     ordering            = ("-created_at",)
-    list_select_related = ("patient__user",)
+    list_select_related = ("appointment__patient__user",)
 
     def patient_name(self, obj):
-        return obj.patient.user.get_full_name() or obj.patient.user.email
+        return obj.appointment.patient.user.get_full_name()
     patient_name.short_description = "Bệnh nhân"
 
     def amount_display(self, obj):
