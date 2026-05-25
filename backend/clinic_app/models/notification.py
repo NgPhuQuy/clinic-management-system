@@ -11,6 +11,7 @@ class Notification(models.Model):
         PAYMENT_SUCCESS       = "payment_success",       "Thanh toán thành công"
         INVENTORY_ALERT       = "inventory_alert",       "Cảnh báo kho thuốc"
         SYSTEM                = "system",                "Hệ thống"
+        TEST_RESULT_READY     = "test_result_ready",     "Kết quả xét nghiệm"
 
     user               = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
     title              = models.CharField(max_length=255)
