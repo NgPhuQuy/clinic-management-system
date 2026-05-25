@@ -1,7 +1,3 @@
-/**
- * screens/Doctor/DoctorDashboard.js
- * Dashboard chính cho bác sĩ - hiển thị tổng quan công việc hôm nay
- */
 import {
     View, ScrollView, StyleSheet, TouchableOpacity,
     ActivityIndicator, RefreshControl, StatusBar,

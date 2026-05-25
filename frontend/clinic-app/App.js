@@ -427,21 +427,29 @@ const App = () => {
     const [initializing, setInitializing] = useState(true);
 
     useEffect(() => {
-        const restoreSession = async () => {
-            try {
-                const token = await AsyncStorage.getItem("token");
-                if (token) {
-                    const res = await authApis(token).get(endpoints["current-user"]);
-                    dispatch({ type: "login", payload: { ...res.data, token } });
+    const restoreSession = async () => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            if (token) {
+                const res = await authApis(token).get(endpoints["current-user"]);
+                const userData = res.data;
+                const storedScope = await AsyncStorage.getItem("token_scope");
+                if (!storedScope || storedScope !== userData.role) {
+                    await AsyncStorage.multiRemove(["token", "token_scope"]);
+                    setInitializing(false);
+                    return;
                 }
-            } catch (e) {
-                await AsyncStorage.removeItem("token");
-            } finally {
-                setInitializing(false);
+
+                dispatch({ type: "login", payload: { ...userData, token } });
             }
-        };
-        restoreSession();
-    }, []);
+        } catch (e) {
+            await AsyncStorage.multiRemove(["token", "token_scope"]);
+        } finally {
+            setInitializing(false);
+        }
+    };
+    restoreSession();
+}, []);
 
     if (initializing) {
         return (

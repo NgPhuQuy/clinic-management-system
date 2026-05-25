@@ -34,6 +34,8 @@ const Login = () => {
                 password: user.password.trim(),
             });
             await AsyncStorage.setItem("token", res.data.access_token);
+            await AsyncStorage.setItem("token_scope", res.data.scope);
+            
             const currentUser = await authApis(res.data.access_token).get(endpoints["current-user"]);
             dispatch({ type: "login", payload: { ...currentUser.data, token: res.data.access_token } });
         } catch (ex) {
