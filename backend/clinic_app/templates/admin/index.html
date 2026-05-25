@@ -4,102 +4,419 @@
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
-/* KPI */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:24px}
-.kpi-card{background:#fff;border-radius:8px;padding:14px 16px;border-left:5px solid var(--kpi-color,#417690);box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:3px}
-.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;color:#888;letter-spacing:.5px}
-.kpi-value{font-size:26px;font-weight:800;color:var(--kpi-color,#333);line-height:1.1}
-.kpi-sub{font-size:11px;color:#aaa}
-/* Alert */
-.alert-banner{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:9px 14px;margin-bottom:20px;font-size:13px;color:#856404}
-/* Tabs */
-.dashboard-tabs{display:flex;gap:4px;margin-bottom:0;border-bottom:2px solid #e5e7eb;flex-wrap:wrap}
-.tab-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border:none;background:transparent;border-radius:6px 6px 0 0;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;position:relative;bottom:-2px;border-bottom:2px solid transparent;transition:color .15s,border-color .15s,background .15s;text-decoration:none}
-.tab-btn:hover{background:#f3f4f6;color:#374151}
-.tab-btn.active{color:#fff;border-bottom-color:var(--tab-color);background:var(--tab-color);box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.tab-panel{display:none;padding-top:20px}
-.tab-panel.active{display:block}
-/* Charts */
-.chart-grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px;margin-bottom:16px}
-.chart-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:16px}
-.chart-card{background:#fff;border-radius:8px;padding:14px 16px;box-shadow:0 2px 6px rgba(0,0,0,.07)}
-.chart-card h3{margin:0 0 10px;font-size:12px;font-weight:700;color:#555;border-bottom:1px solid #f0f0f0;padding-bottom:7px;text-transform:uppercase;letter-spacing:.4px}
-.chart-wrap{position:relative;width:100%;height:210px}
-.section-lbl{font-size:13px;font-weight:700;color:#444;border-left:4px solid #417690;padding-left:9px;margin:22px 0 12px}
-.view-all-link{display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:600;color:#417690;text-decoration:none}
-.view-all-link:hover{text-decoration:underline}
-/* Tables */
-.data-card{background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.07);overflow:hidden;margin-bottom:16px}
-.data-card-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f0f0f0;background:#fafafa}
-.data-card-title{font-size:13px;font-weight:700;color:#333}
-.data-table{width:100%;border-collapse:collapse;font-size:13px}
-.data-table th{background:#f8f9fa;padding:8px 12px;text-align:left;border-bottom:2px solid #e9ecef;font-size:11px;text-transform:uppercase;color:#6b7280;letter-spacing:.4px;font-weight:700}
-.data-table td{padding:9px 12px;border-bottom:1px solid #f3f4f6;color:#374151}
-.data-table tr:last-child td{border-bottom:none}
-.data-table tr:hover td{background:#f9fafb}
-.data-table .empty-row td{text-align:center;color:#9ca3af;font-style:italic;padding:24px}
-/* Badges */
-.badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap}
-.badge-pending{background:#fef3c7;color:#d97706}
-.badge-confirmed{background:#dbeafe;color:#2563eb}
-.badge-in_progress{background:#ede9fe;color:#7c3aed}
-.badge-completed{background:#d1fae5;color:#059669}
-.badge-cancelled{background:#fee2e2;color:#dc2626}
-.badge-no_show{background:#f3f4f6;color:#6b7280}
-.badge-success{background:#d1fae5;color:#059669}
-.badge-pending-pay{background:#fef3c7;color:#d97706}
-.badge-failed{background:#fee2e2;color:#dc2626}
-.badge-refunded{background:#f3f4f6;color:#6b7280}
-.badge-danger{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
-.badge-warning{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
-.badge-ok{background:#d1fae5;color:#059669;border:1px solid #a7f3d0}
+  /* KPI */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px
+  }
 
-.qty-empty{font-weight:700;font-size:16px;color:#ef4444}
-.qty-low{font-weight:700;font-size:16px;color:#f59e0b}
-.qty-ok{font-weight:700;font-size:16px;color:#374151}
-#content-main{padding:0}
+  .kpi-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px 16px;
+    border-left: 5px solid var(--kpi-color, #417690);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .07);
+    display: flex;
+    flex-direction: column;
+    gap: 3px
+  }
+
+  .kpi-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: .5px
+  }
+
+  .kpi-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--kpi-color, #333);
+    line-height: 1.1
+  }
+
+  .kpi-sub {
+    font-size: 11px;
+    color: #aaa
+  }
+
+  /* Alert */
+  .alert-banner {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 6px;
+    padding: 9px 14px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #856404
+  }
+
+  /* Tabs */
+  .dashboard-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 0;
+    border-bottom: 2px solid #e5e7eb;
+    flex-wrap: wrap
+  }
+
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    border: none;
+    background: transparent;
+    border-radius: 6px 6px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    position: relative;
+    bottom: -2px;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s, background .15s;
+    text-decoration: none
+  }
+
+  .tab-btn:hover {
+    background: #f3f4f6;
+    color: #374151
+  }
+
+  .tab-btn.active {
+    color: #fff;
+    border-bottom-color: var(--tab-color);
+    background: var(--tab-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12)
+  }
+
+  .tab-panel {
+    display: none;
+    padding-top: 20px
+  }
+
+  .tab-panel.active {
+    display: block
+  }
+
+  /* Charts */
+  .chart-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px
+  }
+
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px
+  }
+
+  .chart-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .07)
+  }
+
+  .chart-card h3 {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 7px;
+    text-transform: uppercase;
+    letter-spacing: .4px
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 210px
+  }
+
+  .section-lbl {
+    font-size: 13px;
+    font-weight: 700;
+    color: #444;
+    border-left: 4px solid #417690;
+    padding-left: 9px;
+    margin: 22px 0 12px
+  }
+
+  .view-all-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #417690;
+    text-decoration: none
+  }
+
+  .view-all-link:hover {
+    text-decoration: underline
+  }
+
+  /* Tables */
+  .data-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .07);
+    overflow: hidden;
+    margin-bottom: 16px
+  }
+
+  .data-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fafafa
+  }
+
+  .data-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #333
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px
+  }
+
+  .data-table th {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 2px solid #e9ecef;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: .4px;
+    font-weight: 700
+  }
+
+  .data-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151
+  }
+
+  .data-table tr:last-child td {
+    border-bottom: none
+  }
+
+  .data-table tr:hover td {
+    background: #f9fafb
+  }
+
+  .data-table .empty-row td {
+    text-align: center;
+    color: #9ca3af;
+    font-style: italic;
+    padding: 24px
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap
+  }
+
+  .badge-pending {
+    background: #fef3c7;
+    color: #d97706
+  }
+
+  .badge-confirmed {
+    background: #dbeafe;
+    color: #2563eb
+  }
+
+  .badge-in_progress {
+    background: #ede9fe;
+    color: #7c3aed
+  }
+
+  .badge-completed {
+    background: #d1fae5;
+    color: #059669
+  }
+
+  .badge-cancelled {
+    background: #fee2e2;
+    color: #dc2626
+  }
+
+  .badge-no_show {
+    background: #f3f4f6;
+    color: #6b7280
+  }
+
+  .badge-success {
+    background: #d1fae5;
+    color: #059669
+  }
+
+  .badge-pending-pay {
+    background: #fef3c7;
+    color: #d97706
+  }
+
+  .badge-failed {
+    background: #fee2e2;
+    color: #dc2626
+  }
+
+  .badge-refunded {
+    background: #f3f4f6;
+    color: #6b7280
+  }
+
+  .badge-danger {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca
+  }
+
+  .badge-warning {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a
+  }
+
+  .badge-ok {
+    background: #d1fae5;
+    color: #059669;
+    border: 1px solid #a7f3d0
+  }
+
+  .qty-empty {
+    font-weight: 700;
+    font-size: 16px;
+    color: #ef4444
+  }
+
+  .qty-low {
+    font-weight: 700;
+    font-size: 16px;
+    color: #f59e0b
+  }
+
+  .qty-ok {
+    font-weight: 700;
+    font-size: 16px;
+    color: #374151
+  }
+
+  #content-main {
+    padding: 0
+  }
 </style>
 
 {% if low_stock %}
 <div class="alert-banner">
   ⚠️ <strong>Cảnh báo:</strong> Có <strong>{{ low_stock }}</strong> mặt hàng trong kho sắp hết (≤ 10 đơn vị).
-  <a href="#" onclick="switchTab('tab-inventory');return false;" style="margin-left:8px;color:#856404;font-weight:700;text-decoration:underline">Xem kho thuốc →</a>
+  <a href="#" onclick="switchTab('tab-inventory');return false;"
+    style="margin-left:8px;color:#856404;font-weight:700;text-decoration:underline">Xem kho thuốc →</a>
 </div>
 {% endif %}
 
 <!-- KPI -->
 <div class="kpi-grid">
-  <div class="kpi-card" style="--kpi-color:#3b82f6"><div class="kpi-label">Bác sĩ</div><div class="kpi-value">{{ total_doctors }}</div><div class="kpi-sub">Tổng số bác sĩ</div></div>
-  <div class="kpi-card" style="--kpi-color:#10b981"><div class="kpi-label">Bệnh nhân</div><div class="kpi-value">{{ total_patients }}</div><div class="kpi-sub">Đã đăng ký hệ thống</div></div>
-  <div class="kpi-card" style="--kpi-color:#8b5cf6"><div class="kpi-label">Lịch hẹn hôm nay</div><div class="kpi-value">{{ today_appts }}</div><div class="kpi-sub">{{ pending_appts }} chờ xác nhận</div></div>
-  <div class="kpi-card" style="--kpi-color:#f59e0b"><div class="kpi-label">Doanh thu tháng</div><div class="kpi-value" style="font-size:19px">{{ month_revenue|floatformat:"0" }}</div><div class="kpi-sub">VND — tháng hiện tại</div></div>
-  <div class="kpi-card" style="--kpi-color:#06b6d4"><div class="kpi-label">Doanh thu 7 ngày</div><div class="kpi-value" style="font-size:19px">{{ week_revenue|floatformat:"0" }}</div><div class="kpi-sub">VND — 7 ngày gần nhất</div></div>
-  <div class="kpi-card" style="--kpi-color:#e11d48"><div class="kpi-label">Tồn kho thấp</div><div class="kpi-value">{{ low_stock }}</div><div class="kpi-sub">Mặt hàng cần nhập thêm</div></div>
+  <div class="kpi-card" style="--kpi-color:#3b82f6">
+    <div class="kpi-label">Bác sĩ</div>
+    <div class="kpi-value">{{ total_doctors }}</div>
+    <div class="kpi-sub">Tổng số bác sĩ</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#10b981">
+    <div class="kpi-label">Bệnh nhân</div>
+    <div class="kpi-value">{{ total_patients }}</div>
+    <div class="kpi-sub">Đã đăng ký hệ thống</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#8b5cf6">
+    <div class="kpi-label">Lịch hẹn hôm nay</div>
+    <div class="kpi-value">{{ today_appts }}</div>
+    <div class="kpi-sub">{{ pending_appts }} chờ xác nhận</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#f59e0b">
+    <div class="kpi-label">Doanh thu tháng</div>
+    <div class="kpi-value" style="font-size:19px">{{ month_revenue|floatformat:"0" }}</div>
+    <div class="kpi-sub">VND — tháng hiện tại</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#06b6d4">
+    <div class="kpi-label">Doanh thu 7 ngày</div>
+    <div class="kpi-value" style="font-size:19px">{{ week_revenue|floatformat:"0" }}</div>
+    <div class="kpi-sub">VND — 7 ngày gần nhất</div>
+  </div>
+  <div class="kpi-card" style="--kpi-color:#e11d48">
+    <div class="kpi-label">Tồn kho thấp</div>
+    <div class="kpi-value">{{ low_stock }}</div>
+    <div class="kpi-sub">Mặt hàng cần nhập thêm</div>
+  </div>
 </div>
 
 <!-- TAB BAR -->
 <div class="dashboard-tabs">
-  <button class="tab-btn active" id="btn-stats"     style="--tab-color:#417690" onclick="switchTab('tab-stats')"><span>📊</span> Báo cáo &amp; Thống kê</button>
-  <button class="tab-btn"        id="btn-appt"      style="--tab-color:#10b981" onclick="switchTab('tab-appt')"><span>📅</span> Quản lý lịch hẹn</button>
-  <button class="tab-btn"        id="btn-payment"   style="--tab-color:#f59e0b" onclick="switchTab('tab-payment')"><span>💳</span> Quản lý thanh toán</button>
-  <button class="tab-btn"        id="btn-inventory" style="--tab-color:#ef4444" onclick="switchTab('tab-inventory')"><span>💊</span> Quản lý kho thuốc</button>
+  <button class="tab-btn active" id="btn-stats" style="--tab-color:#417690"
+    onclick="switchTab('tab-stats')"><span>📊</span> Báo cáo &amp; Thống kê</button>
+  <button class="tab-btn" id="btn-appt" style="--tab-color:#10b981" onclick="switchTab('tab-appt')"><span>📅</span> Quản
+    lý lịch hẹn</button>
+  <button class="tab-btn" id="btn-payment" style="--tab-color:#f59e0b"
+    onclick="switchTab('tab-payment')"><span>💳</span> Quản lý thanh toán</button>
+  <button class="tab-btn" id="btn-inventory" style="--tab-color:#ef4444"
+    onclick="switchTab('tab-inventory')"><span>💊</span> Quản lý kho thuốc</button>
 </div>
 
 <!-- TAB 1: BÁO CÁO -->
 <div class="tab-panel active" id="tab-stats">
   <div class="section-lbl">💰 Doanh thu</div>
   <div class="chart-grid-2">
-    <div class="chart-card"><h3>Doanh thu 7 ngày gần nhất</h3><div class="chart-wrap"><canvas id="rev7dChart"></canvas></div></div>
-    <div class="chart-card"><h3>Doanh thu 30 ngày gần nhất</h3><div class="chart-wrap"><canvas id="rev30dChart"></canvas></div></div>
+    <div class="chart-card">
+      <h3>Doanh thu 7 ngày gần nhất</h3>
+      <div class="chart-wrap"><canvas id="rev7dChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Doanh thu 30 ngày gần nhất</h3>
+      <div class="chart-wrap"><canvas id="rev30dChart"></canvas></div>
+    </div>
   </div>
   <div class="chart-grid-2">
-    <div class="chart-card"><h3>Phương thức thanh toán</h3><div class="chart-wrap"><canvas id="methodChart"></canvas></div></div>
-    <div class="chart-card"><h3>Trạng thái lịch hẹn</h3><div class="chart-wrap"><canvas id="apptStatusChart"></canvas></div></div>
+    <div class="chart-card">
+      <h3>Phương thức thanh toán</h3>
+      <div class="chart-wrap"><canvas id="methodChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Trạng thái lịch hẹn</h3>
+      <div class="chart-wrap"><canvas id="apptStatusChart"></canvas></div>
+    </div>
   </div>
   <div class="section-lbl">👥 Cơ cấu bệnh nhân</div>
   <div class="chart-grid-2">
-    <div class="chart-card"><h3>Theo giới tính</h3><div class="chart-wrap"><canvas id="genderChart"></canvas></div></div>
-    <div class="chart-card"><h3>Lịch hẹn theo trạng thái</h3><div class="chart-wrap"><canvas id="apptBarChart"></canvas></div></div>
+    <div class="chart-card">
+      <h3>Theo giới tính</h3>
+      <div class="chart-wrap"><canvas id="genderChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Lịch hẹn theo trạng thái</h3>
+      <div class="chart-wrap"><canvas id="apptBarChart"></canvas></div>
+    </div>
   </div>
   <a class="view-all-link" href="{% url 'clinic_admin:clinic-stats' %}">📈 Xem báo cáo toàn diện →</a>
 </div>
@@ -109,10 +426,20 @@
   <div class="data-card">
     <div class="data-card-header">
       <span class="data-card-title">📅 Lịch hẹn sắp tới (chờ / đã xác nhận)</span>
-      <a href="{% url 'clinic_admin:clinic_app_appointment_changelist' %}" class="view-all-link" style="margin-top:0">Xem tất cả →</a>
+      <a href="{% url 'clinic_admin:clinic_app_appointment_changelist' %}" class="view-all-link"
+        style="margin-top:0">Xem tất cả →</a>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Bệnh nhân</th><th>Bác sĩ</th><th>Thời gian</th><th>Trạng thái</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Bệnh nhân</th>
+          <th>Bác sĩ</th>
+          <th>Thời gian</th>
+          <th>Trạng thái</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         {% for appt in upcoming_appts %}
         <tr>
@@ -121,16 +448,22 @@
           <td>{{ appt.doctor.user.get_full_name|default:appt.doctor.user.email }}</td>
           <td style="white-space:nowrap;font-size:12px">{{ appt.appointment_date|date:"d/m/Y H:i" }}</td>
           <td><span class="badge badge-{{ appt.status }}">{{ appt.get_status_display }}</span></td>
-          <td><a href="{% url 'clinic_admin:clinic_app_appointment_change' appt.id %}" style="font-size:12px;color:#417690">Sửa</a></td>
+          <td><a href="{% url 'clinic_admin:clinic_app_appointment_change' appt.id %}"
+              style="font-size:12px;color:#417690">Sửa</a></td>
         </tr>
         {% empty %}
-        <tr class="empty-row"><td colspan="6">Không có lịch hẹn sắp tới</td></tr>
+        <tr class="empty-row">
+          <td colspan="6">Không có lịch hẹn sắp tới</td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   <div class="chart-grid-2">
-    <div class="chart-card"><h3>Phân bổ trạng thái lịch hẹn</h3><div class="chart-wrap"><canvas id="apptTabChart"></canvas></div></div>
+    <div class="chart-card">
+      <h3>Phân bổ trạng thái lịch hẹn</h3>
+      <div class="chart-wrap"><canvas id="apptTabChart"></canvas></div>
+    </div>
   </div>
 </div>
 
@@ -139,30 +472,50 @@
   <div class="data-card">
     <div class="data-card-header">
       <span class="data-card-title">💳 Thanh toán gần đây</span>
-      <a href="{% url 'clinic_admin:clinic_app_payment_changelist' %}" class="view-all-link" style="margin-top:0">Xem tất cả →</a>
+      <a href="{% url 'clinic_admin:clinic_app_payment_changelist' %}" class="view-all-link" style="margin-top:0">Xem
+        tất cả →</a>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Bệnh nhân</th><th>Số tiền</th><th>Phương thức</th><th>Trạng thái</th><th>Ngày</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Bệnh nhân</th>
+          <th>Số tiền</th>
+          <th>Phương thức</th>
+          <th>Trạng thái</th>
+          <th>Ngày</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         {% for pay in recent_payments %}
         <tr>
           <td style="color:#9ca3af;font-size:12px">{{ pay.id }}</td>
-          <td><strong>{{ pay.patient.user.get_full_name|default:pay.patient.user.email }}</strong></td>
+          <td><strong>{{ pay.invoice.appointment.patient.user|default:pay.invoice.appointment.patient.user.email }}</strong></td>
           <td style="font-weight:700;color:#10b981">{{ pay.amount|floatformat:"0" }} đ</td>
           <td style="font-size:12px">{{ pay.get_payment_method_display }}</td>
           <td><span class="badge badge-{{ pay.status }}">{{ pay.get_status_display }}</span></td>
           <td style="font-size:12px;color:#9ca3af;white-space:nowrap">{{ pay.created_at|date:"d/m/Y" }}</td>
-          <td><a href="{% url 'clinic_admin:clinic_app_payment_change' pay.id %}" style="font-size:12px;color:#417690">Sửa</a></td>
+          <td><a href="{% url 'clinic_admin:clinic_app_payment_change' pay.id %}"
+              style="font-size:12px;color:#417690">Sửa</a></td>
         </tr>
         {% empty %}
-        <tr class="empty-row"><td colspan="7">Chưa có giao dịch nào</td></tr>
+        <tr class="empty-row">
+          <td colspan="7">Chưa có giao dịch nào</td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   <div class="chart-grid-2">
-    <div class="chart-card"><h3>Doanh thu 7 ngày</h3><div class="chart-wrap"><canvas id="payTabChart"></canvas></div></div>
-    <div class="chart-card"><h3>Phương thức thanh toán</h3><div class="chart-wrap"><canvas id="methodTabChart"></canvas></div></div>
+    <div class="chart-card">
+      <h3>Doanh thu 7 ngày</h3>
+      <div class="chart-wrap"><canvas id="payTabChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Phương thức thanh toán</h3>
+      <div class="chart-wrap"><canvas id="methodTabChart"></canvas></div>
+    </div>
   </div>
 </div>
 
@@ -171,25 +524,40 @@
   <div class="data-card">
     <div class="data-card-header">
       <span class="data-card-title">💊 Mặt hàng tồn kho thấp (≤ 20 đơn vị)</span>
-      <a href="{% url 'clinic_admin:clinic_app_inventory_changelist' %}" class="view-all-link" style="margin-top:0">Xem tất cả →</a>
+      <a href="{% url 'clinic_admin:clinic_app_inventory_changelist' %}" class="view-all-link" style="margin-top:0">Xem
+        tất cả →</a>
     </div>
     <table class="data-table">
-      <thead><tr><th>Thuốc</th><th>Số lượng</th><th>Hạn dùng</th><th>Trạng thái</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th>Thuốc</th>
+          <th>Số lượng</th>
+          <th>Hạn dùng</th>
+          <th>Trạng thái</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         {% for inv in low_stock_items %}
         <tr>
           <td><strong>{{ inv.medicine.name }}</strong></td>
-          <td class="{% if inv.quantity == 0 %}qty-empty{% elif inv.quantity <= 10 %}qty-low{% else %}qty-ok{% endif %}">{{ inv.quantity }}</td>
-          <td style="font-size:12px;color:#9ca3af">{% if inv.expiry_date %}{{ inv.expiry_date|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+          <td
+            class="{% if inv.quantity == 0 %}qty-empty{% elif inv.quantity <= 10 %}qty-low{% else %}qty-ok{% endif %}">
+            {{ inv.quantity }}</td>
+          <td style="font-size:12px;color:#9ca3af">{% if inv.expiry_date %}{{ inv.expiry_date|date:"d/m/Y" }}{% else
+            %}—{% endif %}</td>
           <td>
             {% if inv.quantity == 0 %}<span class="badge badge-danger">⛔ Hết hàng</span>
             {% elif inv.quantity <= 10 %}<span class="badge badge-warning">⚠️ Sắp hết</span>
-            {% else %}<span class="badge badge-ok">📦 Cần bổ sung</span>{% endif %}
+              {% else %}<span class="badge badge-ok">📦 Cần bổ sung</span>{% endif %}
           </td>
-          <td><a href="{% url 'clinic_admin:clinic_app_inventory_change' inv.id %}" style="font-size:12px;color:#417690">Nhập thêm</a></td>
+          <td><a href="{% url 'clinic_admin:clinic_app_inventory_change' inv.id %}"
+              style="font-size:12px;color:#417690">Nhập thêm</a></td>
         </tr>
         {% empty %}
-        <tr class="empty-row"><td colspan="5">✅ Tất cả mặt hàng đều đủ hàng</td></tr>
+        <tr class="empty-row">
+          <td colspan="5">✅ Tất cả mặt hàng đều đủ hàng</td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
@@ -213,30 +581,30 @@
 </script>
 
 <script>
-function switchTab(tabId) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
-  const btnId = 'btn-' + tabId.replace('tab-', '');
-  const btn = document.getElementById(btnId);
-  if (btn) btn.classList.add('active');
-  setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
-}
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    const btnId = 'btn-' + tabId.replace('tab-', '');
+    const btn = document.getElementById(btnId);
+    if (btn) btn.classList.add('active');
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 60);
+  }
 
-const D = JSON.parse(document.getElementById('chart-data').textContent);
-const PAL = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#e11d48','#f97316'];
-const base = { responsive:true, maintainAspectRatio:false };
-const pal  = n => Array.from({length:n},(_,i)=>PAL[i%PAL.length]);
-const mMap = { momo:'MoMo', vnpay:'VNPay', credit_card:'Thẻ tín dụng', cash:'Tiền mặt', banking:'Chuyển khoản' };
+  const D = JSON.parse(document.getElementById('chart-data').textContent);
+  const PAL = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#e11d48', '#f97316'];
+  const base = { responsive: true, maintainAspectRatio: false };
+  const pal = n => Array.from({ length: n }, (_, i) => PAL[i % PAL.length]);
+  const mMap = { momo: 'MoMo', vnpay: 'VNPay', credit_card: 'Thẻ tín dụng', cash: 'Tiền mặt', banking: 'Chuyển khoản' };
 
-new Chart('rev7dChart',{type:'line',data:{labels:D.rev7d_labels,datasets:[{label:'VND',data:D.rev7d_data,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.1)',borderWidth:2,fill:true,tension:.3,pointRadius:4}]},options:{...base,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v.toLocaleString('vi')}}}}});
-new Chart('rev30dChart',{type:'bar',data:{labels:D.rev30d_labels,datasets:[{label:'VND',data:D.rev30d_data,backgroundColor:'rgba(16,185,129,.7)',borderRadius:3}]},options:{...base,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v.toLocaleString('vi')}},x:{ticks:{maxTicksLimit:10}}}}});
-new Chart('methodChart',{type:'pie',data:{labels:D.method_labels.map(l=>mMap[l]||l),datasets:[{data:D.method_data,backgroundColor:pal(D.method_labels.length)}]},options:{...base,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
-new Chart('apptStatusChart',{type:'doughnut',data:{labels:D.appt_status_labels,datasets:[{data:D.appt_status_data,backgroundColor:['#f59e0b','#3b82f6','#8b5cf6','#10b981','#ef4444','#6b7280']}]},options:{...base,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
-new Chart('genderChart',{type:'pie',data:{labels:D.gender_labels,datasets:[{data:D.gender_data,backgroundColor:['#3b82f6','#f472b6','#a78bfa']}]},options:{...base,plugins:{legend:{position:'bottom'}}}});
-new Chart('apptBarChart',{type:'bar',data:{labels:D.appt_status_labels,datasets:[{label:'Lịch hẹn',data:D.appt_status_data,backgroundColor:['#fcd34d','#93c5fd','#c4b5fd','#6ee7b7','#fca5a5','#d1d5db'],borderRadius:4}]},options:{...base,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:10}}}}}});
-new Chart('apptTabChart',{type:'doughnut',data:{labels:D.appt_status_labels,datasets:[{data:D.appt_status_data,backgroundColor:['#f59e0b','#3b82f6','#8b5cf6','#10b981','#ef4444','#6b7280']}]},options:{...base,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12}}}}});
-new Chart('payTabChart',{type:'bar',data:{labels:D.rev7d_labels,datasets:[{label:'VND',data:D.rev7d_data,backgroundColor:'rgba(245,158,11,.75)',borderRadius:4}]},options:{...base,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v.toLocaleString('vi')}}}}});
-new Chart('methodTabChart',{type:'doughnut',data:{labels:D.method_labels.map(l=>mMap[l]||l),datasets:[{data:D.method_data,backgroundColor:pal(D.method_labels.length)}]},options:{...base,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}});
+  new Chart('rev7dChart', { type: 'line', data: { labels: D.rev7d_labels, datasets: [{ label: 'VND', data: D.rev7d_data, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)', borderWidth: 2, fill: true, tension: .3, pointRadius: 4 }] }, options: { ...base, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v.toLocaleString('vi') } } } } });
+  new Chart('rev30dChart', { type: 'bar', data: { labels: D.rev30d_labels, datasets: [{ label: 'VND', data: D.rev30d_data, backgroundColor: 'rgba(16,185,129,.7)', borderRadius: 3 }] }, options: { ...base, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v.toLocaleString('vi') } }, x: { ticks: { maxTicksLimit: 10 } } } } });
+  new Chart('methodChart', { type: 'pie', data: { labels: D.method_labels.map(l => mMap[l] || l), datasets: [{ data: D.method_data, backgroundColor: pal(D.method_labels.length) }] }, options: { ...base, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } } });
+  new Chart('apptStatusChart', { type: 'doughnut', data: { labels: D.appt_status_labels, datasets: [{ data: D.appt_status_data, backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ef4444', '#6b7280'] }] }, options: { ...base, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } } });
+  new Chart('genderChart', { type: 'pie', data: { labels: D.gender_labels, datasets: [{ data: D.gender_data, backgroundColor: ['#3b82f6', '#f472b6', '#a78bfa'] }] }, options: { ...base, plugins: { legend: { position: 'bottom' } } } });
+  new Chart('apptBarChart', { type: 'bar', data: { labels: D.appt_status_labels, datasets: [{ label: 'Lịch hẹn', data: D.appt_status_data, backgroundColor: ['#fcd34d', '#93c5fd', '#c4b5fd', '#6ee7b7', '#fca5a5', '#d1d5db'], borderRadius: 4 }] }, options: { ...base, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { ticks: { font: { size: 10 } } } } } });
+  new Chart('apptTabChart', { type: 'doughnut', data: { labels: D.appt_status_labels, datasets: [{ data: D.appt_status_data, backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ef4444', '#6b7280'] }] }, options: { ...base, plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } } } });
+  new Chart('payTabChart', { type: 'bar', data: { labels: D.rev7d_labels, datasets: [{ label: 'VND', data: D.rev7d_data, backgroundColor: 'rgba(245,158,11,.75)', borderRadius: 4 }] }, options: { ...base, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v.toLocaleString('vi') } } } } });
+  new Chart('methodTabChart', { type: 'doughnut', data: { labels: D.method_labels.map(l => mMap[l] || l), datasets: [{ data: D.method_data, backgroundColor: pal(D.method_labels.length) }] }, options: { ...base, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } } });
 </script>
 {% endblock %}

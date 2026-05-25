@@ -1,6 +1,7 @@
 from django.db import models
 from .medical_record import MedicalRecord
 from .medicine import Medicine
+from .staff import Staff
 
 
 class Prescription(models.Model):
@@ -14,6 +15,8 @@ class Prescription(models.Model):
     notes        = models.TextField(blank=True)
     created_at   = models.DateTimeField(auto_now_add=True)
     dispensed_at = models.DateTimeField(null=True, blank=True)
+    dispensed_by   = models.ForeignKey(Staff, on_delete=models.SET_NULL,null=True, blank=True,
+                                        related_name="dispensed_prescriptions",help_text="Dược sĩ cấp phát")
 
     class Meta:
         db_table            = "prescriptions"

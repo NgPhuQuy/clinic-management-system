@@ -1,7 +1,7 @@
 from django.db import models
 from .user import User
 from .specialty import Specialty
-from datetime import timezone
+from django.utils import timezone
 
 class Staff(models.Model):
     class Position(models.TextChoices):

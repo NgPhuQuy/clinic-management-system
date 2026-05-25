@@ -28,6 +28,7 @@ class Appointment(models.Model):
         verbose_name        = "Lịch hẹn"
         verbose_name_plural = "Lịch hẹn"
         ordering = ["-appointment_date"]
+        unique_together = ("patient", "doctor", "appointment_date")
 
     def __str__(self):
         return f"{self.patient} → {self.doctor} | {self.appointment_date}"

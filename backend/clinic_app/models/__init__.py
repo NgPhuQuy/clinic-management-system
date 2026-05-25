@@ -7,7 +7,7 @@ from .appointment import Appointment, AppointmentService
 from .medical_record import MedicalRecord, TestResult
 from .medicine import MedicineCategory, Medicine, Inventory, InventoryAlert
 from .prescription import Prescription, PrescriptionDetail
-from .payment import Payment
+from .payment import Invoice, Payment
 from .consultation import Consultation, ChatMessage
 from .notification import Notification
 
@@ -21,7 +21,7 @@ __all__ = [
     "MedicalRecord", "TestResult",
     "MedicineCategory", "Medicine", "Inventory", "InventoryAlert",
     "Prescription", "PrescriptionDetail",
-    "Payment",
+    "Invoice", "Payment",
     "Consultation", "ChatMessage",
     "Notification",
 ]
