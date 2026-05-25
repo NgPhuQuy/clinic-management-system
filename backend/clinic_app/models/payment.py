@@ -22,9 +22,7 @@ class Invoice(models.Model):
 
     @property
     def total_paid(self):
-        return sum(
-            p.amount for p in self.payments.filter(status=Payment.Status.SUCCESS)
-        )
+        return sum(p.amount for p in self.payments.filter(status=Payment.Status.SUCCESS))
 
     @property
     def remaining(self):
@@ -41,13 +39,6 @@ class Invoice(models.Model):
 
 
 class Payment(models.Model):
-    """
-    Một lần thanh toán trong hóa đơn.
-    Mỗi Invoice có thể có nhiều Payment:
-      - Tiền khám (bước 2)
-      - Tiền dịch vụ xét nghiệm (bước 3)
-      - Tiền thuốc (bước 4)
-    """
     class Method(models.TextChoices):
         MOMO        = "momo",        "MoMo"
         VNPAY       = "vnpay",       "VNPay"

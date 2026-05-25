@@ -1,54 +1,21 @@
-"""
-clinic_app/permissions.py
-
-Hệ thống phân quyền dựa trên OAuth2 Scopes.
-
-Scopes được cấp khi user lấy token qua /o/token/:
-  - admin   → quản trị viên (toàn quyền)
-  - doctor  → bác sĩ (khám, ghi hồ sơ, kê đơn)
-  - staff   → nhân viên y tế (tiếp nhận, cấp thuốc, thu tiền, nhập kết quả)
-  - patient → bệnh nhân (đặt lịch, xem hồ sơ, thanh toán)
-  - read    → chỉ đọc (default fallback)
-
-Phân cấp quyền:
-  admin > (doctor | staff) > patient
-"""
-
 from rest_framework.permissions import BasePermission
 
 
-# ─────────────────────────────────────────────
-# Single-scope permissions
-# ─────────────────────────────────────────────
-
 class HasAdminScope(BasePermission):
-    """Yêu cầu scope 'admin'."""
     required_scopes = ["admin"]
 
-
 class HasDoctorScope(BasePermission):
-    """Yêu cầu scope 'doctor'."""
     required_scopes = ["doctor"]
 
-
 class HasStaffScope(BasePermission):
-    """Yêu cầu scope 'staff'. Nhân viên y tế: lễ tân, điều dưỡng, dược sĩ, thu ngân."""
     required_scopes = ["staff"]
 
-
 class HasPatientScope(BasePermission):
-    """Yêu cầu scope 'patient'."""
     required_scopes = ["patient"]
 
-
 class HasReadScope(BasePermission):
-    """Yêu cầu ít nhất scope 'read'."""
     required_scopes = ["read"]
 
-
-# ─────────────────────────────────────────────
-# Combined-scope permissions
-# ─────────────────────────────────────────────
 
 def _get_token_scopes(request) -> set:
     token = getattr(request, "auth", None)
@@ -58,10 +25,6 @@ def _get_token_scopes(request) -> set:
 
 
 class HasDoctorOrAdminScope(BasePermission):
-    """
-    scope 'doctor' HOẶC 'admin'.
-    Dùng cho: ghi hồ sơ bệnh án, kê đơn thuốc.
-    """
     message = "Yêu cầu scope 'doctor' hoặc 'admin'."
 
     def has_permission(self, request, view):
@@ -71,10 +34,6 @@ class HasDoctorOrAdminScope(BasePermission):
 
 
 class HasStaffOrAdminScope(BasePermission):
-    """
-    scope 'staff' HOẶC 'admin'.
-    Dùng cho: cấp phát thuốc, xác nhận thanh toán tiền mặt, nhập kho.
-    """
     message = "Yêu cầu scope 'staff' hoặc 'admin'."
 
     def has_permission(self, request, view):
@@ -84,10 +43,6 @@ class HasStaffOrAdminScope(BasePermission):
 
 
 class HasDoctorOrStaffScope(BasePermission):
-    """
-    scope 'doctor' HOẶC 'staff'.
-    Dùng cho: nhập kết quả xét nghiệm (doctor chỉ định, staff nhập kết quả).
-    """
     message = "Yêu cầu scope 'doctor' hoặc 'staff'."
 
     def has_permission(self, request, view):
@@ -97,10 +52,6 @@ class HasDoctorOrStaffScope(BasePermission):
 
 
 class HasStaffDoctorOrAdminScope(BasePermission):
-    """
-    scope 'staff' HOẶC 'doctor' HOẶC 'admin'.
-    Dùng cho: confirm appointment (staff lễ tân hoặc doctor hoặc admin đều được).
-    """
     message = "Yêu cầu scope 'staff', 'doctor' hoặc 'admin'."
 
     def has_permission(self, request, view):
@@ -110,10 +61,6 @@ class HasStaffDoctorOrAdminScope(BasePermission):
 
 
 class HasPatientOrAdminScope(BasePermission):
-    """
-    scope 'patient' HOẶC 'admin'.
-    Dùng cho: patient tự xem thông tin của mình, admin xem tất cả.
-    """
     message = "Yêu cầu scope 'patient' hoặc 'admin'."
 
     def has_permission(self, request, view):
@@ -121,10 +68,6 @@ class HasPatientOrAdminScope(BasePermission):
             return False
         return bool({"patient", "admin"} & _get_token_scopes(request))
 
-
-# ─────────────────────────────────────────────
-# Generic authenticated
-# ─────────────────────────────────────────────
 
 class IsAuthenticatedWithValidToken(BasePermission):
     """

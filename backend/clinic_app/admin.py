@@ -82,8 +82,6 @@ class ClinicAdminSite(admin.AdminSite):
         seven_days_ago  = today - timedelta(days=7)
         thirty_days_ago = today - timedelta(days=30)
 
-        # ── Tab 1: Báo cáo & Thống kê ────────────────────────────────────
-        # Doanh thu 7 ngày
         rev7d = {(today - timedelta(days=i)).strftime("%d/%m"): 0.0 for i in range(6, -1, -1)}
         for p in Payment.objects.filter(status="success", paid_at__gte=seven_days_ago).values("paid_at", "amount"):
             if p["paid_at"]:
@@ -91,7 +89,6 @@ class ClinicAdminSite(admin.AdminSite):
                 if lbl in rev7d:
                     rev7d[lbl] += float(p["amount"])
 
-        # Doanh thu 30 ngày
         rev30d = {(today - timedelta(days=i)).strftime("%d/%m"): 0.0 for i in range(29, -1, -1)}
         for p in Payment.objects.filter(status="success", paid_at__gte=thirty_days_ago).values("paid_at", "amount"):
             if p["paid_at"]:
@@ -99,24 +96,20 @@ class ClinicAdminSite(admin.AdminSite):
                 if lbl in rev30d:
                     rev30d[lbl] += float(p["amount"])
 
-        # Phương thức thanh toán
         method_qs = (Payment.objects.filter(status="success")
             .values("payment_method").annotate(total=Sum("amount")).order_by("-total"))
 
-        # Trạng thái lịch hẹn
         appt_map = {s: 0 for s in ["pending","confirmed","in_progress","completed","cancelled","no_show"]}
         for row in Appointment.objects.values("status").annotate(count=Count("id")):
             if row["status"] in appt_map:
                 appt_map[row["status"]] = row["count"]
 
-        # Giới tính bệnh nhân
         gender_map = {"male": 0, "female": 0, "other": 0}
         for row in Patient.objects.values("gender").annotate(total=Count("id")):
             key = row["gender"] or "other"
             if key in gender_map:
                 gender_map[key] = row["total"]
 
-        # ── Tab 2: Lịch hẹn ──────────────────────────────────────────────
         upcoming_appts = (Appointment.objects
             .filter(appointment_date__gte=today, status__in=["pending","confirmed"])
             .select_related("patient__user", "doctor__user")

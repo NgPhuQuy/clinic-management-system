@@ -41,10 +41,11 @@ class PrescriptionSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at")
 
     def get_doctor_name(self, obj):
-        return obj.doctor.user.get_full_name() if obj.doctor else None
+        doctor = obj.medical_record.doctor
+        return doctor.user.get_full_name() if doctor else None
 
     def get_patient_name(self, obj):
-        return obj.patient.user.get_full_name()
+        return obj.medical_record.patient.user.get_full_name()
 
     def get_total_amount(self, obj):
         return sum(d.get_subtotal() for d in obj.details.all())
