@@ -81,6 +81,7 @@ class LoginView(APIView):
                 "password":      password,
                 "client_id":     settings.CLIENT_ID,
                 "client_secret": settings.CLIENT_SECRET,
+                "scope":         user.role,
             }
         )
         
