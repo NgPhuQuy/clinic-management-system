@@ -29,6 +29,5 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class PaymentInitSerializer(serializers.Serializer):
-    """Dùng để khởi tạo thanh toán → trả về payment_url."""
     invoice_id     = serializers.IntegerField()
     payment_method = serializers.ChoiceField(choices=Payment.Method.choices)

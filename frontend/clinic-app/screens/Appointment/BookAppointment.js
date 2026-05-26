@@ -46,7 +46,7 @@ const BookAppointment = () => {
                 const appt = res.data;
 
                 const invoiceId = appt.invoice?.id;
-                const amount = appt.invoice?.total ?? appt.invoice?.remaining ?? 0;
+                const amount = appt.invoice?.total_amount ?? appt.invoice?.remaining ?? 0;
                 const appointmentId = appt.id;
                 const appointmentDate = appt.appointment_date;
 
