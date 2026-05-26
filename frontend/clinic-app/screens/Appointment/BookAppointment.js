@@ -45,11 +45,13 @@ const BookAppointment = () => {
             if (res.status === 201) {
                 const appt = res.data;
 
-                const amount = appt.payment?.amount ?? 0;
+                const invoiceId = appt.invoice?.id;
+                const amount = appt.invoice?.total ?? appt.invoice?.remaining ?? 0;
                 const appointmentId = appt.id;
                 const appointmentDate = appt.appointment_date;
 
                 nav.navigate("payment-screen", {
+                    invoiceId,
                     appointmentId,
                     doctorName,
                     appointmentDate,

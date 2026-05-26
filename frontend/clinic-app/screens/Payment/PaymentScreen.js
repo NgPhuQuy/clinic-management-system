@@ -43,7 +43,7 @@ const PaymentScreen = () => {
     const user = useContext(MyUserContext);
 
     // fromBooking = true khi đến từ BookAppointment, false khi đến từ AppointmentDetail
-    const { appointmentId, doctorName, appointmentDate, amount, fromBooking = false } = route.params;
+    const { invoiceId, appointmentId, doctorName, appointmentDate, amount, fromBooking = false } = route.params;
 
     const [selectedMethod, setSelectedMethod] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -57,7 +57,7 @@ const PaymentScreen = () => {
         try {
             setLoading(true);
             const res = await authApis(user.token).post(endpoints["payment-init"], {
-                appointment_id: appointmentId,
+                invoice_id: invoiceId ?? appointmentId, // FIX: backend nhận invoice_id
                 payment_method: selectedMethod,
             });
 

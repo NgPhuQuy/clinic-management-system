@@ -1,14 +1,3 @@
-"""
-clinic_app/views/auth.py
-
-Endpoints:
-  POST /auth/login/             — Đăng nhập (AllowAny)
-  POST /auth/register/          — Đăng ký   (AllowAny)
-  GET  /auth/me/                — Thông tin user hiện tại
-  PUT  /auth/change-password/   — Đổi mật khẩu
-  POST /auth/firebase-token/    — Lấy Firebase Custom Token để dùng Chat
-"""
-
 import logging
 
 from django.conf import settings
@@ -27,24 +16,15 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-# ─────────────────────────────────────────────
-# Firebase — lazy init
-# ─────────────────────────────────────────────
-
 def _get_firebase_app():
     import firebase_admin
     from firebase_admin import credentials
-
     if not firebase_admin._apps:
         cred_path = str(settings.FIREBASE_CREDENTIALS_PATH)
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
     return firebase_admin.get_app()
 
-
-# ─────────────────────────────────────────────
-# Login
-# ─────────────────────────────────────────────
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -72,19 +52,19 @@ class LoginView(APIView):
                 {"detail": "Tài khoản đã bị vô hiệu hóa."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         token_response = requests.post(
             request.build_absolute_uri("/o/token/"),
-            json={
+            data={
                 "grant_type":    "password",
                 "username":      user.username,
                 "password":      password,
                 "client_id":     settings.CLIENT_ID,
                 "client_secret": settings.CLIENT_SECRET,
                 "scope":         user.role,
-            }
+            },
         )
-        
+
         if token_response.status_code != 200:
             return Response(
                 {"detail": "Không thể lấy token. Vui lòng thử lại."},
@@ -96,17 +76,7 @@ class LoginView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-# ─────────────────────────────────────────────
-# Register
-# ─────────────────────────────────────────────
-
 class RegisterView(generics.CreateAPIView):
-    """
-    POST /auth/register/
-    Đăng ký tài khoản mới.
-    Role hợp lệ: patient.
-    (staff và admin chỉ được tạo bởi admin qua Django Admin hoặc API riêng)
-    """
     serializer_class   = RegisterSerializer
     permission_classes = [AllowAny]
 
@@ -115,34 +85,28 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Chặn tự đăng ký role staff/admin
-        if user.role in ("staff", "admin"):
+        if user.role in ("staff", "admin", "doctor"):
             user.delete()
             return Response(
                 {"detail": "Không thể tự đăng ký role này."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        Patient.objects.create(user=user, full_name=user.username)
+        
+        user.first_name = user.username
+        user.save(update_fields=["first_name"])
+        Patient.objects.create(user=user)
 
         return Response(
             {
-                "user": UserSerializer(user).data,
-                "message": "Đăng ký thành công. Dùng POST /o/token/ để lấy access_token.",
+                "user":    UserSerializer(user).data,
+                "message": "Đăng ký thành công.",
             },
             status=status.HTTP_201_CREATED,
         )
 
 
-# ─────────────────────────────────────────────
-# Me
-# ─────────────────────────────────────────────
-
 class MeView(generics.RetrieveUpdateAPIView):
-    """
-    GET   /auth/me/  — Lấy thông tin user hiện tại
-    PATCH /auth/me/  — Cập nhật avatar
-    """
     serializer_class   = UserSerializer
     permission_classes = [IsAuthenticatedWithValidToken]
     http_method_names  = ["get", "patch", "head", "options"]
@@ -151,12 +115,7 @@ class MeView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-# ─────────────────────────────────────────────
-# Change Password
-# ─────────────────────────────────────────────
-
 class ChangePasswordView(generics.UpdateAPIView):
-    """PUT /auth/change-password/"""
     serializer_class   = ChangePasswordSerializer
     permission_classes = [IsAuthenticatedWithValidToken]
     http_method_names  = ["put", "head", "options"]
@@ -171,16 +130,7 @@ class ChangePasswordView(generics.UpdateAPIView):
         return Response({"detail": "Đổi mật khẩu thành công."})
 
 
-# ─────────────────────────────────────────────
-# Firebase Custom Token
-# ─────────────────────────────────────────────
-
 class FirebaseTokenView(APIView):
-    """
-    POST /auth/firebase-token/
-    Cấp Firebase Custom Token để client kết nối Firebase Realtime Chat.
-    Token có hiệu lực 1 giờ (do Firebase quy định).
-    """
     permission_classes = [IsAuthenticatedWithValidToken]
 
     def post(self, request):
@@ -194,16 +144,12 @@ class FirebaseTokenView(APIView):
                 "clinic_uid": request.user.pk,
                 "email":      request.user.email,
             }
-
             custom_token: bytes = firebase_auth.create_custom_token(uid, additional_claims)
-
             return Response(
                 {"firebase_token": custom_token.decode("utf-8")},
                 status=status.HTTP_200_OK,
             )
-
         except ImportError:
-            logger.error("firebase-admin chưa được cài. Chạy: pip install firebase-admin")
             return Response(
                 {"detail": "Firebase chưa được cấu hình trên server."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
