@@ -70,10 +70,6 @@ class HasPatientOrAdminScope(BasePermission):
 
 
 class IsAuthenticatedWithValidToken(BasePermission):
-    """
-    Có token hợp lệ là đủ (bất kỳ scope nào).
-    Thay thế IsAuthenticated + OAuth2Authentication.
-    """
     message = "Yêu cầu đăng nhập với OAuth2 token hợp lệ."
 
     def has_permission(self, request, view):

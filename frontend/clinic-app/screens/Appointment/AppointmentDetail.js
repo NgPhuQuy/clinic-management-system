@@ -95,9 +95,11 @@ const AppointmentDetail = () => {
 
         nav.navigate("payment-screen", {
             invoiceId,
+            invoiceId,
             appointmentId: appt.id,
             doctorName: appt.doctor_info?.full_name || appt.doctor_name || `#${appt.doctor}`,
             appointmentDate: appt.appointment_date,
+            amount,
             amount,
         });
     };
@@ -125,13 +127,11 @@ const AppointmentDetail = () => {
 
     return (
         <ScrollView style={Styles.container}>
-            {/* Banner trạng thái */}
             <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[appt.status] || "#9e9e9e" }]}>
                 <Text style={styles.statusText}>{STATUS_LABELS[appt.status] || appt.status}</Text>
             </View>
 
             <View style={Styles.padding}>
-                {/* Thông tin lịch hẹn */}
                 <View style={Styles.card}>
                     <Text style={Styles.sectionHeader}>Thông tin lịch hẹn</Text>
                     <Text style={Styles.text}>👨‍⚕️ Bác sĩ: BS. {appt.doctor_info?.full_name || appt.doctor_name || appt.doctor}</Text>
@@ -174,7 +174,6 @@ const AppointmentDetail = () => {
                     </View>
                 )}
 
-                {/* ─── Thanh toán ─────────────────────────────────────────── */}
                 <View style={Styles.card}>
                     <Text style={Styles.sectionHeader}>Thanh toán</Text>
 

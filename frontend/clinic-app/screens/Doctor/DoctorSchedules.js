@@ -1,7 +1,3 @@
-/**
- * screens/Doctor/DoctorSchedules.js
- * Bác sĩ quản lý lịch làm việc: xem, tạo, cập nhật, xóa lịch
- */
 import {
     View, FlatList, StyleSheet, TouchableOpacity,
     ActivityIndicator, Alert, Modal, ScrollView,

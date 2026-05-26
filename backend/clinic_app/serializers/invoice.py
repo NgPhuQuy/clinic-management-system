@@ -3,8 +3,6 @@ from ..models import Invoice, Payment
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    # ADDED: patient_name để StaffPayments.js hiển thị được tên bệnh nhân
-    # obj.patient là @property trên Payment → traverse invoice → appointment → patient
     patient_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -12,7 +10,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = (
             "id", "invoice", "amount", "payment_method", "status",
             "transaction_id", "note", "paid_at", "created_at",
-            "patient_name",                                  # ADDED
+            "patient_name",
         )
         read_only_fields = ("id", "transaction_id", "paid_at", "created_at", "patient_name")
 

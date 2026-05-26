@@ -60,6 +60,11 @@ const PaymentScreen = () => {
             return;
         }
 
+        if (!invoiceId) {
+            Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
+            return;
+        }
+
         try {
             setLoading(true);
             const res = await authApis(user.token).post(endpoints["payment-init"], {
