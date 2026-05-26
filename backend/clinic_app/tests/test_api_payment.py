@@ -3,15 +3,6 @@ test_api_payment.py — Kiểm thử API Thanh toán (Payment).
 
 Chạy: python manage.py test clinic_app.tests.test_api_payment
 
-BUG ĐÃ SỬA:
-  1. make_user(role="staff") → role không hợp lệ sau migration 0003.
-     Fix: xóa tất cả staff user, dùng admin thay thế.
-  2. test_staff_can_confirm_payment() → staff không còn → admin confirm.
-  3. test_staff_cannot_init_for_patient() → đổi sang test_doctor_cannot_init_payment()
-     (doctor cũng không phải patient, không nên init payment thay họ).
-  4. PaymentViewSet.get_queryset() cũ dùng user.role → đã sửa dùng scope.
-     Test phản ánh đúng behavior mới (patient scope → chỉ thấy của mình).
-
 Luồng được test:
   ✓ Bệnh nhân khởi tạo thanh toán cho lịch hẹn của mình → 200/201
   ✓ Chưa đăng nhập → 401
@@ -19,14 +10,14 @@ Luồng được test:
   ✓ Bệnh nhân xem lịch sử thanh toán của mình → 200
   ✓ Admin xem tất cả thanh toán → 200
   ✓ Chưa đăng nhập → 401
-  ✓ Admin xác nhận thanh toán → 200 (BUG FIX: trước là staff)
+  ✓ Admin xác nhận thanh toán → 200
   ✓ Bệnh nhân không thể xác nhận → 403
 """
 
 from datetime import timedelta
 from django.utils import timezone
 
-from clinic_app.models import Appointment, Doctor, Patient, DoctorSchedule, Payment
+from clinic_app.models import Appointment, Doctor, Patient, DoctorSchedule, Payment, Invoice
 
 from .base_test import BaseAPITestCase, make_user
 
@@ -53,6 +44,11 @@ def _make_appointment(patient, doctor, schedule, status="completed"):
     )
 
 
+def _make_invoice(appointment):
+    invoice, _ = Invoice.objects.get_or_create(appointment=appointment)
+    return invoice
+
+
 class PaymentInitTests(BaseAPITestCase):
     """POST /payments/init/ — Khởi tạo thanh toán (chỉ Patient scope)."""
 
@@ -62,10 +58,11 @@ class PaymentInitTests(BaseAPITestCase):
         self.patient = Patient.objects.get(user=self.patient_user)
         self.schedule = _make_schedule(self.doctor)
         self.appointment = _make_appointment(self.patient, self.doctor, self.schedule)
+        self.invoice = _make_invoice(self.appointment)
 
     def _payload(self):
         return {
-            "appointment_id": self.appointment.id,
+            "invoice_id": self.invoice.id,
             "payment_method": "cash",
         }
 
@@ -81,10 +78,7 @@ class PaymentInitTests(BaseAPITestCase):
         self.assertEqual(res.status_code, 401)
 
     def test_doctor_cannot_init_payment(self):
-        """
-        BUG FIX: trước là test_staff_cannot_init_for_patient() với role='staff'.
-        Doctor scope cũng không có quyền gọi init endpoint (scope 'patient' required).
-        """
+        """Doctor scope không có quyền gọi init endpoint (scope 'patient' required)."""
         self.auth(self.doctor_user)
         res = self.client.post(f"{PAYMENTS_URL}init/", self._payload(), format="json")
         self.assertEqual(res.status_code, 403)
@@ -105,23 +99,22 @@ class PaymentListTests(BaseAPITestCase):
         self.patient = Patient.objects.get(user=self.patient_user)
         self.schedule = _make_schedule(self.doctor)
         self.appointment = _make_appointment(self.patient, self.doctor, self.schedule)
+        self.invoice = _make_invoice(self.appointment)
 
-        Payment.objects.create(
-            appointment=self.appointment,
-            patient=self.patient,
+        self.payment = Payment.objects.create(
+            invoice=self.invoice,
             amount=250_000,
             payment_method="cash",
-            status="pending",
+            status=Payment.Status.PENDING,
         )
 
     def test_patient_can_list_own_payments(self):
         self.auth(self.patient_user)
         res = self.client.get(PAYMENTS_URL)
         self.assertEqual(res.status_code, 200)
-        # Patient scope → chỉ thấy thanh toán của mình
         results = res.data.get("results", res.data)
         for payment in results:
-            self.assertEqual(payment["patient"], self.patient.id)
+            self.assertEqual(payment["invoice"], self.invoice.id)
 
     def test_admin_can_list_all_payments(self):
         self.auth(self.admin)
@@ -140,15 +133,7 @@ class PaymentListTests(BaseAPITestCase):
 
 
 class PaymentConfirmTests(BaseAPITestCase):
-    """
-    POST /payments/{id}/confirm/ — Xác nhận thanh toán.
-
-    BUG FIX:
-      - Trước: staff_user (role="staff" không hợp lệ) xác nhận thanh toán.
-      - Nay: Admin xác nhận thanh toán (staff đã bị loại).
-      - PaymentViewSet.confirm action trước không có permission → bất kỳ ai cũng confirm được.
-      - Nay: chỉ HasAdminScope mới confirm được.
-    """
+    """POST /payments/{id}/confirm/ — Xác nhận thanh toán."""
 
     def setUp(self):
         super().setUp()
@@ -156,16 +141,16 @@ class PaymentConfirmTests(BaseAPITestCase):
         self.patient = Patient.objects.get(user=self.patient_user)
         self.schedule = _make_schedule(self.doctor)
         self.appointment = _make_appointment(self.patient, self.doctor, self.schedule)
+        self.invoice = _make_invoice(self.appointment)
+
         self.payment = Payment.objects.create(
-            appointment=self.appointment,
-            patient=self.patient,
+            invoice=self.invoice,
             amount=250_000,
             payment_method="cash",
-            status="pending",
+            status=Payment.Status.PENDING,
         )
 
     def test_admin_can_confirm_payment(self):
-        """BUG FIX: trước là test_staff_can_confirm_payment với role='staff'."""
         self.auth(self.admin)
         res = self.client.post(
             f"{PAYMENTS_URL}{self.payment.id}/confirm/",

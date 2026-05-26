@@ -1,18 +1,17 @@
 from .test_auth import (
     RegisterTests,
-    LoginTests,
-    TokenRefreshTests,
-    TokenVerifyTests,
+    OAuth2TokenTests,
+    TokenIntrospectTests,
     MeViewTests,
     ChangePasswordTests,
 )
 from .test_permissions import (
     AnonymousAccessTests,
     PublicEndpointTests,
-    AdminAccessTests,
-    PatientAccessTests,
-    DoctorAccessTests,
-    StaffAccessTests,
+    AdminScopeTests,
+    PatientScopeTests,
+    DoctorScopeTests,
+    ScopeIsolationTests,
 )
 from .test_api_appointment import (
     AppointmentCreateTests,
@@ -30,23 +29,23 @@ from .test_api_medicine import (
 from .test_api_payment import (
     PaymentInitTests,
     PaymentListTests,
+    PaymentConfirmTests,
 )
 
 __all__ = [
     # Auth
     "RegisterTests",
-    "LoginTests",
-    "TokenRefreshTests",
-    "TokenVerifyTests",
+    "OAuth2TokenTests",
+    "TokenIntrospectTests",
     "MeViewTests",
     "ChangePasswordTests",
     # Permissions
     "AnonymousAccessTests",
     "PublicEndpointTests",
-    "AdminAccessTests",
-    "PatientAccessTests",
-    "DoctorAccessTests",
-    "StaffAccessTests",
+    "AdminScopeTests",
+    "PatientScopeTests",
+    "DoctorScopeTests",
+    "ScopeIsolationTests",
     # Appointment
     "AppointmentCreateTests",
     "AppointmentListTests",
@@ -61,4 +60,5 @@ __all__ = [
     # Payment
     "PaymentInitTests",
     "PaymentListTests",
+    "PaymentConfirmTests",
 ]
