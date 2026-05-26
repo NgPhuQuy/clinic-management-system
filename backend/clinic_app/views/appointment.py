@@ -27,6 +27,7 @@ from ..permissions import (
     HasStaffDoctorOrAdminScope,
     HasStaffOrAdminScope,
 )
+from ..utils import get_token_scopes
 
 
 class AppointmentViewSet(viewsets.ModelViewSet):
@@ -71,8 +72,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user   = self.request.user
         qs     = super().get_queryset()
-        token  = getattr(self.request, "auth", None)
-        scopes = set(token.scope.split()) if token else set()
+        scopes = get_token_scopes(self.request)
 
         if "admin"  in scopes: return qs
         if "staff"  in scopes: return qs

@@ -28,7 +28,20 @@ class InvoiceSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at", "updated_at")
 
 
+class InvoiceSummarySerializer(serializers.ModelSerializer):
+    """Dùng inline trong AppointmentSerializer."""
+    total_amount = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    total_paid   = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    remaining    = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+
+    class Meta:
+        model  = Invoice
+        fields = ("id", "total_amount", "total_paid", "remaining")
+        read_only_fields = fields
+
+
 class PaymentInitSerializer(serializers.Serializer):
-    """Dùng để khởi tạo thanh toán → trả về payment_url."""
     invoice_id     = serializers.IntegerField()
+    amount         = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
     payment_method = serializers.ChoiceField(choices=Payment.Method.choices)
+    note           = serializers.CharField(required=False, allow_blank=True)

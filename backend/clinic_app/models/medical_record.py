@@ -54,6 +54,7 @@ class TestResult(models.Model):
         db_table            = "test_results"
         verbose_name        = "Kết quả cận lâm sàng"
         verbose_name_plural = "Kết quả cận lâm sàng"
+        ordering = ["-test_date"]
 
     def __str__(self):
         return f"[{self.get_test_type_display()}] {self.test_name} - {self.test_date}"

@@ -1,7 +1,3 @@
-/**
- * screens/Doctor/DoctorDashboard.js
- * Dashboard chính cho bác sĩ – gọi backend, fallback mock nếu lỗi
- */
 import {
     View, ScrollView, TouchableOpacity,
     ActivityIndicator, RefreshControl, StatusBar,

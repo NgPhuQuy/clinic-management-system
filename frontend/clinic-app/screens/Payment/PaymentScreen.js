@@ -10,7 +10,7 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, paymentScreenStyles as PS } from "../../styles/Styles";
 
-const METHODS = [
+const ALL_METHODS = [
     {
         key: "momo",
         label: "Ví MoMo",
@@ -43,7 +43,11 @@ const PaymentScreen = () => {
     const user = useContext(MyUserContext);
 
     // fromBooking = true khi đến từ BookAppointment, false khi đến từ AppointmentDetail
-    const { appointmentId, doctorName, appointmentDate, amount, fromBooking = false } = route.params;
+    const { invoiceId, appointmentId, doctorName, appointmentDate, amount, fromBooking = false } = route.params;
+
+    const METHODS = fromBooking
+        ? ALL_METHODS.filter((m) => m.key !== "cash")
+        : ALL_METHODS;
 
     const [selectedMethod, setSelectedMethod] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -54,10 +58,21 @@ const PaymentScreen = () => {
             return;
         }
 
+        // invoiceId bắt buộc — appointmentId chỉ là tham chiếu hiển thị
+        if (!invoiceId) {
+            Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
+            return;
+        }
+
+        if (!invoiceId) {
+            Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
+            return;
+        }
+
         try {
             setLoading(true);
             const res = await authApis(user.token).post(endpoints["payment-init"], {
-                appointment_id: appointmentId,
+                invoice_id: invoiceId,
                 payment_method: selectedMethod,
             });
 
@@ -86,7 +101,7 @@ const PaymentScreen = () => {
                 paymentUrl: payment_url,
                 paymentId: payment_id,
                 method: selectedMethod,
-                fromBooking,  // ✅ chuyển tiếp để PaymentResult biết luồng
+                fromBooking, 
             });
         } catch (e) {
             const msg =
@@ -102,7 +117,6 @@ const PaymentScreen = () => {
     return (
         <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
 
-            {/* Thông tin lịch hẹn */}
             <View style={[Styles.card, { margin: 16, marginBottom: 8 }]}>
                 <Text style={Styles.sectionHeader}>Thông tin thanh toán</Text>
                 <View style={PS.infoRow}>
@@ -127,6 +141,15 @@ const PaymentScreen = () => {
             </View>
 
             <Text style={PS.sectionLabel}>CHỌN PHƯƠNG THỨC THANH TOÁN</Text>
+
+            {fromBooking && (
+                <View style={styles.onlineNote}>
+                    <MaterialCommunityIcons name="shield-check" size={14} color="#1565c0" />
+                    <Text style={styles.onlineNoteText}>
+                        Đặt lịch trực tuyến yêu cầu thanh toán qua ví điện tử hoặc chuyển khoản
+                    </Text>
+                </View>
+            )}
 
             {METHODS.map((m) => {
                 const selected = selectedMethod === m.key;
@@ -164,9 +187,7 @@ const PaymentScreen = () => {
                     {loading
                         ? <ActivityIndicator color="#fff" />
                         : <Text style={Styles.btnPrimaryText}>
-                            {selectedMethod === "cash"
-                                ? "Xác nhận thanh toán tiền mặt"
-                                : "Tiến hành thanh toán →"}
+                            {selectedMethod === "cash" ? "Xác nhận thanh toán tiền mặt" : "Tiến hành thanh toán →"}
                         </Text>
                     }
                 </TouchableOpacity>
@@ -183,4 +204,81 @@ const PaymentScreen = () => {
         </ScrollView>
     );
 };
+
+const styles = StyleSheet.create({
+    sectionLabel: {
+        fontSize: 11,
+        fontWeight: "700",
+        color: COLORS.textLight,
+        letterSpacing: 0.8,
+        marginLeft: 20,
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    infoRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 5,
+    },
+    infoLabel: { fontSize: 12, color: COLORS.textMuted },
+    infoValue: {
+        fontSize: 13,
+        color: COLORS.text,
+        fontWeight: "500",
+        flex: 1,
+        textAlign: "right",
+    },
+    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 10 },
+    amountText: { fontSize: 20, fontWeight: "800", color: COLORS.primary },
+    methodCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#fff",
+        marginHorizontal: 16,
+        marginBottom: 10,
+        borderRadius: 14,
+        padding: 14,
+        borderWidth: 1.5,
+        borderColor: COLORS.border,
+        elevation: 1,
+    },
+    methodCardSelected: {
+        borderColor: COLORS.primary,
+        backgroundColor: COLORS.primaryPale,
+        elevation: 3,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+    },
+    methodIcon: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    methodLabel: { fontSize: 14, fontWeight: "700", color: COLORS.text },
+    methodSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+    radio: {
+        width: 20, height: 20, borderRadius: 10,
+        borderWidth: 2, borderColor: COLORS.border,
+        alignItems: "center", justifyContent: "center",
+    },
+    radioSelected: { borderColor: COLORS.primary },
+    radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
+    onlineNote: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#e3f2fd",
+        marginHorizontal: 16,
+        marginBottom: 10,
+        borderRadius: 8,
+        padding: 10,
+        gap: 6,
+    },
+    onlineNoteText: { fontSize: 12, color: "#1565c0", flex: 1 },
+});
+
 export default PaymentScreen;

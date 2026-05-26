@@ -1,7 +1,5 @@
-import {
-    View, ScrollView, TouchableOpacity, StyleSheet,
-    ActivityIndicator, TextInput, StatusBar,
-} from "react-native";
+import {View, ScrollView, TouchableOpacity, StyleSheet,
+     ActivityIndicator, TextInput, StatusBar} from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
@@ -11,7 +9,6 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, homeStyles as S } from "../../styles/Styles";
 
-// ─── Danh sách tính năng nhanh ────────────────────────────────────────────────
 const QUICK_ACTIONS = [
     { icon: "calendar-check-outline", label: "Đặt khám", screen: "doctor-list", bg: "#e3f2fd", color: "#1565c0" },
     { icon: "clipboard-text-clock-outline", label: "Lịch sử đặt khám", screen: "my-appointments", bg: "#f3e5f5", color: "#7b1fa2" },
@@ -48,7 +45,6 @@ const STATUS_LABELS = {
     no_show:   "Không đến",
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
 const Home = () => {
     const nav = useNavigation();
     const user = useContext(MyUserContext);
@@ -62,7 +58,6 @@ const Home = () => {
     useEffect(() => {
         if (!user?.token) return;
 
-        // Chuyên khoa
         authApis(user.token).get(endpoints["specialties"])
             .then(r => setSpecialties(r.data.results || r.data))
             .catch(console.error)
@@ -110,21 +105,19 @@ const Home = () => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Greeting */}
-                    <Text style={S.greeting}>Xin chào,</Text>
-                    <Text style={S.userName}>
-                        {user?.first_name || user?.username} 👋
+                    <Text style={styles.greeting}>Xin chào,</Text>
+                    <Text style={styles.userName}>
+                        {user?.first_name }
                     </Text>
-                    <Text style={S.tagLine}>Chúc bạn một ngày sức khoẻ!</Text>
+                    <Text style={styles.tagLine}>Chúc bạn một ngày tốt lành!</Text>
                 </View>
 
-                {/* ── SEARCH BAR nổi ── */}
-                <View style={S.searchWrap}>
-                    <View style={S.searchBar}>
+                <View style={styles.searchWrap}>
+                    <View style={styles.searchBar}>
                         <MaterialCommunityIcons name="magnify" size={20} color={COLORS.textLight} />
                         <TextInput
-                            style={S.searchInput}
-                            placeholder="Tìm bác sĩ, chuyên khoa, dịch vụ..."
+                            style={styles.searchInput}
+                            placeholder="Chức năng"
                             placeholderTextColor={COLORS.textLight}
                             value={search}
                             onChangeText={setSearch}

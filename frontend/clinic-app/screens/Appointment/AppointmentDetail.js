@@ -82,33 +82,56 @@ const AppointmentDetail = () => {
     };
 
     const goToPayment = () => {
-        const total = calcTotal(appt);
+        const invoice = appt.invoice;
+        const invoiceId = invoice?.id;
+
+        if (!invoiceId) {
+            Alert.alert("Lỗi", "Không tìm thấy hóa đơn cho lịch hẹn này. Vui lòng thử lại sau.");
+            return;
+        }
+
+        // Ưu tiên dùng invoice.remaining (số tiền còn lại cần thanh toán)
+        const amount = Number(invoice?.remaining ?? invoice?.total_amount ?? calcTotal(appt));
+
         nav.navigate("payment-screen", {
+            invoiceId,
+            invoiceId,
             appointmentId: appt.id,
             doctorName: appt.doctor_info?.full_name || appt.doctor_name || `#${appt.doctor}`,
             appointmentDate: appt.appointment_date,
-            amount: appt.payment?.amount || total,
+            amount,
+            amount,
         });
     };
 
     if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
     if (!appt) return <View style={[Styles.center, { flex: 1 }]}><Text>Không tìm thấy lịch hẹn</Text></View>;
 
-    const payment = appt.payment;
-    const total = calcTotal(appt);
-    const canPay = (appt.status === "pending" || appt.status === "confirmed" || appt.status === "completed")
-        && (!payment || payment.status === "pending" || payment.status === "failed");
-    const alreadyPaid = payment?.status === "success";
+    // API trả về appt.invoice (InvoiceSerializer), không phải appt.payment
+    // Lấy payment mới nhất (payments sắp xếp -created_at)
+    const invoice    = appt.invoice;
+    const payments   = invoice?.payments ?? [];
+    // Payment hiển thị: ưu tiên success → pending → mới nhất
+    const payment    = payments.find(p => p.status === "success")
+                    ?? payments.find(p => p.status === "pending")
+                    ?? payments[0]
+                    ?? null;
+    const total      = calcTotal(appt);
+    const remaining  = Number(invoice?.remaining ?? total);
+    // Có thể thanh toán khi: lịch chưa hủy + còn tiền cần trả + không có payment đang pending
+    const hasPendingPayment = payments.some(p => p.status === "pending");
+    const canPay     = ["pending", "confirmed", "completed", "in_progress"].includes(appt.status)
+        && remaining > 0
+        && !hasPendingPayment;
+    const alreadyPaid = remaining <= 0 || payment?.status === "success";
 
     return (
         <ScrollView style={Styles.container}>
-            {/* Banner trạng thái */}
-            <View style={[S.statusBanner, { backgroundColor: STATUS_COLORS[appt.status] || "#9e9e9e" }]}>
-                <Text style={S.statusText}>{STATUS_LABELS[appt.status] || appt.status}</Text>
+            <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[appt.status] || "#9e9e9e" }]}>
+                <Text style={styles.statusText}>{STATUS_LABELS[appt.status] || appt.status}</Text>
             </View>
 
             <View style={Styles.padding}>
-                {/* Thông tin lịch hẹn */}
                 <View style={Styles.card}>
                     <Text style={Styles.sectionHeader}>Thông tin lịch hẹn</Text>
                     <Text style={Styles.text}>👨‍⚕️ Bác sĩ: BS. {appt.doctor_info?.full_name || appt.doctor_name || appt.doctor}</Text>
@@ -151,7 +174,6 @@ const AppointmentDetail = () => {
                     </View>
                 )}
 
-                {/* ─── Thanh toán ─────────────────────────────────────────── */}
                 <View style={Styles.card}>
                     <Text style={Styles.sectionHeader}>Thanh toán</Text>
 
@@ -214,6 +236,18 @@ const AppointmentDetail = () => {
                     )}
                 </View>
 
+                {/* Vào phòng khám trực tuyến */}
+                {appt.consultation_id && ["confirmed", "in_progress"].includes(appt.status) && (
+                    <TouchableOpacity
+                        style={[styles.consultBtn]}
+                        onPress={() => nav.navigate("consultation-room", { consultationId: appt.consultation_id })}
+                        activeOpacity={0.85}
+                    >
+                        <MaterialCommunityIcons name="video" size={20} color="#fff" />
+                        <Text style={styles.consultBtnText}>Vào phòng khám trực tuyến</Text>
+                    </TouchableOpacity>
+                )}
+
                 {/* Hồ sơ bệnh án */}
                 {appt.medical_record_id && (
                     <Button
@@ -245,4 +279,69 @@ const AppointmentDetail = () => {
         </ScrollView>
     );
 };
+
+const styles = StyleSheet.create({
+    statusBanner: {
+        padding: 16,
+        alignItems: "center",
+    },
+    statusText: {
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: 16,
+    },
+    payBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: COLORS.primary,
+        borderRadius: 12,
+        paddingVertical: 13,
+        marginTop: 14,
+        gap: 8,
+        elevation: 3,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+    },
+    payBtnText: {
+        color: "#fff",
+        fontWeight: "800",
+        fontSize: 15,
+    },
+    paidTag: {
+        backgroundColor: "#e8f5e9",
+        borderRadius: 8,
+        paddingVertical: 8,
+        alignItems: "center",
+        marginTop: 12,
+    },
+    paidTagText: {
+        color: COLORS.green,
+        fontWeight: "700",
+        fontSize: 13,
+    },
+    consultBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#2e7d32",
+        borderRadius: 12,
+        paddingVertical: 13,
+        marginBottom: 12,
+        gap: 8,
+        elevation: 3,
+        shadowColor: "#2e7d32",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+    },
+    consultBtnText: {
+        color: "#fff",
+        fontWeight: "800",
+        fontSize: 15,
+    },
+});
+
 export default AppointmentDetail;

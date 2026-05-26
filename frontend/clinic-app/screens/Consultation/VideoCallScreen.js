@@ -1,0 +1,164 @@
+import { View, StyleSheet, Alert, StatusBar } from "react-native";
+import { Text } from "react-native-paper";
+import { useRef, useContext } from "react";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { WebView } from "react-native-webview";
+import { authApis, endpoints } from "../../configs/Apis";
+import { MyUserContext } from "../../contexts/MyContext";
+
+const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>Video Call</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;background:#111827;font-family:sans-serif;overflow:hidden}
+    #app{display:flex;flex-direction:column;height:100%}
+    #info{background:#1565c0;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:600}
+    #remote-wrap{flex:1;position:relative;background:#1e293b;display:flex;align-items:center;justify-content:center}
+    #remote-player{width:100%;height:100%}
+    #wait-msg{color:#94a3b8;font-size:14px;position:absolute}
+    #local-wrap{position:absolute;bottom:96px;right:12px;width:108px;height:148px;border-radius:14px;overflow:hidden;border:2.5px solid #fff;z-index:10;background:#0f172a}
+    #controls{display:flex;justify-content:center;align-items:center;gap:20px;padding:14px 20px 22px;background:#1e293b}
+    .btn{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}
+    #btn-end{background:#dc2626}
+    #btn-mic,#btn-cam{background:#374151}
+    .btn.muted{background:#7f1d1d}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="info">Đang kết nối phòng khám...</div>
+  <div id="remote-wrap">
+    <div id="remote-player"></div>
+    <span id="wait-msg">Đang chờ kết nối...</span>
+    <div id="local-wrap" id="local-player"></div>
+  </div>
+  <div id="controls">
+    <button class="btn" id="btn-mic">🎤</button>
+    <button class="btn" id="btn-end">📵</button>
+    <button class="btn" id="btn-cam">📷</button>
+  </div>
+</div>
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+<script>
+const APP_ID="${appId}", TOKEN="${token}", CHANNEL="${channel}", UID=${uid};
+let client,audioTrack,videoTrack,micMuted=false,camMuted=false;
+const $=id=>document.getElementById(id);
+const info=msg=>$('info').textContent=msg;
+
+async function init(){
+  if(!APP_ID||APP_ID==='undefined'){info('Agora chưa được cấu hình');return;}
+  try{
+    client=AgoraRTC.createClient({mode:'rtc',codec:'vp8'});
+    client.on('user-published',async(user,type)=>{
+      await client.subscribe(user,type);
+      if(type==='video'){$('wait-msg').style.display='none';user.videoTrack.play('remote-player');}
+      if(type==='audio') user.audioTrack.play();
+    });
+    client.on('user-left',()=>{
+      $('remote-player').innerHTML='';
+      $('wait-msg').style.display='';
+      $('wait-msg').textContent='Người kia đã rời cuộc gọi';
+    });
+    info('Đang vào phòng...');
+    await client.join(APP_ID,CHANNEL,TOKEN||null,UID||null);
+    [audioTrack,videoTrack]=await AgoraRTC.createMicrophoneAndCameraTracks();
+    videoTrack.play('local-player');
+    await client.publish([audioTrack,videoTrack]);
+    info('Đang khám — '+CHANNEL);
+  }catch(e){info('Lỗi: '+e.message);}
+}
+
+$('btn-mic').onclick=async()=>{
+  micMuted=!micMuted;
+  if(audioTrack) await audioTrack.setMuted(micMuted);
+  $('btn-mic').textContent=micMuted?'🔇':'🎤';
+  $('btn-mic').classList.toggle('muted',micMuted);
+};
+$('btn-cam').onclick=async()=>{
+  camMuted=!camMuted;
+  if(videoTrack) await videoTrack.setMuted(camMuted);
+  $('btn-cam').textContent=camMuted?'📵':'📷';
+  $('btn-cam').classList.toggle('muted',camMuted);
+};
+$('btn-end').onclick=async()=>{
+  try{if(audioTrack){audioTrack.stop();audioTrack.close();}
+      if(videoTrack){videoTrack.stop();videoTrack.close();}
+      if(client) await client.leave();}catch(e){}
+  if(window.ReactNativeWebView)
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'END_CALL'}));
+};
+init();
+</script>
+</body>
+</html>`;
+
+const VideoCallScreen = () => {
+    const nav = useNavigation();
+    const route = useRoute();
+    const user = useContext(MyUserContext);
+    const webviewRef = useRef(null);
+
+    const {
+        agoraAppId = "",
+        agoraToken = "",
+        channelName = "",
+        uid = 0,
+        consultationId,
+    } = route.params || {};
+
+    const html = buildHtml(agoraAppId, agoraToken, channelName, uid);
+
+    const handleMessage = async (e) => {
+        try {
+            const msg = JSON.parse(e.nativeEvent.data);
+            if (msg.type === "END_CALL") {
+                await endConsultation();
+            }
+        } catch {}
+    };
+
+    const endConsultation = async () => {
+        try {
+            if (consultationId) {
+                await authApis(user.token).post(endpoints["consultation-end"](consultationId));
+            }
+        } catch {}
+        nav.goBack();
+    };
+
+    const confirmEnd = () => {
+        Alert.alert("Kết thúc khám", "Bạn có chắc muốn kết thúc phiên khám?", [
+            { text: "Tiếp tục", style: "cancel" },
+            { text: "Kết thúc", style: "destructive", onPress: endConsultation },
+        ]);
+    };
+
+    return (
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor="#111827" />
+            <WebView
+                ref={webviewRef}
+                source={{ html }}
+                style={styles.webview}
+                originWhitelist={["*"]}
+                allowsInlineMediaPlayback
+                mediaPlaybackRequiresUserAction={false}
+                javaScriptEnabled
+                domStorageEnabled
+                onMessage={handleMessage}
+                onPermissionRequest={(e) => e.nativeEvent.request.grant(e.nativeEvent.request.resources)}
+            />
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: "#111827" },
+    webview: { flex: 1 },
+});
+
+export default VideoCallScreen;

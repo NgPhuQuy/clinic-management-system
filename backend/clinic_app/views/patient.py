@@ -1,18 +1,3 @@
-"""
-clinic_app/views/patient.py
-
-Endpoints:
-  GET   /api/patients/              — Danh sách           [admin scope]
-  GET   /api/patients/{id}/         — Chi tiết            [owner or admin]
-  PATCH /api/patients/{id}/         — Cập nhật profile    [owner or admin]
-  GET   /api/patients/{id}/appointments/   — Lịch sử khám [owner or admin]
-  GET   /api/patients/{id}/medical_records/ — Hồ sơ bệnh  [owner or admin]
-
-BUG ĐÃ SỬA:
-  - Dùng IsAuthenticated (Django session) → thay bằng IsAuthenticatedWithValidToken (OAuth2)
-  - Docstring cũ "admin/staff" → chỉ còn "admin"
-"""
-
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -23,11 +8,6 @@ from ..permissions import HasAdminScope, IsOwnerOrAdmin, IsAuthenticatedWithVali
 
 
 class PatientViewSet(viewsets.ModelViewSet):
-    """
-    GET   /api/patients/        — Danh sách [admin]
-    GET   /api/patients/{id}/   — Chi tiết  [owner or admin]
-    PATCH /api/patients/{id}/   — Cập nhật  [owner or admin]
-    """
     queryset = Patient.objects.select_related("user").all()
     serializer_class = PatientSerializer
     filter_backends = [filters.SearchFilter]

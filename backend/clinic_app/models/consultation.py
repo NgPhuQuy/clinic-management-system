@@ -20,11 +20,13 @@ class Consultation(models.Model):
     status      = models.CharField(max_length=10, choices=Status, default=Status.WAITING)
     started_at  = models.DateTimeField(null=True, blank=True)
     ended_at    = models.DateTimeField(null=True, blank=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table            = "consultations"
         verbose_name        = "Tư vấn trực tuyến"
-        verbose_name_plural = "Tư vấn trực tuyến" 
+        verbose_name_plural = "Tư vấn trực tuyến"
+        ordering = ["-id"]
 
     def get_duration_minutes(self):
         if self.started_at and self.ended_at:

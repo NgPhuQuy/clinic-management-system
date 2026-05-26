@@ -8,7 +8,7 @@ import Styles, { myAppointmentsStyles as S } from "../../styles/Styles";
 
 const STATUS_FILTERS = [
     { label: "Tất cả", value: null },
-    { label: "Chờ xác nhận", value: "pending" },
+    { label: "Chờ thanh toán", value: "pending" },
     { label: "Đã xác nhận", value: "confirmed" },
     { label: "Hoàn thành", value: "completed" },
     { label: "Đã hủy", value: "cancelled" },
@@ -23,7 +23,7 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABELS = {
-    pending: "Chờ xác nhận",
+    pending: "Chờ thanh toán",
     confirmed: "Đã xác nhận",
     cancelled: "Đã hủy",
     completed: "Hoàn thành",

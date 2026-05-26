@@ -40,6 +40,8 @@ class DoctorScheduleSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
     def get_booked_count(self, obj):
+        if hasattr(obj, "booked_count"):
+            return obj.booked_count
         return obj.appointments.exclude(status="cancelled").count()
 
     def validate(self, data):

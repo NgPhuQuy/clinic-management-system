@@ -176,8 +176,16 @@ const BookAppointment = () => {
             const res = await authApis(user.token).post(endpoints["appointments"], payload);
             if (res.status === 201) {
                 const appt = res.data;
+
+                const invoiceId = appt.invoice?.id;
+                // API trả về total_amount (từ @property Invoice.total_amount)
+                const amount = appt.invoice?.total_amount_amount ?? appt.invoice?.remaining ?? 0;
+                const appointmentId = appt.id;
+                const appointmentDate = appt.appointment_date;
+
                 nav.navigate("payment-screen", {
-                    appointmentId:   appt.id,
+                    invoiceId,
+                    appointmentId,
                     doctorName,
                     appointmentDate: appt.appointment_date,
                     amount:          appt.payment?.amount ?? 0,
@@ -315,5 +323,20 @@ const BookAppointment = () => {
         </ScrollView>
     );
 };
+
+const styles = StyleSheet.create({
+    form: {
+        backgroundColor: "#fff",
+        margin: 16,
+        borderRadius: 16,
+        elevation: 3,
+        padding: 20,
+    },
+    btn: {
+        borderRadius: 8,
+        paddingVertical: 4,
+        marginBottom: 10,
+    },
+});
 
 export default BookAppointment;

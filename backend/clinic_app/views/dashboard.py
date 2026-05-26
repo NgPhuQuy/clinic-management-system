@@ -1,21 +1,6 @@
-"""
-clinic_app/views/dashboard.py
-
-GET /api/admin/dashboard/         — Tổng hợp (admin only)
-GET /api/admin/dashboard/reports/ — Báo cáo chi tiết (admin only)
-
-Báo cáo chi tiết theo đề tài:
-  - Số lượng bệnh nhân theo độ tuổi
-  - Số lượng bệnh nhân theo giới tính
-  - Số lượng lượt khám theo chuyên khoa
-  - Dịch vụ y tế được sử dụng nhiều nhất
-  - Tình hình bệnh phổ biến trong cộng đồng
-  - Doanh thu theo ngày/tuần/tháng
-"""
 from datetime import timedelta
-
-from django.db.models import Count, Sum, Q, F
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, ExtractYear
+from django.db.models import Case, CharField, Count, Sum, Q, F, Value, When
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -28,7 +13,6 @@ from ..permissions import HasAdminScope
 
 
 class DashboardView(APIView):
-    """GET /api/admin/dashboard/ — Tổng hợp nhanh cho admin."""
     permission_classes = [HasAdminScope]
 
     def get(self, request):
@@ -94,14 +78,6 @@ class DashboardView(APIView):
 
 
 class DashboardReportsView(APIView):
-    """
-    GET /api/admin/dashboard/reports/?type=<report_type>&period=<period>
-
-    Query params:
-      type   : age_group | gender | specialty | disease | service | revenue
-      period : day | week | month (chỉ dùng cho type=revenue)
-      days   : số ngày nhìn lại (default 30)
-    """
     permission_classes = [HasAdminScope]
 
     def get(self, request):
@@ -129,37 +105,26 @@ class DashboardReportsView(APIView):
         data = handler(since=since, period=period)
         return Response({"type": report_type, "period": period, "days": days, "data": data})
 
-    # ── 1. Bệnh nhân theo độ tuổi ──────────────────────────────────────────
-
     def _report_age_group(self, since, **kwargs):
-        """
-        Phân nhóm bệnh nhân theo độ tuổi dựa trên ngày sinh.
-        Nhóm: <18, 18–30, 31–45, 46–60, >60
-        """
-        from django.db.models import Case, When, IntegerField
         current_year = timezone.now().year
-
-        patients = Patient.objects.annotate(
-            age=current_year - ExtractYear("birth_date")
-        ).values("age")
-
-        buckets = {"<18": 0, "18-30": 0, "31-45": 0, "46-60": 0, ">60": 0}
-        for p in patients:
-            age = p.get("age")
-            if age is None:
-                continue
-            if age < 18:
-                buckets["<18"] += 1
-            elif age <= 30:
-                buckets["18-30"] += 1
-            elif age <= 45:
-                buckets["31-45"] += 1
-            elif age <= 60:
-                buckets["46-60"] += 1
-            else:
-                buckets[">60"] += 1
-
-        return [{"age_group": k, "count": v} for k, v in buckets.items()]
+        data = (
+            Patient.objects
+            .annotate(
+                age_group=Case(
+                    When(date_of_birth__isnull=True, then=Value("unknown")),
+                    When(date_of_birth__year__gte=current_year - 17, then=Value("<18")),
+                    When(date_of_birth__year__gte=current_year - 30, then=Value("18-30")),
+                    When(date_of_birth__year__gte=current_year - 45, then=Value("31-45")),
+                    When(date_of_birth__year__gte=current_year - 60, then=Value("46-60")),
+                    default=Value(">60"),
+                    output_field=CharField(),
+                )
+            )
+            .values("age_group")
+            .annotate(count=Count("id"))
+            .order_by("age_group")
+        )
+        return [{"age_group": item["age_group"], "count": item["count"]} for item in data]
 
     # ── 2. Bệnh nhân theo giới tính ────────────────────────────────────────
 
@@ -176,10 +141,6 @@ class DashboardReportsView(APIView):
     # ── 3. Lượt khám theo chuyên khoa ──────────────────────────────────────
 
     def _report_specialty(self, since, **kwargs):
-        """
-        Số lượt khám theo chuyên khoa trong khoảng thời gian.
-        Đề tài: "báo cáo số lượng bệnh nhân theo chuyên khoa"
-        """
         data = (
             Appointment.objects
             .filter(
@@ -198,10 +159,6 @@ class DashboardReportsView(APIView):
     # ── 4. Bệnh phổ biến trong cộng đồng ──────────────────────────────────
 
     def _report_disease(self, since, **kwargs):
-        """
-        Tình hình bệnh phổ biến dựa trên diagnosis trong MedicalRecord.
-        Đề tài: "báo cáo tình hình bệnh phổ biến trong cộng đồng"
-        """
         data = (
             MedicalRecord.objects
             .filter(created_at__date__gte=since)
@@ -241,11 +198,6 @@ class DashboardReportsView(APIView):
     # ── 6. Doanh thu chi tiết theo thời gian ───────────────────────────────
 
     def _report_revenue(self, since, period="month", **kwargs):
-        """
-        Doanh thu tổng hợp và chi tiết.
-        Đề tài: "báo cáo doanh thu tổng hợp và chi tiết"
-        period: day | week | month
-        """
         trunc_fn = {
             "day":   TruncDay,
             "week":  TruncWeek,
