@@ -86,7 +86,7 @@ const PaymentScreen = () => {
                 paymentUrl: payment_url,
                 paymentId: payment_id,
                 method: selectedMethod,
-                fromBooking,  // ✅ chuyển tiếp để PaymentResult biết luồng
+                fromBooking, 
             });
         } catch (e) {
             const msg =
@@ -102,7 +102,6 @@ const PaymentScreen = () => {
     return (
         <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
 
-            {/* Thông tin lịch hẹn */}
             <View style={[Styles.card, { margin: 16, marginBottom: 8 }]}>
                 <Text style={Styles.sectionHeader}>Thông tin thanh toán</Text>
                 <View style={styles.infoRow}>

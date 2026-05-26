@@ -55,7 +55,7 @@ class LoginView(APIView):
 
         token_response = requests.post(
             request.build_absolute_uri("/o/token/"),
-            data={
+            json={
                 "grant_type":    "password",
                 "username":      user.username,
                 "password":      password,
