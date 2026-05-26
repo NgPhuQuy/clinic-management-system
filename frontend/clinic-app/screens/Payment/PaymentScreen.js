@@ -54,10 +54,16 @@ const PaymentScreen = () => {
             return;
         }
 
+        // invoiceId bắt buộc — appointmentId chỉ là tham chiếu hiển thị
+        if (!invoiceId) {
+            Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
+            return;
+        }
+
         try {
             setLoading(true);
             const res = await authApis(user.token).post(endpoints["payment-init"], {
-                invoice_id: invoiceId ?? appointmentId, // FIX: backend nhận invoice_id
+                invoice_id: invoiceId,
                 payment_method: selectedMethod,
             });
 
