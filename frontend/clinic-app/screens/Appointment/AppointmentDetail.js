@@ -229,6 +229,18 @@ const AppointmentDetail = () => {
                     )}
                 </View>
 
+                {/* Vào phòng khám trực tuyến */}
+                {appt.consultation_id && ["confirmed", "in_progress"].includes(appt.status) && (
+                    <TouchableOpacity
+                        style={[styles.consultBtn]}
+                        onPress={() => nav.navigate("consultation-room", { consultationId: appt.consultation_id })}
+                        activeOpacity={0.85}
+                    >
+                        <MaterialCommunityIcons name="video" size={20} color="#fff" />
+                        <Text style={styles.consultBtnText}>Vào phòng khám trực tuyến</Text>
+                    </TouchableOpacity>
+                )}
+
                 {/* Hồ sơ bệnh án */}
                 {appt.medical_record_id && (
                     <Button
@@ -302,6 +314,26 @@ const styles = StyleSheet.create({
         color: COLORS.green,
         fontWeight: "700",
         fontSize: 13,
+    },
+    consultBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#2e7d32",
+        borderRadius: 12,
+        paddingVertical: 13,
+        marginBottom: 12,
+        gap: 8,
+        elevation: 3,
+        shadowColor: "#2e7d32",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+    },
+    consultBtnText: {
+        color: "#fff",
+        fontWeight: "800",
+        fontSize: 15,
     },
 });
 

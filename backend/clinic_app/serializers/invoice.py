@@ -3,77 +3,41 @@ from ..models import Invoice, Payment
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    patient_name = serializers.SerializerMethodField()
-
     class Meta:
         model  = Payment
         fields = (
             "id", "invoice", "amount", "payment_method", "status",
             "transaction_id", "note", "paid_at", "created_at",
-            "patient_name",
         )
-        read_only_fields = ("id", "transaction_id", "paid_at", "created_at", "patient_name")
-
-    def get_patient_name(self, obj):
-        try:
-            return obj.patient.user.get_full_name()
-        except Exception:
-            return None
+        read_only_fields = ("id", "status", "transaction_id", "paid_at", "created_at")
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    payments         = PaymentSerializer(many=True, read_only=True)
-    patient_name     = serializers.SerializerMethodField()
-    amount_paid      = serializers.SerializerMethodField()
-    amount_remaining = serializers.SerializerMethodField()
+    payments     = PaymentSerializer(many=True, read_only=True)
+    total_amount = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    total_paid   = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    remaining    = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
 
     class Meta:
         model  = Invoice
         fields = (
-            "id", "appointment", "prescription",
-            "patient_name",
-            "subtotal_services", "subtotal_medicine", "discount", "total",
-            "status", "notes",
-            "amount_paid", "amount_remaining",
-            "payments",
-            "created_at", "updated_at",
+            "id", "appointment",
+            "total_amount", "total_paid", "remaining",
+            "payments", "created_at", "updated_at",
         )
-        read_only_fields = (
-            "id", "subtotal_services", "subtotal_medicine",
-            "total", "created_at", "updated_at",
-        )
-
-    def get_patient_name(self, obj):
-        try:
-            return obj.patient.user.get_full_name()
-        except Exception:
-            return None
-
-    def get_amount_paid(self, obj):
-        return obj.amount_paid
-
-    def get_amount_remaining(self, obj):
-        return obj.amount_remaining
+        read_only_fields = ("id", "created_at", "updated_at")
 
 
 class InvoiceSummarySerializer(serializers.ModelSerializer):
-    """Inline vào AppointmentSerializer."""
-    amount_paid      = serializers.SerializerMethodField()
-    amount_remaining = serializers.SerializerMethodField()
+    """Dùng inline trong AppointmentSerializer."""
+    total_amount = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    total_paid   = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    remaining    = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
 
     class Meta:
         model  = Invoice
-        fields = (
-            "id", "total", "discount", "status",
-            "amount_paid", "amount_remaining",
-        )
+        fields = ("id", "total_amount", "total_paid", "remaining")
         read_only_fields = fields
-
-    def get_amount_paid(self, obj):
-        return obj.amount_paid
-
-    def get_amount_remaining(self, obj):
-        return obj.amount_remaining
 
 
 class PaymentInitSerializer(serializers.Serializer):

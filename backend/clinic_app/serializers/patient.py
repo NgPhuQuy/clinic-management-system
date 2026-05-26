@@ -1,3 +1,4 @@
+from datetime import date
 from rest_framework import serializers
 from ..models import Patient
 
@@ -14,6 +15,11 @@ class PatientSerializer(serializers.ModelSerializer):
             "blood_type", "emergency_contact",
         )
         read_only_fields = ("id", "user", "full_name")
+
+    def validate_date_of_birth(self, value):
+        if value and value >= date.today():
+            raise serializers.ValidationError("Ngày sinh phải là ngày trong quá khứ.")
+        return value
 
 
 class PatientSummarySerializer(serializers.ModelSerializer):

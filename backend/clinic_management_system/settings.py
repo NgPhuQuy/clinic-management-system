@@ -97,7 +97,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
+    'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
@@ -239,6 +239,13 @@ CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 # agora settings (video call real time)
 AGORA_APP_ID = os.getenv("AGORA_APP_ID")
 AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE")
+
+# ─────────────────────────────────────────────
+# BUSINESS CONSTANTS
+# ─────────────────────────────────────────────
+CONSULTATION_WINDOW_BEFORE_MINUTES = 15
+CONSULTATION_WINDOW_AFTER_MINUTES = 30
+INVENTORY_NEAR_EXPIRY_DAYS = 30
 
 # ─────────────────────────────────────────────
 # PAYMENT GATEWAYS

@@ -1,9 +1,10 @@
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 from ..models import Appointment, AppointmentService, Service, Payment, Invoice
 from .patient import PatientSummarySerializer
 from .doctor import DoctorSummarySerializer
-from .payment import InvoiceSerializer
+from .invoice import InvoiceSerializer
 
 
 class AppointmentServiceSerializer(serializers.ModelSerializer):
@@ -24,13 +25,20 @@ class AppointmentSerializer(serializers.ModelSerializer):
     doctor_info          = DoctorSummarySerializer(source="doctor", read_only=True)
     appointment_services = AppointmentServiceSerializer(many=True, read_only=True)
     invoice              = InvoiceSerializer(read_only=True)
+    consultation_id      = serializers.SerializerMethodField()
+
+    def get_consultation_id(self, obj):
+        try:
+            return obj.consultation.id
+        except Exception:
+            return None
 
     class Meta:
         model  = Appointment
         fields = (
             "id", "patient", "patient_info", "doctor", "doctor_info",
             "schedule", "appointment_date", "status", "reason", "notes",
-            "appointment_services", "invoice", "created_at", "updated_at",
+            "appointment_services", "invoice", "consultation_id", "created_at", "updated_at",
         )
         read_only_fields = ("id", "status", "created_at", "updated_at")
 
@@ -63,11 +71,32 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
 
     def validate(self, data):
+        doctor = data.get("doctor")
+        if doctor and not doctor.is_available:
+            raise serializers.ValidationError("Bác sĩ hiện không nhận lịch hẹn.")
+
         schedule = data.get("schedule")
+        appointment_date = data.get("appointment_date")
+
         if schedule:
             booked = schedule.appointments.exclude(status="cancelled").count()
             if booked >= schedule.max_appointments:
                 raise serializers.ValidationError("Ca khám này đã đủ số lượng.")
+
+            if appointment_date and schedule.date != appointment_date.date():
+                raise serializers.ValidationError("Ngày hẹn không khớp với ngày trong lịch làm việc.")
+
+        if doctor and appointment_date:
+            request = self.context.get("request")
+            if request and hasattr(request.user, "patient_profile"):
+                duplicate = Appointment.objects.filter(
+                    patient=request.user.patient_profile,
+                    doctor=doctor,
+                    appointment_date=appointment_date,
+                ).exclude(status=Appointment.Status.CANCELLED).exists()
+                if duplicate:
+                    raise serializers.ValidationError("Bạn đã có lịch hẹn với bác sĩ này vào thời điểm đó.")
+
         return data
 
     def create(self, validated_data):
@@ -75,31 +104,30 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         payment_method = validated_data.pop("payment_method")
         patient        = self.context["request"].user.patient_profile
 
-        appointment = Appointment.objects.create(patient=patient, **validated_data)
+        with transaction.atomic():
+            appointment = Appointment.objects.create(patient=patient, **validated_data)
 
-        for service in services:
-            AppointmentService.objects.create(
-                appointment   = appointment,
-                service       = service,
-                quantity      = 1,
-                price_at_time = service.price,
+            for service in services:
+                AppointmentService.objects.create(
+                    appointment   = appointment,
+                    service       = service,
+                    quantity      = 1,
+                    price_at_time = service.price,
+                )
+
+            invoice = Invoice.objects.create(appointment=appointment)
+
+            total = appointment.doctor.consultation_fee
+            for svc in appointment.appointment_services.all():
+                total += svc.get_subtotal()
+
+            Payment.objects.create(
+                invoice        = invoice,
+                amount         = total,
+                payment_method = payment_method,
+                status         = Payment.Status.PENDING,
+                note           = "Phí khám + dịch vụ",
             )
-
-        # Tạo Invoice cho appointment
-        invoice = Invoice.objects.create(appointment=appointment)
-
-        # Tạo Payment PENDING ban đầu (phí khám + dịch vụ)
-        total = appointment.doctor.consultation_fee
-        for svc in appointment.appointment_services.all():
-            total += svc.get_subtotal()
-
-        Payment.objects.create(
-            invoice        = invoice,
-            amount         = total,
-            payment_method = payment_method,
-            status         = Payment.Status.PENDING,
-            note           = "Phí khám + dịch vụ",
-        )
 
         return appointment
 

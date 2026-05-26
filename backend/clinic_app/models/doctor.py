@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from .user import User
 from .specialty import Specialty
@@ -37,6 +38,10 @@ class DoctorSchedule(models.Model):
         verbose_name_plural = "Lịch làm việc"
         ordering = ["date", "start_time"]
         unique_together = ("doctor", "date", "start_time")
+
+    def clean(self):
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError("Giờ bắt đầu phải trước giờ kết thúc.")
 
     def __str__(self):
         return f"{self.doctor} | {self.date} {self.start_time}-{self.end_time}"

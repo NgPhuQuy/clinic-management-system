@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
@@ -49,7 +50,9 @@ class DoctorViewSet(viewsets.ModelViewSet):
 
 
 class DoctorScheduleViewSet(viewsets.ModelViewSet):
-    queryset = DoctorSchedule.objects.select_related("doctor").all()
+    queryset = DoctorSchedule.objects.select_related("doctor__user").annotate(
+        booked_count=Count("appointments", filter=~Q(appointments__status="cancelled"))
+    )
     serializer_class = DoctorScheduleSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["doctor", "date", "is_available"]

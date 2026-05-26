@@ -19,13 +19,7 @@ from rest_framework.response import Response
 from ..models import Payment, Invoice, Appointment
 from ..serializers import PaymentSerializer, PaymentInitSerializer
 from ..permissions import HasPatientScope, HasStaffOrAdminScope, IsAuthenticatedWithValidToken
-
-
-def _get_token_scopes(request) -> set:
-    token = getattr(request, "auth", None)
-    if token is None:
-        return set()
-    return set(token.scope.split())
+from ..utils import get_token_scopes
 
 
 def _get_client_ip(request) -> str:
@@ -35,22 +29,21 @@ def _get_client_ip(request) -> str:
     return request.META.get("REMOTE_ADDR", "127.0.0.1")
 
 
-def _get_setting(name: str, fallback: str) -> str:
+def _get_setting(name: str, fallback: str = "") -> str:
     val = getattr(settings, name, None)
     return val if val else fallback
 
 
 def _create_momo_payment_url(payment: Payment, request) -> dict:
-    partner_code = _get_setting("MOMO_PARTNER_CODE", "MOMOBKUN20180529")
-    access_key   = _get_setting("MOMO_ACCESS_KEY",   "klm05TvNBzhg7h7j")
-    secret_key   = _get_setting("MOMO_SECRET_KEY",   "at67qH6mk8w5Y1nAyMoTkqIxteL4MR11")
+    partner_code = _get_setting("MOMO_PARTNER_CODE")
+    access_key   = _get_setting("MOMO_ACCESS_KEY")
+    secret_key   = _get_setting("MOMO_SECRET_KEY")
     endpoint     = _get_setting("MOMO_ENDPOINT", "https://test-payment.momo.vn/v2/gateway/api/create")
     base_url     = _get_setting("BACKEND_BASE_URL", "http://localhost:8000")
 
     request_id   = str(uuid.uuid4())
     order_id     = f"CLINIC-{payment.id}-{int(time.time())}"
     amount       = int(payment.amount)
-    # FIX: Payment không còn appointment_id trực tiếp → qua invoice
     appt_id      = payment.invoice.appointment_id
     order_info   = f"Thanh toan lich kham #{appt_id}"
     redirect_url = f"{base_url}/api/payments/momo/return/"
@@ -99,9 +92,9 @@ def _create_momo_payment_url(payment: Payment, request) -> dict:
 
 
 def _verify_momo_ipn(data: dict) -> bool:
-    secret_key   = _get_setting("MOMO_SECRET_KEY",   "at67qH6mk8w5Y1nAyMoTkqIxteL4MR11")
-    access_key   = _get_setting("MOMO_ACCESS_KEY",   "klm05TvNBzhg7h7j")
-    partner_code = _get_setting("MOMO_PARTNER_CODE", "MOMOBKUN20180529")
+    secret_key   = _get_setting("MOMO_SECRET_KEY")
+    access_key   = _get_setting("MOMO_ACCESS_KEY")
+    partner_code = _get_setting("MOMO_PARTNER_CODE")
     raw_sig = (
         f"accessKey={access_key}"
         f"&amount={data.get('amount')}"
@@ -122,8 +115,8 @@ def _verify_momo_ipn(data: dict) -> bool:
 
 
 def _create_vnpay_payment_url(payment: Payment, request) -> dict:
-    tmn_code    = _get_setting("VNPAY_TMN_CODE",    "VNPAYMENT")
-    hash_secret = _get_setting("VNPAY_HASH_SECRET", "NWNFRSSJLQOCIJXJXSQBSTUGWHGPYQKM")
+    tmn_code    = _get_setting("VNPAY_TMN_CODE")
+    hash_secret = _get_setting("VNPAY_HASH_SECRET")
     vnpay_url   = _get_setting("VNPAY_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
     base_url    = _get_setting("BACKEND_BASE_URL", "http://localhost:8000")
     return_url  = f"{base_url}/api/payments/vnpay/return/"
@@ -132,7 +125,6 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
     amount   = int(payment.amount) * 100
     now_str  = datetime.now().strftime("%Y%m%d%H%M%S")
     ip_addr  = _get_client_ip(request)
-    # FIX: Payment không còn appointment_id trực tiếp → qua invoice
     appt_id  = payment.invoice.appointment_id
 
     vnp_params = {
@@ -156,7 +148,7 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
 
 
 def _verify_vnpay_return(params: dict) -> bool:
-    hash_secret   = _get_setting("VNPAY_HASH_SECRET", "NWNFRSSJLQOCIJXJXSQBSTUGWHGPYQKM")
+    hash_secret   = _get_setting("VNPAY_HASH_SECRET")
     received_hash = params.get("vnp_SecureHash", "")
     verify_params = {k: v for k, v in params.items() if k not in ("vnp_SecureHash", "vnp_SecureHashType")}
     sorted_params = sorted(verify_params.items())
@@ -166,7 +158,6 @@ def _verify_vnpay_return(params: dict) -> bool:
 
 
 class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
-    # FIX: Payment không còn FK patient/appointment trực tiếp → select_related qua invoice
     queryset         = Payment.objects.select_related(
         "invoice__appointment__patient__user",
         "invoice__appointment__doctor",
@@ -177,13 +168,12 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs     = super().get_queryset()
-        scopes = _get_token_scopes(self.request)
+        scopes = get_token_scopes(self.request)
 
         if "admin"  in scopes: return qs
         if "staff"  in scopes: return qs
         if "doctor" in scopes: return qs
         if "patient" in scopes:
-            # FIX: filter qua invoice → appointment → patient
             return qs.filter(invoice__appointment__patient__user=self.request.user)
         return qs.none()
 
@@ -222,7 +212,6 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # FIX: tạo Payment gắn vào Invoice, không còn appointment/patient FK
         payment = Payment.objects.create(
             invoice        = invoice,
             amount         = amount,

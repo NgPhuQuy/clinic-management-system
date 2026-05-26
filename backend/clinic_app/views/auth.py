@@ -81,18 +81,17 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        if user.role in ("staff", "admin", "doctor"):
-            user.delete()
+        role = request.data.get("role", "patient")
+        if role in ("staff", "admin", "doctor"):
             return Response(
                 {"detail": "Không thể tự đăng ký role này."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
         user.first_name = user.username
         user.save(update_fields=["first_name"])
         Patient.objects.create(user=user)

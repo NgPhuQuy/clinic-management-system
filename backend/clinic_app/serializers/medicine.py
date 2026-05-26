@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import serializers
@@ -23,6 +24,8 @@ class MedicineSerializer(serializers.ModelSerializer):
         )
 
     def get_total_stock(self, obj):
+        if hasattr(obj, "total_stock"):
+            return obj.total_stock or 0
         return (
             obj.inventory_batches
             .filter(expiry_date__gt=timezone.now().date())
@@ -45,7 +48,7 @@ class InventorySerializer(serializers.ModelSerializer):
         )
 
     def get_is_near_expiry(self, obj):
-        return obj.is_near_expiry(days=30)
+        return obj.is_near_expiry(days=settings.INVENTORY_NEAR_EXPIRY_DAYS)
 
 
 class InventoryAlertSerializer(serializers.ModelSerializer):

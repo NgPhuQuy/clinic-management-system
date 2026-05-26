@@ -20,13 +20,7 @@ from ..permissions import (
     HasDoctorOrAdminScope, HasStaffOrAdminScope,
     IsAuthenticatedWithValidToken,
 )
-
-
-def _get_token_scopes(request) -> set:
-    token = getattr(request, "auth", None)
-    if token is None:
-        return set()
-    return set(token.scope.split())
+from ..utils import get_token_scopes
 
 
 # ─────────────────────────────────────────────
@@ -37,7 +31,7 @@ class DoctorDashboardView(APIView):
     permission_classes = [HasDoctorOrAdminScope]
 
     def get(self, request):
-        scopes = _get_token_scopes(request)
+        scopes = get_token_scopes(request)
 
         if "admin" in scopes:
             doctor_filter = {}
@@ -63,7 +57,9 @@ class DoctorDashboardView(APIView):
             appointment_date__date__lte=today + timedelta(days=7),
             status__in=["pending", "confirmed"],
             **doctor_filter,
-        ).select_related("patient__user", "doctor__specialty", "schedule").order_by("appointment_date")[:10]
+        ).select_related(
+            "patient__user", "doctor__specialty", "doctor__user", "schedule", "invoice",
+        ).prefetch_related("appointment_services__service").order_by("appointment_date")[:10]
 
         return Response({
             "appointments": {
@@ -106,7 +102,9 @@ class StaffDashboardView(APIView):
 
         todays_appointments = Appointment.objects.filter(
             appointment_date__date=today,
-        ).select_related("patient__user", "doctor__specialty").order_by("appointment_date")[:20]
+        ).select_related(
+            "patient__user", "doctor__specialty", "doctor__user", "schedule", "invoice",
+        ).prefetch_related("appointment_services__service").order_by("appointment_date")[:20]
 
         return Response({
             "appointments": {"today": appointments_today, "pending": appointments_pending},
@@ -210,7 +208,9 @@ class DoctorTodayAppointmentsView(APIView):
         qs = Appointment.objects.filter(
             doctor=doctor,
             appointment_date__date=today,
-        ).select_related("patient__user", "schedule").order_by("appointment_date")
+        ).select_related(
+            "patient__user", "doctor__specialty", "doctor__user", "schedule", "invoice",
+        ).prefetch_related("appointment_services__service").order_by("appointment_date")
 
         status_filter = request.query_params.get("status")
         if status_filter:

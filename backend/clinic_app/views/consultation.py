@@ -25,13 +25,14 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from ..models import Consultation, Notification
+from ..models import Consultation, Notification, ChatMessage
 from ..permissions import (
     IsAuthenticatedWithValidToken,
     HasDoctorOrAdminScope,
     HasPatientScope,
 )
-from ..serializers import ConsultationSerializer
+from ..serializers import ConsultationSerializer, ChatMessageSerializer
+from ..utils import get_token_scopes
 
 logger = logging.getLogger(__name__)
 
@@ -183,8 +184,7 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs   = super().get_queryset()
-        token = getattr(self.request, "auth", None)
-        scopes = set(token.scope.split()) if token else set()
+        scopes = get_token_scopes(self.request)
 
         if "admin"   in scopes: return qs
         if "doctor"  in scopes: return qs.filter(appointment__doctor__user=user)
@@ -227,8 +227,8 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
         # Kiểm tra cửa sổ thời gian hợp lệ (15 phút trước → 30 phút sau giờ hẹn)
         appointment_time = consultation.appointment.appointment_date
         now          = timezone.now()
-        window_open  = appointment_time - timedelta(minutes=15)
-        window_close = appointment_time + timedelta(minutes=30)
+        window_open  = appointment_time - timedelta(minutes=settings.CONSULTATION_WINDOW_BEFORE_MINUTES)
+        window_close = appointment_time + timedelta(minutes=settings.CONSULTATION_WINDOW_AFTER_MINUTES)
 
         if not (window_open <= now <= window_close):
             return Response(
@@ -354,6 +354,35 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
             "detail":           "Phiên khám đã kết thúc.",
             "duration_minutes": consultation.get_duration_minutes(),
         })
+
+    # ── messages (Chat) ───────────────────────
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAuthenticatedWithValidToken],
+        url_path="messages",
+    )
+    def messages(self, request, pk=None):
+        """POST /consultations/{id}/messages/ — Gửi tin nhắn trong phòng khám."""
+        consultation = self.get_object()
+
+        if consultation.status == Consultation.Status.ENDED:
+            return Response(
+                {"detail": "Phiên khám đã kết thúc, không thể gửi tin nhắn."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        text = request.data.get("message", "").strip()
+        if not text:
+            return Response({"detail": "Tin nhắn không được để trống."}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = ChatMessage.objects.create(
+            consultation=consultation,
+            sender=request.user,
+            message=text,
+        )
+        return Response(ChatMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
 
     # ── sync (Force sync Firebase) ─────────────
 
