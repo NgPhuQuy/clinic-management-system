@@ -1,18 +1,33 @@
-/**
- * screens/Appointment/BookAppointment.js
- * Đặt lịch hẹn với bác sĩ – có calendar picker & time slot picker
- */
-import {
-    View, ScrollView, TouchableOpacity, Modal,
-    ActivityIndicator, Dimensions,
-} from "react-native";
+import { View, ScrollView, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
+
+const HOLD_MINUTES = 10;
+
+const DoctorAvatar = ({ uri, size = 52 }) => {
+    const [err, setErr] = useState(false);
+    if (uri && !err) return (
+        <Image
+            source={{ uri }}
+            style={{ width: size, height: size, borderRadius: size / 2 }}
+            onError={() => setErr(true)}
+        />
+    );
+    return (
+        <View style={{
+            width: size, height: size, borderRadius: size / 2,
+            backgroundColor: COLORS.primaryPale,
+            alignItems: "center", justifyContent: "center",
+        }}>
+            <MaterialCommunityIcons name="doctor" size={size * 0.52} color={COLORS.primary} />
+        </View>
+    );
+};
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const DAY_NAMES = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -133,30 +148,41 @@ const BookAppointment = () => {
     const user   = useContext(MyUserContext);
     const { doctorId, scheduleId, doctorName, schedule } = route.params || {};
 
-    const initDate = schedule?.date ? new Date(schedule.date) : null;
-    const initTime = schedule?.start_time?.slice(0,5) || "";
+    const doctorAvatar = schedule?.doctorAvatar || route.params?.doctorAvatar || null;
 
-    const [selectedDate, setSelectedDate] = useState(initDate);
-    const [selectedTime, setSelectedTime] = useState(initTime);
-    const [showCal,  setShowCal]  = useState(false);
-    const [reason,   setReason]   = useState("");
-    const [notes,    setNotes]    = useState("");
-    const [loading,  setLoading]  = useState(false);
-    const [err,      setErr]      = useState(null);
+    const [form, setForm] = useState({
+        reason: "",
+        notes: "",
+        appointment_date: schedule ? `${schedule.date}T${schedule.start_time}` : "",
+    });
+    const [loading, setLoading] = useState(false);
+    const [err, setErr] = useState(null);
 
-    const formattedDate = selectedDate
-        ? selectedDate.toLocaleDateString("vi-VN", { weekday:"long", day:"2-digit", month:"2-digit", year:"numeric" })
-        : "Chọn ngày khám";
+    // 10-minute countdown
+    const startTime = useRef(Date.now());
+    const [secondsLeft, setSecondsLeft] = useState(HOLD_MINUTES * 60);
+    const expired = secondsLeft <= 0;
 
-    const appointmentDatetime = selectedDate && selectedTime
-        ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,"0")}-${String(selectedDate.getDate()).padStart(2,"0")}T${selectedTime}`
-        : "";
+    useEffect(() => {
+        const timer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime.current) / 1000);
+            const left = HOLD_MINUTES * 60 - elapsed;
+            setSecondsLeft(left > 0 ? left : 0);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const formatCountdown = (s) => {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${m}:${String(sec).padStart(2, "0")}`;
+    };
 
     const validate = () => {
-        if (!doctorId)        { setErr("Vui lòng chọn bác sĩ trước khi đặt lịch!"); return false; }
-        if (!selectedDate)    { setErr("Vui lòng chọn ngày khám!"); return false; }
-        if (!selectedTime)    { setErr("Vui lòng chọn giờ khám!"); return false; }
-        if (!reason.trim())   { setErr("Vui lòng nhập lý do khám!"); return false; }
+        if (!doctorId) { setErr("Vui lòng chọn bác sĩ trước khi đặt lịch!"); return false; }
+        if (!form.appointment_date) { setErr("Vui lòng nhập ngày giờ khám!"); return false; }
+        if (!form.reason.trim()) { setErr("Vui lòng nhập lý do khám!"); return false; }
+        if (expired) { setErr("Phiên đặt lịch đã hết hạn. Vui lòng chọn lại ca khám."); return false; }
         return true;
     };
 
@@ -176,20 +202,13 @@ const BookAppointment = () => {
             const res = await authApis(user.token).post(endpoints["appointments"], payload);
             if (res.status === 201) {
                 const appt = res.data;
-
-                const invoiceId = appt.invoice?.id;
-                // API trả về total_amount (từ @property Invoice.total_amount)
-                const amount = appt.invoice?.total_amount_amount ?? appt.invoice?.remaining ?? 0;
-                const appointmentId = appt.id;
-                const appointmentDate = appt.appointment_date;
-
                 nav.navigate("payment-screen", {
-                    invoiceId,
-                    appointmentId,
+                    invoiceId: appt.invoice?.id,
+                    appointmentId: appt.id,
                     doctorName,
                     appointmentDate: appt.appointment_date,
-                    amount:          appt.payment?.amount ?? 0,
-                    fromBooking:     true,
+                    amount: appt.invoice?.total_amount_amount ?? appt.invoice?.remaining ?? 0,
+                    fromBooking: true,
                 });
             }
         } catch (ex) {
@@ -209,67 +228,67 @@ const BookAppointment = () => {
     };
 
     return (
-        <ScrollView style={Styles.container} keyboardShouldPersistTaps="handled">
-            <View style={Styles.bookForm}>
-                <Text style={Styles.title}>Đặt lịch hẹn</Text>
+        <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+            <View style={[Styles.padding, styles.form]}>
 
                 {/* Doctor info */}
-                <View style={[Styles.card, { backgroundColor: COLORS.primaryPale, marginBottom: 16 }]}>
-                    <Text style={Styles.sectionHeader}>Thông tin bác sĩ</Text>
-                    <Text style={Styles.text}>👨‍⚕️ BS. {doctorName}</Text>
-                    {schedule && (
-                        <>
-                            <Text style={Styles.text}>📅 {new Date(schedule.date).toLocaleDateString("vi-VN")}</Text>
-                            <Text style={Styles.text}>🕐 {schedule.start_time} – {schedule.end_time}</Text>
-                        </>
-                    )}
+                <View style={styles.doctorCard}>
+                    <DoctorAvatar uri={doctorAvatar} size={54} />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.doctorName}>BS. {doctorName}</Text>
+                        {schedule && (
+                            <>
+                                <View style={styles.infoLine}>
+                                    <MaterialCommunityIcons name="calendar" size={13} color={COLORS.primary} />
+                                    <Text style={styles.infoText}>
+                                        {" "}{new Date(schedule.date + "T00:00:00").toLocaleDateString("vi-VN", {
+                                            weekday: "short", day: "numeric", month: "numeric", year: "numeric"
+                                        })}
+                                    </Text>
+                                </View>
+                                <View style={styles.infoLine}>
+                                    <MaterialCommunityIcons name="clock-outline" size={13} color={COLORS.primary} />
+                                    <Text style={styles.infoText}>
+                                        {" "}{schedule.start_time} – {schedule.end_time}
+                                    </Text>
+                                </View>
+                            </>
+                        )}
+                    </View>
+                </View>
+
+                {/* Countdown */}
+                <View style={[styles.countdown, expired && styles.countdownExpired]}>
+                    <MaterialCommunityIcons
+                        name={expired ? "clock-alert-outline" : "timer-sand"}
+                        size={18}
+                        color={expired ? COLORS.red : secondsLeft < 120 ? COLORS.orange : COLORS.primary}
+                    />
+                    <Text style={[
+                        styles.countdownText,
+                        expired && { color: COLORS.red },
+                        !expired && secondsLeft < 120 && { color: COLORS.orange },
+                    ]}>
+                        {expired
+                            ? " Phiên đặt lịch đã hết hạn"
+                            : ` Giữ chỗ còn lại: ${formatCountdown(secondsLeft)}`}
+                    </Text>
                 </View>
 
                 <HelperText type="error" visible={!!err}>{err}</HelperText>
 
-                {/* Date picker trigger */}
-                <Text style={[Styles.subtitle, { marginBottom: 8 }]}>📅 Chọn ngày khám *</Text>
-                <TouchableOpacity
-                    style={Styles.datePickerBtn}
-                    onPress={() => setShowCal(v => !v)}
-                    activeOpacity={0.8}
-                >
-                    <MaterialCommunityIcons name="calendar-month" size={22} color={COLORS.primary} />
-                    <Text style={Styles.datePickerBtnText}>{formattedDate}</Text>
-                    <MaterialCommunityIcons
-                        name={showCal ? "chevron-up" : "chevron-down"}
-                        size={20}
-                        color={COLORS.textMuted}
+                {!schedule && (
+                    <TextInput
+                        label="Ngày giờ hẹn (YYYY-MM-DDTHH:MM)"
+                        value={form.appointment_date}
+                        onChangeText={(t) => setForm({ ...form, appointment_date: t })}
+                        style={Styles.margin}
+                        mode="outlined"
+                        left={<TextInput.Icon icon="calendar" />}
+                        outlineColor={COLORS.primary}
+                        activeOutlineColor={COLORS.primary}
+                        placeholder="2025-06-15T09:00"
                     />
-                </TouchableOpacity>
-
-                {/* Inline calendar */}
-                {showCal && (
-                    <CalendarPicker
-                        selectedDate={selectedDate}
-                        onSelect={d => { setSelectedDate(d); setShowCal(false); }}
-                        onClose={() => setShowCal(false)}
-                    />
-                )}
-
-                {/* Time slot */}
-                {selectedDate && (
-                    <View style={{ marginBottom: 16 }}>
-                        <Text style={[Styles.subtitle, { marginBottom: 4 }]}>🕐 Chọn giờ khám *</Text>
-                        <TimePicker
-                            selectedTime={selectedTime}
-                            onSelect={setSelectedTime}
-                        />
-                    </View>
-                )}
-
-                {/* Confirmation chip */}
-                {selectedDate && selectedTime && (
-                    <View style={[Styles.card, { backgroundColor: COLORS.greenPale, marginBottom: 16 }]}>
-                        <Text style={[Styles.text, { color: COLORS.green, fontWeight: "700" }]}>
-                            ✅ {formattedDate} lúc {selectedTime}
-                        </Text>
-                    </View>
                 )}
 
                 <TextInput
@@ -294,30 +313,31 @@ const BookAppointment = () => {
                     mode="outlined"
                     multiline
                     numberOfLines={2}
-                    left={<TextInput.Icon icon="note-text" />}
+                    left={<TextInput.Icon icon="note-text-outline" />}
                     outlineColor={COLORS.primary}
                     activeOutlineColor={COLORS.primary}
                     placeholder="Dị ứng thuốc, tiền sử bệnh..."
                 />
 
-                <Button
-                    mode="contained"
+                <TouchableOpacity
+                    style={[styles.confirmBtn, (loading || expired) && { opacity: 0.55 }]}
                     onPress={book}
-                    loading={loading}
-                    disabled={loading}
-                    buttonColor={COLORS.primary}
-                    style={Styles.bookBtn}
-                    icon="calendar-check"
+                    disabled={loading || expired}
+                    activeOpacity={0.8}
                 >
-                    Xác nhận đặt lịch
-                </Button>
+                    <MaterialCommunityIcons name="calendar-check" size={20} color="#fff" />
+                    <Text style={styles.confirmBtnText}>
+                        {loading ? "Đang đặt lịch..." : "Xác nhận đặt lịch"}
+                    </Text>
+                </TouchableOpacity>
+
                 <Button
                     mode="outlined"
                     onPress={() => nav.goBack()}
-                    style={{ borderRadius: 8 }}
+                    style={{ borderRadius: 10 }}
                     textColor={COLORS.primary}
                 >
-                    Hủy
+                    Quay lại
                 </Button>
             </View>
         </ScrollView>
@@ -331,11 +351,74 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         elevation: 3,
         padding: 20,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
     },
-    btn: {
+    doctorCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: COLORS.primaryPale,
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 14,
+    },
+    doctorName: {
+        fontSize: 15,
+        fontWeight: "700",
+        color: COLORS.primaryDark,
+        marginBottom: 4,
+    },
+    infoLine: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 2,
+    },
+    infoText: {
+        fontSize: 12,
+        color: COLORS.primary,
+        fontWeight: "600",
+    },
+    countdown: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: COLORS.primaryPale,
         borderRadius: 8,
-        paddingVertical: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: COLORS.primaryMid,
+    },
+    countdownExpired: {
+        backgroundColor: COLORS.redPale,
+        borderColor: COLORS.redLight,
+    },
+    countdownText: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: COLORS.primary,
+    },
+    confirmBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        backgroundColor: COLORS.primary,
+        borderRadius: 12,
+        paddingVertical: 14,
         marginBottom: 10,
+        elevation: 3,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+    },
+    confirmBtnText: {
+        color: "#fff",
+        fontWeight: "800",
+        fontSize: 15,
     },
 });
 

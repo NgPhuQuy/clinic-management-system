@@ -13,7 +13,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from ..models import Appointment
+from ..models import Appointment, Payment
 from ..serializers import (
     AppointmentSerializer,
     AppointmentCreateSerializer,
@@ -64,7 +64,8 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         if self.action == "create":
             return [HasPatientScope()]
         if self.action == "update_status":
-            return [HasStaffDoctorOrAdminScope()]
+            # serializer.validate_status handles per-role transition rules (incl. patient cancel)
+            return [IsAuthenticatedWithValidToken()]
         if self.action == "add_service":
             return [HasStaffDoctorOrAdminScope()]
         return [IsAuthenticatedWithValidToken()]
@@ -100,6 +101,16 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        # Auto-refund khi hủy lịch: đánh dấu các payment pending/success → refunded
+        if serializer.instance.status == "cancelled":
+            try:
+                serializer.instance.invoice.payments.filter(
+                    status__in=[Payment.Status.SUCCESS, Payment.Status.PENDING]
+                ).update(status=Payment.Status.REFUNDED)
+            except Exception:
+                pass
+
         return Response(AppointmentSerializer(serializer.instance).data)
 
     @action(detail=True, methods=["post"], url_path="add_service")

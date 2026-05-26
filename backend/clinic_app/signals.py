@@ -1,16 +1,3 @@
-"""
-clinic_app/signals.py
-
-Signals:
-  1. Inventory    → auto tạo InventoryAlert (LOW_STOCK / NEAR_EXPIRY / EXPIRED)
-  2. Appointment  → auto Notification khi status thay đổi
-  3. Appointment  → auto tạo Consultation record khi status → confirmed
-  4. Prescription → auto Notification khi status → dispensed
-
-KHÔNG xử lý trừ kho ở đây — việc trừ kho được xử lý trong
-views/prescription.py action dispense() để có thể kiểm tra tồn kho
-và trả lỗi cụ thể trước khi thực hiện.
-"""
 import logging
 
 from django.db.models.signals import post_save, pre_save
@@ -21,13 +8,35 @@ logger = logging.getLogger(__name__)
 
 
 # ─────────────────────────────────────────────
+# Helper: gửi Expo push notification
+# ─────────────────────────────────────────────
+
+def _send_push(user, title, body, data=None):
+    push_token = getattr(user, "push_token", None)
+    if not push_token or not push_token.startswith("ExponentPushToken"):
+        return
+    try:
+        import requests as _req
+        _req.post(
+            "https://exp.host/--/api/v2/push/send",
+            json={
+                "to":    push_token,
+                "title": title,
+                "body":  body,
+                "data":  data or {},
+                "sound": "default",
+            },
+            timeout=5,
+        )
+    except Exception as exc:
+        logger.warning("Push notification failed for user %s: %s", user.pk, exc)
+
+
+# ─────────────────────────────────────────────
 # Helper: cache old status (dùng chung cho nhiều model)
 # ─────────────────────────────────────────────
 
 def _cache_old_status(sender, instance, **kwargs):
-    """
-    Lưu status cũ vào instance._old_status trước khi save.
-    """
     if instance.pk:
         try:
             instance._old_status = sender.objects.get(pk=instance.pk).status
@@ -43,10 +52,6 @@ def _cache_old_status(sender, instance, **kwargs):
 
 @receiver(post_save, sender="clinic_app.Inventory")
 def check_inventory_alerts(sender, instance, **kwargs):
-    """
-    Sau mỗi lần save Inventory, kiểm tra và tạo alert nếu cần.
-    Cũng được trigger tự động khi views/prescription.py trừ kho.
-    """
     from .models import InventoryAlert
 
     today         = timezone.now().date()
@@ -94,11 +99,6 @@ pre_save.connect(_cache_old_status, sender="clinic_app.Appointment")
 
 @receiver(post_save, sender="clinic_app.Appointment")
 def on_appointment_saved(sender, instance, created, **kwargs):
-    """
-    Hai việc sau mỗi lần save Appointment:
-      1. Gửi Notification cho bệnh nhân khi status thay đổi.
-      2. Tự tạo Consultation record khi status → confirmed.
-    """
     from .models import Consultation, Notification
 
     old_status = getattr(instance, "_old_status", None)
@@ -109,7 +109,6 @@ def on_appointment_saved(sender, instance, created, **kwargs):
 
     patient_user = instance.patient.user
 
-    # ── 1. Notification ──────────────────────
     STATUS_MESSAGES = {
         "confirmed": (
             Notification.Type.APPOINTMENT_CONFIRMED,
@@ -151,13 +150,14 @@ def on_appointment_saved(sender, instance, created, **kwargs):
             type=notif_type,
             related_object_id=instance.pk,
         )
+        _send_push(patient_user, title, message, data={"appointment_id": instance.pk})
 
-    # ── 2. Auto-tạo Consultation khi confirmed ──
+    # Auto-tạo Consultation khi confirmed
     if new_status == "confirmed":
         consultation, created_c = Consultation.objects.get_or_create(
             appointment=instance,
             defaults={
-                "type":   Consultation.Type.CHAT,   # default CHAT, tích hợp cả video lẫn chat
+                "type":   Consultation.Type.CHAT,
                 "status": Consultation.Status.WAITING,
             },
         )
@@ -173,14 +173,6 @@ def on_appointment_saved(sender, instance, created, **kwargs):
 # ─────────────────────────────────────────────
 # PRESCRIPTION — notify khi dispensed
 # ─────────────────────────────────────────────
-# NOTE: Việc trừ kho KHÔNG xử lý ở đây.
-# views/prescription.py action dispense() xử lý toàn bộ:
-#   1. Kiểm tra tồn kho đủ không
-#   2. Trừ kho (FEFO)
-#   3. Set status → dispensed
-# Sau đó signal này chỉ gửi notification cho bệnh nhân.
-# Tách ra như vậy để tránh double-deduction và có thể trả lỗi chi tiết.
-# ─────────────────────────────────────────────
 
 pre_save.connect(_cache_old_status, sender="clinic_app.Prescription")
 
@@ -194,14 +186,56 @@ def on_prescription_saved(sender, instance, created, **kwargs):
         return
 
     if instance.status == "dispensed":
+        title   = "Đơn thuốc đã sẵn sàng"
+        message = (
+            f"Đơn thuốc #{instance.pk} của bạn đã được cấp phát. "
+            f"Vui lòng đến nhận thuốc tại quầy dược."
+        )
+        patient_user = instance.patient.user
         Notification.objects.create(
-            user=instance.patient.user,
-            title="Đơn thuốc đã sẵn sàng",
-            message=(
-                f"Đơn thuốc #{instance.pk} của bạn đã được cấp phát. "
-                f"Vui lòng đến nhận thuốc tại quầy dược."
-            ),
+            user=patient_user,
+            title=title,
+            message=message,
             type=Notification.Type.PRESCRIPTION_READY,
             related_object_id=instance.pk,
         )
+        _send_push(patient_user, title, message, data={"prescription_id": instance.pk})
         logger.info("Prescription #%s dispensed — notification sent to patient.", instance.pk)
+
+
+# ─────────────────────────────────────────────
+# PAYMENT — notify khi thanh toán thành công
+# ─────────────────────────────────────────────
+
+pre_save.connect(_cache_old_status, sender="clinic_app.Payment")
+
+
+@receiver(post_save, sender="clinic_app.Payment")
+def on_payment_saved(sender, instance, created, **kwargs):
+    from .models import Notification
+
+    old_status = getattr(instance, "_old_status", None)
+    if created or old_status == instance.status:
+        return
+
+    if instance.status == "success":
+        try:
+            patient_user = instance.invoice.appointment.patient.user
+        except Exception:
+            return
+
+        amount  = f"{int(instance.amount):,}đ".replace(",", ".")
+        title   = "Thanh toán thành công"
+        message = (
+            f"Đã thanh toán {amount} qua {instance.get_payment_method_display()}. "
+            f"Mã giao dịch: {instance.transaction_id or instance.pk}."
+        )
+        Notification.objects.create(
+            user=patient_user,
+            title=title,
+            message=message,
+            type=Notification.Type.PAYMENT_SUCCESS,
+            related_object_id=instance.pk,
+        )
+        _send_push(patient_user, title, message, data={"payment_id": instance.pk})
+        logger.info("Payment #%s success — notification sent to patient.", instance.pk)

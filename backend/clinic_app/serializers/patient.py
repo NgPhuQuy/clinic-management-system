@@ -24,7 +24,8 @@ class PatientSerializer(serializers.ModelSerializer):
 
 class PatientSummarySerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="user.get_full_name", read_only=True)
+    email     = serializers.EmailField(source="user.email", read_only=True)
 
     class Meta:
         model  = Patient
-        fields = ("id", "full_name", "phone", "date_of_birth")
+        fields = ("id", "full_name", "email", "phone", "date_of_birth")

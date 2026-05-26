@@ -10,6 +10,7 @@ import { useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
@@ -37,6 +38,7 @@ const StaffDoctorProfile = () => {
     const nav      = useNavigation();
     const user     = useContext(MyUserContext);
     const dispatch = useContext(MyDispatchContext);
+    const { top }  = useSafeAreaInsets();
 
     const roleCfg = ROLE_CONFIG[user?.role] || ROLE_CONFIG.staff;
 
@@ -60,10 +62,14 @@ const StaffDoctorProfile = () => {
     return (
         <ScrollView style={Styles.container}>
             {/* Profile header */}
-            <View style={[Styles.profileHeader, { backgroundColor: roleCfg.bg }]}>
-                <View style={Styles.profileAvatarWrap}>
-                    {user?.avatar ? (
-                        <Image source={{ uri: user.avatar }} style={Styles.profileAvatar} />
+            <View style={[styles.header, { backgroundColor: roleCfg.bg, paddingTop: top + 24 }]}>
+                <View style={styles.avatarWrap}>
+                    {avatarUri ? (
+                        <Image
+                            source={{ uri: avatarUri }}
+                            style={styles.avatar}
+                            onError={() => {}}
+                        />
                     ) : (
                         <MaterialCommunityIcons name={roleCfg.icon} size={44} color="rgba(255,255,255,0.9)" />
                     )}
@@ -186,5 +192,50 @@ const StaffDoctorProfile = () => {
         </ScrollView>
     );
 };
+
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.bg },
+    header: {
+        paddingTop: 24, paddingBottom: 32,
+        alignItems: "center",
+    },
+    avatarWrap: { marginBottom: 14 },
+    avatar: { width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: "rgba(255,255,255,0.5)" },
+    avatarPlaceholder: {
+        width: 90, height: 90, borderRadius: 45,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        alignItems: "center", justifyContent: "center",
+        borderWidth: 3, borderColor: "rgba(255,255,255,0.4)",
+    },
+    name:       { fontSize: 22, fontWeight: "800", color: "#fff" },
+    email:      { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+    roleBadge:  {
+        flexDirection: "row", alignItems: "center", gap: 6,
+        backgroundColor: "rgba(255,255,255,0.9)",
+        paddingHorizontal: 14, paddingVertical: 6,
+        borderRadius: 20, marginTop: 12,
+    },
+    roleLabel:  { fontSize: 13, fontWeight: "700" },
+    section:    { margin: 16, marginBottom: 0 },
+    sectionTitle: { fontSize: 13, fontWeight: "700", color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+    infoCard: {
+        backgroundColor: "#fff", borderRadius: 14, padding: 14,
+        elevation: 1,
+    },
+    infoRow:    { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
+    infoLabel:  { fontSize: 13, color: COLORS.textMuted, marginLeft: 8, flex: 1 },
+    infoValue:  { fontSize: 13, color: COLORS.text, fontWeight: "600" },
+    menuCard:   { backgroundColor: "#fff", borderRadius: 14, overflow: "hidden", elevation: 1 },
+    menuItem:   { flexDirection: "row", alignItems: "center", padding: 16, gap: 12 },
+    menuIcon:   { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+    menuLabel:  { flex: 1, fontSize: 14, fontWeight: "600", color: COLORS.text },
+    divider:    { height: 1, backgroundColor: COLORS.border, marginHorizontal: 16 },
+    logoutBtn: {
+        flexDirection: "row", alignItems: "center", justifyContent: "center",
+        gap: 10, backgroundColor: COLORS.redPale,
+        borderRadius: 14, paddingVertical: 14,
+    },
+    logoutText: { fontSize: 15, fontWeight: "700", color: COLORS.red },
+});
 
 export default StaffDoctorProfile;

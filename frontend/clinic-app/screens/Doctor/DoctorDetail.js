@@ -117,8 +117,8 @@ const DoctorDetail = () => {
                     schedules.map((s) => (
                         <TouchableOpacity
                             key={s.id}
-                            style={[Styles.card, S.scheduleItem]}
-                            onPress={() => nav.navigate("book-appointment", { doctorId, scheduleId: s.id, doctorName: doctor.full_name, schedule: s })}
+                            style={[Styles.card, styles.scheduleItem]}
+                            onPress={() => nav.navigate("book-appointment", { doctorId, scheduleId: s.id, doctorName: doctor.full_name, doctorAvatar: doctor.avatar || doctor.avatar_url, schedule: s })}
                         >
                             <View>
                                 <Text style={Styles.subtitle}>📅 {new Date(s.date).toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</Text>
@@ -136,7 +136,7 @@ const DoctorDetail = () => {
                     mode="contained"
                     buttonColor="#1565c0"
                     style={{ borderRadius: 8, marginTop: 8 }}
-                    onPress={() => nav.navigate("book-appointment", { doctorId, doctorName: doctor.full_name })}
+                    onPress={() => nav.navigate("book-appointment", { doctorId, doctorName: doctor.full_name, doctorAvatar: doctor.avatar || doctor.avatar_url })}
                 >
                     Đặt lịch hẹn với bác sĩ này
                 </Button>

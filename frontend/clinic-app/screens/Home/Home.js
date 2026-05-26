@@ -5,12 +5,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, homeStyles as S } from "../../styles/Styles";
 
 const QUICK_ACTIONS = [
-    { icon: "calendar-check-outline", label: "Đặt khám", screen: "doctor-list", bg: "#e3f2fd", color: "#1565c0" },
+    { icon: "calendar-check-outline", label: "Đặt khám", screen: "specialty-select", bg: "#e3f2fd", color: "#1565c0" },
     { icon: "clipboard-text-clock-outline", label: "Lịch sử đặt khám", screen: "my-appointments", bg: "#f3e5f5", color: "#7b1fa2" },
     { icon: "credit-card-outline", label: "Thanh toán viện phí", screen: "payments", bg: "#fff3e0", color: "#ef6c00" },
     { icon: "receipt-text-outline", label: "Hoá đơn", screen: "payments", bg: "#e8f5e9", color: "#2e7d32" },
@@ -48,6 +49,7 @@ const STATUS_LABELS = {
 const Home = () => {
     const nav = useNavigation();
     const user = useContext(MyUserContext);
+    const { top } = useSafeAreaInsets();
 
     const [specialties, setSpecialties]   = useState([]);
     const [loadingSpec, setLoadingSpec]   = useState(true);
@@ -85,7 +87,7 @@ const Home = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
 
                 {/* ── HEADER ── */}
-                <View style={S.header}>
+                <View style={[styles.header, { paddingTop: top + 16 }]}>
                     {/* Top row */}
                     <View style={S.headerTop}>
                         <View style={S.logoRow}>
@@ -306,3 +308,213 @@ const Home = () => {
 };
 export default Home;
 // ─── Styles ───────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+    /* Header */
+    header: {
+        backgroundColor: COLORS.primaryDark,
+        paddingTop: 16,
+        paddingHorizontal: 20,
+        paddingBottom: 28,
+    },
+    headerTop: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
+    },
+    logoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+    logoBox: {
+        width: 38, height: 38,
+        backgroundColor: "rgba(255,255,255,0.18)",
+        borderRadius: 10,
+        alignItems: "center", justifyContent: "center",
+    },
+    appName: { color: "#fff", fontSize: 16, fontWeight: "800" },
+    appSub:  { color: "rgba(255,255,255,0.65)", fontSize: 10, marginTop: 1 },
+    bellBtn: {
+        width: 38, height: 38,
+        backgroundColor: "rgba(255,255,255,0.15)",
+        borderRadius: 19,
+        alignItems: "center", justifyContent: "center",
+    },
+    greeting: { color: "rgba(255,255,255,0.75)", fontSize: 13 },
+    userName: { color: "#fff", fontSize: 22, fontWeight: "800", marginTop: 2 },
+    tagLine:  { color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 4 },
+
+    /* Search */
+    searchWrap: { paddingHorizontal: 16, marginTop: -20, zIndex: 10 },
+    searchBar: {
+        backgroundColor: "#fff",
+        borderRadius: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        gap: 10,
+        elevation: 8,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+    },
+    searchInput: { flex: 1, fontSize: 13, color: COLORS.text },
+    searchBtn: {
+        backgroundColor: COLORS.primaryPale,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+    },
+    searchBtnText: { color: COLORS.primary, fontWeight: "700", fontSize: 12 },
+
+    /* Section */
+    section: { paddingHorizontal: 16, paddingTop: 24 },
+    sectionHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 14,
+    },
+    sectionTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
+    sectionLink:  { fontSize: 12, fontWeight: "700", color: COLORS.primary },
+
+    /* Quick grid */
+    quickGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 10,
+    },
+    quickItem: {
+        backgroundColor: "#fff",
+        borderRadius: 14,
+        padding: 12,
+        alignItems: "center",
+        width: "22.5%",
+        elevation: 2,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 6,
+        gap: 8,
+    },
+    quickIconWrap: {
+        width: 46, height: 46,
+        borderRadius: 13,
+        alignItems: "center", justifyContent: "center",
+    },
+    quickLabel: {
+        fontSize: 10,
+        fontWeight: "600",
+        color: COLORS.textMuted,
+        textAlign: "center",
+        lineHeight: 14,
+    },
+
+    /* Appointment card */
+    apptCard: {
+        backgroundColor: COLORS.primaryDark,
+        borderRadius: 16,
+        padding: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 10,
+        elevation: 4,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+    },
+    apptAvatar: {
+        width: 50, height: 50,
+        borderRadius: 14,
+        backgroundColor: "rgba(255,255,255,0.18)",
+        alignItems: "center", justifyContent: "center",
+    },
+    apptDoctor: { color: "#fff", fontSize: 14, fontWeight: "700" },
+    apptTime:   { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 4 },
+    apptBadge: {
+        borderRadius: 20,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+    },
+    apptBadgeText: { fontSize: 10, fontWeight: "700" },
+
+    /* Specialty chips */
+    specChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        backgroundColor: "#fff",
+        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        marginRight: 8,
+        borderWidth: 1.5,
+        borderColor: COLORS.border,
+        elevation: 1,
+    },
+    specText: { fontSize: 12, fontWeight: "600", color: COLORS.text },
+
+    /* Doctor card */
+    docCard: {
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        padding: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 10,
+        elevation: 2,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 6,
+    },
+    docAvatar: {
+        width: 54, height: 54,
+        borderRadius: 16,
+        backgroundColor: COLORS.primaryPale,
+        alignItems: "center", justifyContent: "center",
+    },
+    docName: { fontSize: 13, fontWeight: "700", color: COLORS.text },
+    docSpec: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+    docTag: {
+        backgroundColor: COLORS.primaryPale,
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        marginTop: 6,
+        alignSelf: "flex-start",
+    },
+    docTagText: { fontSize: 10, fontWeight: "600", color: COLORS.primary },
+    docBtn: {
+        backgroundColor: COLORS.primary,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+    },
+    docBtnText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+
+    /* Health banner */
+    healthBanner: {
+        backgroundColor: "#e8f5e9",
+        borderRadius: 16,
+        padding: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 14,
+        borderWidth: 1.5,
+        borderColor: "#a5d6a7",
+    },
+    healthTitle: { fontSize: 13, fontWeight: "700", color: COLORS.green },
+    healthSub:   { fontSize: 11, color: "#388e3c", marginTop: 2 },
+    healthBtn: {
+        backgroundColor: COLORS.greenLight,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    healthBtnText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+});
+
+export default Home;

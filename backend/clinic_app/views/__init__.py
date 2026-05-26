@@ -1,9 +1,9 @@
-from .auth import RegisterView, LoginView, MeView, ChangePasswordView, FirebaseTokenView
+from .auth import RegisterView, LoginView, MeView, ChangePasswordView
 from .specialty import SpecialtyViewSet, ServiceViewSet
 from .patient import PatientViewSet
 from .doctor import DoctorViewSet, DoctorScheduleViewSet
 from .appointment import AppointmentViewSet
-from .medical_record import MedicalRecordViewSet
+from .medical_record import MedicalRecordViewSet, TestResultViewSet
 from .medicine import MedicineCategoryViewSet, MedicineViewSet, InventoryViewSet, InventoryAlertViewSet
 from .prescription import PrescriptionViewSet
 from .payment import PaymentViewSet
@@ -22,12 +22,12 @@ from .staff_doctor import (
 )
 
 __all__ = [
-    "RegisterView", "LoginView", "MeView", "ChangePasswordView", "FirebaseTokenView",
+    "RegisterView", "LoginView", "MeView", "ChangePasswordView",
     "SpecialtyViewSet", "ServiceViewSet",
     "PatientViewSet",
     "DoctorViewSet", "DoctorScheduleViewSet",
     "AppointmentViewSet",
-    "MedicalRecordViewSet",
+    "MedicalRecordViewSet", "TestResultViewSet",
     "MedicineCategoryViewSet", "MedicineViewSet", "InventoryViewSet", "InventoryAlertViewSet",
     "PrescriptionViewSet",
     "PaymentViewSet",

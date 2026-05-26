@@ -12,6 +12,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
 import Styles, { COLORS, profileStyles as PS } from "../../styles/Styles";
@@ -41,7 +42,8 @@ export const UserAvatar = ({ uri, size = 80, iconName = "account", borderRadius 
 export const Profile = () => {
     const user     = useContext(MyUserContext);
     const dispatch = useContext(MyDispatchContext);
-    const nav      = useNavigation();
+    const nav = useNavigation();
+    const { top } = useSafeAreaInsets();
     const [patient, setPatient] = useState(null);
     const [stats,   setStats]   = useState({ appointments: 0, prescriptions: 0 });
 
@@ -77,11 +79,17 @@ export const Profile = () => {
         <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} showsVerticalScrollIndicator={false}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
-            <View style={PS.header}>
-                <UserAvatar uri={avatarUri} size={84} iconName="account" borderRadius={24} />
-                <Text style={PS.name}>{user?.first_name} {user?.last_name}</Text>
-                <View style={PS.roleBadge}>
-                    <Text style={PS.roleText}>{ROLE_LABELS[user?.role] || user?.role}</Text>
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: top + 16 }]}>
+                <UserAvatar
+                    uri={avatarUri}
+                    size={84}
+                    iconName="account"
+                    borderRadius={24}
+                />
+                <Text style={styles.name}>{user?.first_name} {user?.last_name}</Text>
+                <View style={styles.roleBadge}>
+                    <Text style={styles.roleText}>{ROLE_LABELS[user?.role] || user?.role}</Text>
                 </View>
                 <Text style={PS.email}>{user?.email}</Text>
             </View>
@@ -227,113 +235,35 @@ export const Prescriptions = () => {
     );
 };
 
-// ─── Payments ─────────────────────────────────────────────────────────────────
-// Luồng: danh sách invoice → bấm vào invoice → modal chọn PT → xác nhận TT tiền mặt
-const PAY_STATUS_CFG = {
-    pending:  { label: "Chờ thanh toán", color: COLORS.orange  },
-    success:  { label: "Đã thanh toán",  color: COLORS.green   },
-    failed:   { label: "Thất bại",       color: COLORS.red     },
-    refunded: { label: "Hoàn tiền",      color: COLORS.purple  },
+// ─── Payments Screen ─────────────────────────────────────────────────────────
+const PAY_STATUS_COLORS = {
+    pending:  COLORS.orangeLight,
+    success:  COLORS.greenLight,
+    failed:   COLORS.redLight,
+    refunded: COLORS.purpleLight,
+};
+const PAY_STATUS_LABELS = {
+    pending:  "Chờ thanh toán",
+    success:  "Đã thanh toán",
+    failed:   "Thất bại",
+    refunded: "Đã hoàn tiền",
+};
+const PAY_METHOD_ICONS = {
+    momo: "wallet", vnpay: "qrcode-scan", cash: "cash",
+    banking: "bank-transfer", credit_card: "credit-card",
 };
 const PAY_METHOD_LABELS = {
-    momo: "Ví MoMo", vnpay: "VNPay QR", cash: "Tiền mặt",
+    momo: "MoMo", vnpay: "VNPay", cash: "Tiền mặt",
     banking: "Chuyển khoản", credit_card: "Thẻ tín dụng",
 };
-
-const MOCK_INVOICES = [
-    { id:1,  appointment_id:1,  doctor_name:"BS. Nguyễn Văn An",  amount:"450000", status:"pending",  payment_method:"cash",    created_at: new Date(Date.now()-1*86400*1000).toISOString() },
-    { id:2,  appointment_id:2,  doctor_name:"BS. Lê Minh Cường",   amount:"320000", status:"success",  payment_method:"momo",    created_at: new Date(Date.now()-3*86400*1000).toISOString(), paid_at: new Date(Date.now()-3*86400*1000).toISOString() },
-    { id:3,  appointment_id:3,  doctor_name:"BS. Phạm Thị Dung",   amount:"700000", status:"pending",  payment_method:"cash",    created_at: new Date(Date.now()-2*86400*1000).toISOString() },
-    { id:4,  appointment_id:4,  doctor_name:"BS. Hoàng Văn Em",    amount:"250000", status:"success",  payment_method:"vnpay",   created_at: new Date(Date.now()-7*86400*1000).toISOString(), paid_at: new Date(Date.now()-7*86400*1000).toISOString() },
-    { id:5,  appointment_id:5,  doctor_name:"BS. Vũ Thị Phương",   amount:"280000", status:"pending",  payment_method:"cash",    created_at: new Date(Date.now()-1*3600*1000).toISOString() },
-    { id:6,  appointment_id:6,  doctor_name:"BS. Nguyễn Văn An",   amount:"550000", status:"refunded", payment_method:"momo",    created_at: new Date(Date.now()-10*86400*1000).toISOString() },
-];
-
-const PAYMENT_METHODS = [
-    { key:"cash",  label:"Tiền mặt",  sub:"Thanh toán tại quầy thu ngân",      icon:"cash",        iconBg: COLORS.greenPale, iconColor: COLORS.green },
-    { key:"momo",  label:"Ví MoMo",   sub:"Thanh toán qua ứng dụng MoMo",      icon:"wallet",      iconBg: "#ae2070",        iconColor: "#fff" },
-    { key:"vnpay", label:"VNPay QR",  sub:"Quét mã QR hoặc Internet Banking",  icon:"qrcode-scan", iconBg: "#005baf",        iconColor: "#fff" },
-];
-
-// Modal xác nhận thanh toán tiền mặt
-const CashConfirmModal = ({ invoice, onClose, onConfirm }) => {
-    const [loading, setLoading] = useState(false);
-    if (!invoice) return null;
-    return (
-        <View style={{
-            position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end",
-        }}>
-            <View style={{
-                backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24,
-                padding: 24, paddingBottom: 36,
-            }}>
-                {/* Handle */}
-                <View style={{ width: 40, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
-
-                <View style={{ alignItems: "center", marginBottom: 20 }}>
-                    <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.greenPale, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-                        <MaterialCommunityIcons name="cash" size={32} color={COLORS.green} />
-                    </View>
-                    <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text }}>Thanh toán tiền mặt</Text>
-                    <Text style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4, textAlign: "center" }}>
-                        Xác nhận đặt lịch thanh toán tại quầy thu ngân
-                    </Text>
-                </View>
-
-                {/* Invoice info */}
-                <View style={{ backgroundColor: COLORS.bg, borderRadius: 12, padding: 14, marginBottom: 20, gap: 8 }}>
-                    {[
-                        { label: "Bác sĩ",      value: invoice.doctor_name },
-                        { label: "Số hoá đơn",  value: `#${invoice.id}` },
-                        { label: "Số tiền",     value: `${Number(invoice.amount).toLocaleString("vi-VN")}đ`, bold: true },
-                    ].map(r => (
-                        <View key={r.label} style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                            <Text style={{ fontSize: 13, color: COLORS.textMuted }}>{r.label}</Text>
-                            <Text style={{ fontSize: 13, color: r.bold ? COLORS.primary : COLORS.text, fontWeight: r.bold ? "800" : "600" }}>{r.value}</Text>
-                        </View>
-                    ))}
-                </View>
-
-                <View style={{ backgroundColor: "#e8f5e9", borderRadius: 10, padding: 12, marginBottom: 20 }}>
-                    <Text style={{ fontSize: 13, color: COLORS.green, lineHeight: 20 }}>
-                        ℹ️ Sau khi xác nhận, vui lòng đến quầy thu ngân để hoàn tất thanh toán. Nhân viên sẽ thu tiền và cấp biên lai.
-                    </Text>
-                </View>
-
-                <TouchableOpacity
-                    style={[Styles.btnPrimary, { backgroundColor: COLORS.green, marginBottom: 10 }]}
-                    onPress={async () => {
-                        setLoading(true);
-                        await onConfirm(invoice);
-                        setLoading(false);
-                    }}
-                    disabled={loading}
-                >
-                    {loading
-                        ? <ActivityIndicator color="#fff" />
-                        : <Text style={Styles.btnPrimaryText}>✓ Xác nhận thanh toán tiền mặt</Text>
-                    }
-                </TouchableOpacity>
-
-                <TouchableOpacity style={Styles.btnOutline} onPress={onClose}>
-                    <Text style={Styles.btnOutlineText}>Hủy</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+const PAY_METHOD_COLORS = {
+    momo: "#ae2070", vnpay: "#005baf", cash: COLORS.green,
+    banking: COLORS.teal, credit_card: COLORS.purple,
 };
 
 export const Payments = () => {
     const nav  = useNavigation();
     const user = useContext(MyUserContext);
-
-    const [invoices,       setInvoices]       = useState([]);
-    const [loading,        setLoading]        = useState(true);
-    const [selectedInvoice, setSelected]      = useState(null); // invoice đang chọn phương thức
-    const [selectedMethod, setMethod]         = useState(null);
-    const [showCash,       setShowCash]       = useState(false);
-    const [filterStatus,   setFilterStatus]   = useState("all");
 
     useEffect(() => {
         authApis(user.token).get(endpoints["payments"])
@@ -391,151 +321,180 @@ export const Payments = () => {
 
     if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
-    return (
-        <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-            {/* Filter tabs */}
-            <View style={{ flexDirection: "row", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                {STATUS_FILTERS.map(f => (
-                    <TouchableOpacity
-                        key={f.key}
-                        style={{
-                            flex: 1, paddingVertical: 12, alignItems: "center",
-                            borderBottomWidth: 2.5,
-                            borderBottomColor: filterStatus === f.key ? COLORS.primary : "transparent",
-                        }}
-                        onPress={() => setFilterStatus(f.key)}
-                    >
-                        <Text style={{ fontSize: 13, fontWeight: "700", color: filterStatus === f.key ? COLORS.primary : COLORS.textMuted }}>
-                            {f.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
+    const renderPayment = ({ item }) => {
+        const statusColor = PAY_STATUS_COLORS[item.status] || "#9e9e9e";
+        const methodIcon  = PAY_METHOD_ICONS[item.payment_method] || "credit-card-outline";
+        const methodColor = PAY_METHOD_COLORS[item.payment_method] || COLORS.primary;
+        const methodLabel = PAY_METHOD_LABELS[item.payment_method] || item.payment_method;
+        const date = item.paid_at || item.created_at;
 
-            {/* Invoice list */}
-            <FlatList
-                data={displayed}
-                keyExtractor={item => item.id.toString()}
-                contentContainerStyle={{ padding: 16, gap: 10, flexGrow: 1 }}
-                ListEmptyComponent={
-                    <View style={Styles.emptyWrap}>
-                        <MaterialCommunityIcons name="credit-card-outline" size={52} color={COLORS.border} />
-                        <Text style={Styles.emptyText}>Chưa có giao dịch nào</Text>
-                    </View>
-                }
-                renderItem={({ item }) => {
-                    const sCfg = PAY_STATUS_CFG[item.status] || {};
-                    const isPending = item.status === "pending";
-                    return (
-                        <TouchableOpacity
-                            style={[PS.invoiceCard, isPending && { borderWidth: 1.5, borderColor: COLORS.primary + "40" }]}
-                            onPress={() => openInvoice(item)}
-                            activeOpacity={isPending ? 0.8 : 1}
-                        >
-                            <View style={PS.invoiceTop}>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={PS.invoiceNum}>Hoá đơn #{item.id}</Text>
-                                    <Text style={PS.invoiceDoc}>{item.doctor_name}</Text>
-                                </View>
-                                <View style={[Styles.badge, { backgroundColor: sCfg.color + "20", alignSelf: "flex-start" }]}>
-                                    <Text style={[Styles.badgeText, { color: sCfg.color }]}>{sCfg.label}</Text>
-                                </View>
-                            </View>
-
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 4 }}>
-                                <View>
-                                    <Text style={PS.invoiceAmt}>{Number(item.amount).toLocaleString("vi-VN")}đ</Text>
-                                    <Text style={PS.invoiceDate}>
-                                        {new Date(item.created_at).toLocaleDateString("vi-VN")}
-                                        {item.payment_method ? ` • ${PAY_METHOD_LABELS[item.payment_method] || item.payment_method}` : ""}
-                                    </Text>
-                                </View>
-                                {isPending && (
-                                    <View style={{
-                                        flexDirection: "row", alignItems: "center", gap: 4,
-                                        backgroundColor: COLORS.primary, borderRadius: 8,
-                                        paddingHorizontal: 10, paddingVertical: 6,
-                                    }}>
-                                        <MaterialCommunityIcons name="credit-card-outline" size={14} color="#fff" />
-                                        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>Thanh toán</Text>
-                                    </View>
-                                )}
-                            </View>
-                        </TouchableOpacity>
-                    );
-                }}
-            />
-
-            {/* Payment method sheet (khi bấm vào invoice pending) */}
-            {selectedInvoice && !showCash && (
-                <View style={{
-                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end",
-                }}>
-                    <View style={{
-                        backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24,
-                        padding: 24, paddingBottom: 36,
-                    }}>
-                        <View style={{ width: 40, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: "center", marginBottom: 16 }} />
-                        <Text style={{ fontSize: 16, fontWeight: "800", color: COLORS.text, marginBottom: 4 }}>
-                            Thanh toán hoá đơn #{selectedInvoice.id}
-                        </Text>
-                        <Text style={{ fontSize: 22, fontWeight: "900", color: COLORS.primary, marginBottom: 16 }}>
-                            {Number(selectedInvoice.amount).toLocaleString("vi-VN")}đ
-                        </Text>
-
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: COLORS.textLight, letterSpacing: 0.8, marginBottom: 10 }}>
-                            CHỌN PHƯƠNG THỨC
-                        </Text>
-
-                        {PAYMENT_METHODS.map(m => {
-                            const sel = selectedMethod === m.key;
-                            return (
-                                <TouchableOpacity
-                                    key={m.key}
-                                    style={[PS.methodCard, sel && PS.methodCardSelected]}
-                                    onPress={() => setMethod(m.key)}
-                                    activeOpacity={0.75}
-                                >
-                                    <View style={[PS.methodIcon, { backgroundColor: m.iconBg }]}>
-                                        <MaterialCommunityIcons name={m.icon} size={22} color={m.iconColor} />
-                                    </View>
-                                    <View style={{ flex: 1, marginLeft: 14 }}>
-                                        <Text style={[PS.methodLabel, sel && { color: COLORS.primary }]}>{m.label}</Text>
-                                        <Text style={PS.methodSub}>{m.sub}</Text>
-                                    </View>
-                                    <View style={[PS.radio, sel && PS.radioSelected]}>
-                                        {sel && <View style={PS.radioDot} />}
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })}
-
-                        <TouchableOpacity
-                            style={[Styles.btnPrimary, (!selectedMethod) && { opacity: 0.5 }, { marginTop: 8 }]}
-                            onPress={proceedPayment}
-                            disabled={!selectedMethod}
-                        >
-                            <Text style={Styles.btnPrimaryText}>
-                                {selectedMethod === "cash" ? "Xác nhận tiền mặt →" : "Tiến hành thanh toán →"}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={Styles.btnOutline} onPress={() => { setSelected(null); setMethod(null); }}>
-                            <Text style={Styles.btnOutlineText}>Hủy</Text>
-                        </TouchableOpacity>
-                    </View>
+        return (
+            <View style={payStyles.card}>
+                {/* Left: method icon */}
+                <View style={[payStyles.methodIcon, { backgroundColor: methodColor + "18" }]}>
+                    <MaterialCommunityIcons name={methodIcon} size={22} color={methodColor} />
                 </View>
-            )}
 
-            {/* Cash confirm modal */}
-            {showCash && (
-                <CashConfirmModal
-                    invoice={selectedInvoice}
-                    onClose={() => { setShowCash(false); setSelected(null); setMethod(null); }}
-                    onConfirm={confirmCash}
+                {/* Center: info */}
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={payStyles.topRow}>
+                        <Text style={payStyles.amount}>
+                            {Number(item.amount).toLocaleString("vi-VN")}đ
+                        </Text>
+                        <View style={[payStyles.badge, { backgroundColor: statusColor + "22" }]}>
+                            <Text style={[payStyles.badgeText, { color: statusColor }]}>
+                                {PAY_STATUS_LABELS[item.status] || item.status}
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={payStyles.bottomRow}>
+                        <MaterialCommunityIcons name={methodIcon} size={12} color={COLORS.textLight} />
+                        <Text style={payStyles.meta}>  {methodLabel}</Text>
+                        <Text style={payStyles.metaDot}>  ·  </Text>
+                        <Text style={payStyles.meta}>
+                            {new Date(date).toLocaleDateString("vi-VN")}
+                        </Text>
+                    </View>
+                    {item.note ? (
+                        <Text style={payStyles.note} numberOfLines={1}>{item.note}</Text>
+                    ) : null}
+                </View>
+            </View>
+        );
+    };
+
+    return (
+        <View style={Styles.container}>
+            {payments.length === 0 ? (
+                <View style={[Styles.center, { flex: 1 }]}>
+                    <MaterialCommunityIcons name="receipt-text-outline" size={64} color={COLORS.textLight} />
+                    <Text style={[Styles.text, { marginTop: 12, fontWeight: "600" }]}>Chưa có giao dịch nào</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={payments}
+                    keyExtractor={(item) => item.id.toString()}
+                    contentContainerStyle={{ padding: 16 }}
+                    renderItem={renderPayment}
                 />
             )}
         </View>
     );
 };
-export default Profile;
+
+const payStyles = StyleSheet.create({
+    card: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#fff",
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 10,
+        elevation: 2,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+    },
+    methodIcon: {
+        width: 46, height: 46,
+        borderRadius: 13,
+        alignItems: "center", justifyContent: "center",
+    },
+    topRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 4,
+    },
+    amount: { fontSize: 16, fontWeight: "800", color: COLORS.text },
+    badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+    badgeText: { fontSize: 11, fontWeight: "700" },
+    bottomRow: { flexDirection: "row", alignItems: "center" },
+    meta: { fontSize: 11, color: COLORS.textMuted },
+    metaDot: { fontSize: 11, color: COLORS.textLight },
+    note: { fontSize: 11, color: COLORS.textLight, marginTop: 2 },
+});
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+    header: {
+        backgroundColor: COLORS.primaryDark,
+        paddingTop: 16,
+        paddingHorizontal: 20,
+        paddingBottom: 36,
+        alignItems: "center",
+        gap: 6,
+    },
+    name: { color: "#fff", fontSize: 20, fontWeight: "800", marginTop: 6 },
+    roleBadge: {
+        backgroundColor: "rgba(255,255,255,0.2)",
+        borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4,
+    },
+    roleText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+    email: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
+
+    statsRow: {
+        flexDirection: "row",
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        marginHorizontal: 16,
+        marginTop: -22,
+        elevation: 6,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        overflow: "hidden",
+        zIndex: 10,
+    },
+    statItem: { flex: 1, paddingVertical: 16, alignItems: "center" },
+    statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: COLORS.border },
+    statNum: { fontSize: 22, fontWeight: "800", color: COLORS.primary },
+    statLabel: { fontSize: 10, color: COLORS.textMuted, marginTop: 2 },
+
+    section: { marginHorizontal: 16, marginTop: 20 },
+    sectionTitle: {
+        fontSize: 11, fontWeight: "700", color: COLORS.textLight,
+        letterSpacing: 0.8, marginBottom: 8, paddingLeft: 4,
+    },
+    card: {
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        overflow: "hidden",
+        elevation: 2,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 6,
+    },
+    infoRow: {
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 16, paddingVertical: 12,
+        borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    },
+    infoLabel: { fontSize: 11, color: COLORS.textMuted, width: 90 },
+    infoValue: { fontSize: 13, color: COLORS.text, fontWeight: "500", flex: 1 },
+    menuRow: {
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 16, paddingVertical: 14,
+        borderBottomWidth: 1, borderBottomColor: COLORS.border,
+        gap: 12,
+    },
+    menuIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+    menuLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+    menuSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
+    badgeWrap: {
+        backgroundColor: COLORS.redLight, borderRadius: 8,
+        paddingHorizontal: 6, paddingVertical: 2, marginRight: 6,
+    },
+    badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+    logoutBtn: {
+        margin: 16,
+        backgroundColor: "#fff0f0",
+        borderWidth: 1.5, borderColor: "#ffcdd2",
+        borderRadius: 16, paddingVertical: 14,
+        flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    },
+    logoutText: { color: COLORS.redLight, fontSize: 14, fontWeight: "700" },
+});

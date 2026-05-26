@@ -49,6 +49,10 @@ export const endpoints = {
     'medical-record-detail': (id) => `/medical-records/${id}/`,
     'medical-record-add-test': (id) => `/medical-records/${id}/add_test_result/`,
 
+    // Test Results
+    'test-results': '/test-results/',
+    'test-result-detail': (id) => `/test-results/${id}/`,
+
     // Prescriptions
     'prescriptions': '/prescriptions/',
     'prescription-detail': (id) => `/prescriptions/${id}/`,
@@ -89,6 +93,7 @@ export const endpoints = {
     'consultation-start': (id) => `/consultations/${id}/start/`,
     'consultation-end': (id) => `/consultations/${id}/end/`,
     'consultation-messages': (id) => `/consultations/${id}/messages/`,
+    'consultation-rtm-token': (id) => `/consultations/${id}/rtm-token/`,
 
     // Admin dashboard
     'admin-dashboard': '/admin/dashboard/',
