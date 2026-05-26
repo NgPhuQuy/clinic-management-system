@@ -82,33 +82,49 @@ const AppointmentDetail = () => {
     };
 
     const goToPayment = () => {
-        const total = calcTotal(appt);
+        const invoice = appt.invoice;
+        const invoiceId = invoice?.id;
+
+        if (!invoiceId) {
+            Alert.alert("Lỗi", "Không tìm thấy hóa đơn cho lịch hẹn này. Vui lòng thử lại sau.");
+            return;
+        }
+
+        const amount = Number(invoice?.remaining ?? invoice?.total_amount ?? calcTotal(appt));
+
         nav.navigate("payment-screen", {
+            invoiceId,
             appointmentId: appt.id,
             doctorName: appt.doctor_info?.full_name || appt.doctor_name || `#${appt.doctor}`,
             appointmentDate: appt.appointment_date,
-            amount: appt.payment?.amount || total,
+            amount,
         });
     };
 
     if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
     if (!appt) return <View style={[Styles.center, { flex: 1 }]}><Text>Không tìm thấy lịch hẹn</Text></View>;
 
-    const payment = appt.payment;
-    const total = calcTotal(appt);
-    const canPay = (appt.status === "pending" || appt.status === "confirmed" || appt.status === "completed")
-        && (!payment || payment.status === "pending" || payment.status === "failed");
-    const alreadyPaid = payment?.status === "success";
+    const invoice    = appt.invoice;
+    const payments   = invoice?.payments ?? [];
+    const payment    = payments.find(p => p.status === "success")
+                    ?? payments.find(p => p.status === "pending")
+                    ?? payments[0]
+                    ?? null;
+    const total      = calcTotal(appt);
+    const remaining  = Number(invoice?.remaining ?? total);
+    const hasPendingPayment = payments.some(p => p.status === "pending");
+    const canPay     = ["pending", "confirmed", "completed", "in_progress"].includes(appt.status)
+        && remaining > 0
+        && !hasPendingPayment;
+    const alreadyPaid = remaining <= 0 || payment?.status === "success";
 
     return (
         <ScrollView style={Styles.container}>
-            {/* Banner trạng thái */}
             <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[appt.status] || "#9e9e9e" }]}>
                 <Text style={styles.statusText}>{STATUS_LABELS[appt.status] || appt.status}</Text>
             </View>
 
             <View style={Styles.padding}>
-                {/* Thông tin lịch hẹn */}
                 <View style={Styles.card}>
                     <Text style={Styles.sectionHeader}>Thông tin lịch hẹn</Text>
                     <Text style={Styles.text}>👨‍⚕️ Bác sĩ: BS. {appt.doctor_info?.full_name || appt.doctor_name || appt.doctor}</Text>
@@ -151,7 +167,6 @@ const AppointmentDetail = () => {
                     </View>
                 )}
 
-                {/* ─── Thanh toán ─────────────────────────────────────────── */}
                 <View style={Styles.card}>
                     <Text style={Styles.sectionHeader}>Thanh toán</Text>
 
