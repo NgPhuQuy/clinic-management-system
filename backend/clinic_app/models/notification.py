@@ -5,6 +5,7 @@ from .user import User
 class Notification(models.Model):
     class Type(models.TextChoices):
         APPOINTMENT_REMINDER  = "appointment_reminder",  "Nhắc lịch hẹn"
+        APPOINTMENT_CONFIRMED = "appointment_confirmed", "Xác nhận lịch hẹn"
         APPOINTMENT_CANCELLED = "appointment_cancelled", "Hủy lịch hẹn"
         PRESCRIPTION_READY    = "prescription_ready",    "Đơn thuốc sẵn sàng"
         PAYMENT_SUCCESS       = "payment_success",       "Thanh toán thành công"

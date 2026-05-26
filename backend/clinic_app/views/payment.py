@@ -45,7 +45,7 @@ def _create_momo_payment_url(payment: Payment, request) -> dict:
     order_id     = f"CLINIC-{payment.id}-{int(time.time())}"
     amount       = int(payment.amount)
     appt_id      = payment.invoice.appointment_id
-    order_info   = f"Thanh toan lich kham #{appt_id}"
+    order_info   = f"Thanh toán lịch khám #{appt_id}"
     redirect_url = f"{base_url}/api/payments/momo/return/"
     ipn_url      = f"{base_url}/api/payments/momo/ipn/"
     extra_data   = ""

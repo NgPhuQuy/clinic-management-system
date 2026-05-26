@@ -10,11 +10,14 @@ import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
 const TYPE_MAP = {
-    appointment_reminder: { icon: "calendar-clock",    bg: "#e8f5e9", color: COLORS.green },
-    prescription:         { icon: "pill",               bg: "#fff3e0", color: COLORS.orange },
-    payment:              { icon: "credit-card-outline",bg: "#f3e5f5", color: COLORS.purple },
-    lab_result:           { icon: "flask-outline",      bg: "#e0f7fa", color: COLORS.teal },
-    general:              { icon: "bell-outline",       bg: "#e3f2fd", color: COLORS.primary },
+    appointment_reminder:  { icon: "calendar-clock",     bg: "#e8f5e9", color: COLORS.green },
+    appointment_confirmed: { icon: "calendar-check",     bg: "#e8f5e9", color: COLORS.green },
+    appointment_cancelled: { icon: "calendar-remove",    bg: "#fce4ec", color: "#e53935" },
+    prescription_ready:    { icon: "pill",               bg: "#fff3e0", color: COLORS.orange },
+    payment_success:       { icon: "credit-card-check",  bg: "#f3e5f5", color: "#7b1fa2" },
+    inventory_alert:       { icon: "package-variant",    bg: "#fff8e1", color: "#f57f17" },
+    test_result_ready:     { icon: "flask-outline",      bg: "#e0f7fa", color: "#00838f" },
+    system:                { icon: "bell-outline",       bg: "#e3f2fd", color: COLORS.primary },
 };
 
 const Notifications = () => {
@@ -52,7 +55,7 @@ const Notifications = () => {
     const displayed = tab === "unread" ? notifications.filter(n => !n.is_read) : notifications;
 
     const renderItem = ({ item }) => {
-        const t = TYPE_MAP[item.notification_type] || TYPE_MAP.general;
+        const t = TYPE_MAP[item.type] || TYPE_MAP.system;
         return (
             <TouchableOpacity
                 style={[styles.item, !item.is_read && styles.itemUnread]}

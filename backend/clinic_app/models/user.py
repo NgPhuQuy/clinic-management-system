@@ -10,8 +10,9 @@ class User(AbstractUser):
         STAFF   = "staff",   "Nhân viên y tế"
         ADMIN   = "admin",   "Quản trị viên"
 
-    role   = models.CharField(max_length=20, choices=Role, default=Role.PATIENT)
-    avatar = CloudinaryField(null=True)
+    role       = models.CharField(max_length=20, choices=Role, default=Role.PATIENT)
+    avatar     = CloudinaryField(null=True)
+    push_token = models.CharField(max_length=255, blank=True, null=True)
 
     oauth_provider = models.CharField(
         max_length=50, blank=True, null=True,

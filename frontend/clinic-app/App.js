@@ -48,8 +48,17 @@ import StaffPrescriptions from "./screens/Staff/StaffPrescriptions";
 // Shared
 import StaffDoctorProfile from "./screens/Shared/StaffDoctorProfile";
 
+import * as Notifications from "expo-notifications";
 import { authApis, endpoints } from "./configs/Apis";
 import { COLORS } from "./styles/Styles";
+
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge:  true,
+    }),
+});
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -439,29 +448,41 @@ const App = () => {
     const [initializing, setInitializing] = useState(true);
 
     useEffect(() => {
-    const restoreSession = async () => {
-        try {
-            const token = await AsyncStorage.getItem("token");
-            if (token) {
-                const res = await authApis(token).get(endpoints["current-user"]);
-                const userData = res.data;
-                const storedScope = await AsyncStorage.getItem("token_scope");
-                if (!storedScope || storedScope !== userData.role) {
-                    await AsyncStorage.multiRemove(["token", "token_scope"]);
-                    setInitializing(false);
-                    return;
+        const restoreSession = async () => {
+            try {
+                const token = await AsyncStorage.getItem("token");
+                if (token) {
+                    const res = await authApis(token).get(endpoints["current-user"]);
+                    const userData = res.data;
+                    const storedScope = await AsyncStorage.getItem("token_scope");
+                    if (!storedScope || storedScope !== userData.role) {
+                        await AsyncStorage.multiRemove(["token", "token_scope"]);
+                        setInitializing(false);
+                        return;
+                    }
+                    dispatch({ type: "login", payload: { ...userData, token } });
                 }
-
-                dispatch({ type: "login", payload: { ...userData, token } });
+            } catch (e) {
+                await AsyncStorage.multiRemove(["token", "token_scope"]);
+            } finally {
+                setInitializing(false);
             }
-        } catch (e) {
-            await AsyncStorage.multiRemove(["token", "token_scope"]);
-        } finally {
-            setInitializing(false);
-        }
-    };
-    restoreSession();
-}, []);
+        };
+        restoreSession();
+    }, []);
+
+    useEffect(() => {
+        if (!user?.token) return;
+        const registerPushToken = async () => {
+            try {
+                const { status } = await Notifications.requestPermissionsAsync();
+                if (status !== "granted") return;
+                const { data: pushToken } = await Notifications.getExpoPushTokenAsync();
+                await authApis(user.token).patch(endpoints["current-user"], { push_token: pushToken });
+            } catch (_) {}
+        };
+        registerPushToken();
+    }, [user?.id]);
 
     if (initializing) {
         return (
