@@ -10,6 +10,7 @@ import { Text } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
@@ -73,6 +74,7 @@ const AppointmentItem = ({ item, onPress }) => {
 const StaffDashboard = () => {
     const nav = useNavigation();
     const user = useContext(MyUserContext);
+    const { top } = useSafeAreaInsets();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -115,7 +117,7 @@ const StaffDashboard = () => {
             <StatusBar backgroundColor={COLORS.teal} barStyle="light-content" />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: top + 16 }]}>
                 <View>
                     <Text style={styles.greeting}>Nhân viên y tế 🏥</Text>
                     <Text style={styles.dateText}>{today}</Text>
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.bg },
     header: {
         backgroundColor: COLORS.teal,
-        paddingHorizontal: 20, paddingTop: 52, paddingBottom: 24,
+        paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24,
         flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     },
     greeting: { fontSize: 20, fontWeight: "800", color: "#fff" },

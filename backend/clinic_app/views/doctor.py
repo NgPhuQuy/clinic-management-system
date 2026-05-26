@@ -2,13 +2,13 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import Doctor, DoctorSchedule
 from ..serializers import DoctorSerializer, DoctorScheduleSerializer, AppointmentSerializer
-from ..permissions import HasAdminScope, IsOwnerOrAdmin, HasDoctorOrAdminScope
+from ..permissions import HasAdminScope, IsOwnerOrAdmin, HasDoctorOrAdminScope, IsAuthenticatedWithValidToken
 
 
 class DoctorViewSet(viewsets.ModelViewSet):
@@ -22,7 +22,7 @@ class DoctorViewSet(viewsets.ModelViewSet):
         if self.action in ("list", "retrieve", "schedules"):
             return [AllowAny()]
         if self.action in ("update", "partial_update"):
-            return [IsAuthenticated(), IsOwnerOrAdmin()]
+            return [IsAuthenticatedWithValidToken(), IsOwnerOrAdmin()]
         if self.action == "appointments":
             return [HasDoctorOrAdminScope()]
         return [HasAdminScope()]
@@ -60,7 +60,7 @@ class DoctorScheduleViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
             return [HasDoctorOrAdminScope()]
-        return [IsAuthenticated()]
+        return [IsAuthenticatedWithValidToken()]
 
     def perform_create(self, serializer):
         if self.request.user.role == "doctor":

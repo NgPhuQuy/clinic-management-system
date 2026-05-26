@@ -5,10 +5,18 @@ from .doctor import DoctorSummarySerializer
 
 
 class TestResultSerializer(serializers.ModelSerializer):
+    patient_name = serializers.SerializerMethodField(read_only=True)
+
+    def get_patient_name(self, obj):
+        try:
+            return obj.medical_record.patient.user.get_full_name()
+        except Exception:
+            return ""
+
     class Meta:
         model = TestResult
         fields = "__all__"
-        read_only_fields = ("id", "medical_record", "entered_by")
+        read_only_fields = ("id", "medical_record", "entered_by", "patient_name")
 
 
 class MedicalRecordSerializer(serializers.ModelSerializer):

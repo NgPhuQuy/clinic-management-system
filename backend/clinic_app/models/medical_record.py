@@ -40,13 +40,18 @@ class TestResult(models.Model):
         ECG          = "ecg",        "Điện tâm đồ (ECG)"
         OTHER        = "other",      "Khác"
 
+    class Status(models.TextChoices):
+        ORDERED   = "ordered",   "Đã chỉ định"
+        COMPLETED = "completed", "Có kết quả"
+
     medical_record  = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name="test_results")
     test_type       = models.CharField(max_length=20, choices=TestType, default=TestType.OTHER, help_text="Loại cận lâm sàng")
     test_name       = models.CharField(max_length=255, help_text="Tên xét nghiệm/chụp chiếu cụ thể")
-    result          = models.TextField(help_text="Kết quả")
+    result          = models.TextField(blank=True, default="", help_text="Kết quả")
     unit            = models.CharField(max_length=50, blank=True, help_text="Đơn vị (nếu có)")
     reference_range = models.CharField(max_length=100, blank=True, help_text="Khoảng tham chiếu bình thường")
     test_date       = models.DateField()
+    status          = models.CharField(max_length=20, choices=Status, default=Status.ORDERED, help_text="Trạng thái kết quả")
     file_attachment = models.FileField(upload_to="test_results/", blank=True, null=True, help_text="File kết quả (hình chụp, PDF...)")
     entered_by      = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True, related_name="entered_test_results", help_text="Nhân viên nhập kết quả")
 

@@ -14,6 +14,7 @@ import { useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
@@ -56,6 +57,7 @@ const StaffDoctorProfile = () => {
     const nav      = useNavigation();
     const user     = useContext(MyUserContext);
     const dispatch = useContext(MyDispatchContext);
+    const { top }  = useSafeAreaInsets();
 
     const roleCfg = ROLE_CONFIG[user?.role] || ROLE_CONFIG.staff;
 
@@ -78,7 +80,7 @@ const StaffDoctorProfile = () => {
     return (
         <ScrollView style={styles.container}>
             {/* Profile header */}
-            <View style={[styles.header, { backgroundColor: roleCfg.bg }]}>
+            <View style={[styles.header, { backgroundColor: roleCfg.bg, paddingTop: top + 24 }]}>
                 <View style={styles.avatarWrap}>
                     {avatarUri ? (
                         <Image
@@ -215,7 +217,7 @@ const StaffDoctorProfile = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.bg },
     header: {
-        paddingTop: 56, paddingBottom: 32,
+        paddingTop: 24, paddingBottom: 32,
         alignItems: "center",
     },
     avatarWrap: { marginBottom: 14 },

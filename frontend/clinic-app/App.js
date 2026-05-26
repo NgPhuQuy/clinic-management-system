@@ -5,7 +5,9 @@ import { PaperProvider } from "react-native-paper";
 import { useReducer, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ActivityIndicator, View, Platform } from "react-native";
+import Constants from "expo-constants";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MyUserContext, MyDispatchContext, MyReducer } from "./contexts/MyContext";
 import Login from "./screens/Auth/Login";
@@ -17,6 +19,9 @@ import DoctorDetail from "./screens/Doctor/DoctorDetail";
 import BookAppointment from "./screens/Appointment/BookAppointment";
 import MyAppointments from "./screens/Appointment/MyAppointments";
 import AppointmentDetail from "./screens/Appointment/AppointmentDetail";
+import SpecialtySelect from "./screens/Appointment/SpecialtySelect";
+import DateSelect from "./screens/Appointment/DateSelect";
+import SlotSelect from "./screens/Appointment/SlotSelect";
 import { Profile, Prescriptions, Payments } from "./screens/Profile/Profile";
 import { MedicalRecords, MedicalRecordDetail } from "./screens/Profile/MedicalRecords";
 import Notifications from "./screens/Notification/Notifications";
@@ -48,11 +53,11 @@ import StaffPrescriptions from "./screens/Staff/StaffPrescriptions";
 // Shared
 import StaffDoctorProfile from "./screens/Shared/StaffDoctorProfile";
 
-import * as Notifications from "expo-notifications";
+import * as ExpoNotifications from "expo-notifications";
 import { authApis, endpoints } from "./configs/Apis";
 import { COLORS } from "./styles/Styles";
 
-Notifications.setNotificationHandler({
+ExpoNotifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
         shouldPlaySound: true,
@@ -70,24 +75,35 @@ const HS = {
     headerShadowVisible: false,
 };
 
-const TAB_STYLE = {
+const TAB_BASE_STYLE = {
     headerShown: false,
     tabBarActiveTintColor: COLORS.primary,
     tabBarInactiveTintColor: COLORS.textLight,
-    tabBarStyle: {
-        height: Platform.OS === "ios" ? 84 : 72,
-        paddingBottom: Platform.OS === "ios" ? 28 : 14,
-        paddingTop: 8,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-        backgroundColor: "#fff",
-        elevation: 12,
-        shadowColor: "#1565c0",
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-    },
     tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
+};
+
+const TAB_BAR_BASE = {
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    backgroundColor: "#fff",
+    elevation: 12,
+    shadowColor: "#1565c0",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+};
+
+const useTabStyle = () => {
+    const { bottom } = useSafeAreaInsets();
+    return {
+        ...TAB_BASE_STYLE,
+        tabBarStyle: {
+            ...TAB_BAR_BASE,
+            height: 56 + Math.max(bottom, 8),
+            paddingBottom: Math.max(bottom, 8),
+        },
+    };
 };
 
 // ─────────────────────────── PATIENT STACKS ───────────────────────────
@@ -95,6 +111,9 @@ const TAB_STYLE = {
 const HomeStack = () => (
     <Stack.Navigator screenOptions={HS}>
         <Stack.Screen name="home-main" component={Home} options={{ headerShown: false }} />
+        <Stack.Screen name="specialty-select" component={SpecialtySelect} options={{ title: "Chọn chuyên khoa" }} />
+        <Stack.Screen name="date-select" component={DateSelect} options={{ title: "Chọn ngày khám" }} />
+        <Stack.Screen name="slot-select" component={SlotSelect} options={{ title: "Chọn ca khám" }} />
         <Stack.Screen name="doctor-list" component={DoctorList} options={{ title: "Tìm bác sĩ" }} />
         <Stack.Screen name="doctor-detail" component={DoctorDetail} options={{ title: "Thông tin bác sĩ" }} />
         <Stack.Screen name="book-appointment" component={BookAppointment} options={{ title: "Đặt lịch khám" }} />
@@ -117,8 +136,9 @@ const HomeStack = () => (
 
 const BookingStack = () => (
     <Stack.Navigator screenOptions={HS}>
-        <Stack.Screen name="booking-main" component={DoctorList} options={{ title: "Chọn bác sĩ để đặt khám" }} />
-        <Stack.Screen name="doctor-detail" component={DoctorDetail} options={{ title: "Thông tin bác sĩ" }} />
+        <Stack.Screen name="booking-main" component={SpecialtySelect} options={{ title: "Chọn chuyên khoa" }} />
+        <Stack.Screen name="date-select" component={DateSelect} options={{ title: "Chọn ngày khám" }} />
+        <Stack.Screen name="slot-select" component={SlotSelect} options={{ title: "Chọn ca khám" }} />
         <Stack.Screen name="book-appointment" component={BookAppointment} options={{ title: "Đặt lịch khám" }} />
         <Stack.Screen name="my-appointments" component={MyAppointments} options={{ title: "Lịch hẹn của tôi" }} />
         <Stack.Screen name="appointment-detail" component={AppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
@@ -151,8 +171,10 @@ const ProfileStack = () => (
 
 // ─────────────────────────── PATIENT TABS ───────────────────────────
 
-const AppTabs = () => (
-    <Tab.Navigator screenOptions={TAB_STYLE}>
+const AppTabs = () => {
+    const tabStyle = useTabStyle();
+    return (
+    <Tab.Navigator screenOptions={tabStyle}>
         <Tab.Screen
             name="home-tab"
             component={HomeStack}
@@ -194,7 +216,8 @@ const AppTabs = () => (
             }}
         />
     </Tab.Navigator>
-);
+    );
+};
 
 // ─────────────────────────── DOCTOR STACKS ───────────────────────────
 
@@ -256,8 +279,10 @@ const DoctorProfileStack = () => (
 
 // ─────────────────────────── DOCTOR TABS ───────────────────────────
 
-const DoctorTabs = () => (
-    <Tab.Navigator screenOptions={TAB_STYLE}>
+const DoctorTabs = () => {
+    const tabStyle = useTabStyle();
+    return (
+    <Tab.Navigator screenOptions={tabStyle}>
         <Tab.Screen
             name="doctor-home-tab"
             component={DoctorHomeStack}
@@ -309,7 +334,8 @@ const DoctorTabs = () => (
             }}
         />
     </Tab.Navigator>
-);
+    );
+};
 
 // ─────────────────────────── STAFF STACKS ───────────────────────────
 
@@ -369,8 +395,10 @@ const StaffProfileStack = () => (
 
 // ─────────────────────────── STAFF TABS ───────────────────────────
 
-const StaffTabs = () => (
-    <Tab.Navigator screenOptions={TAB_STYLE}>
+const StaffTabs = () => {
+    const tabStyle = useTabStyle();
+    return (
+    <Tab.Navigator screenOptions={tabStyle}>
         <Tab.Screen
             name="staff-home-tab"
             component={StaffHomeStack}
@@ -422,7 +450,8 @@ const StaffTabs = () => (
             }}
         />
     </Tab.Navigator>
-);
+    );
+};
 
 // ─────────────────────────── AUTH STACK ───────────────────────────
 
@@ -473,11 +502,12 @@ const App = () => {
 
     useEffect(() => {
         if (!user?.token) return;
+        if (Constants.appOwnership === "expo") return; // skip in Expo Go
         const registerPushToken = async () => {
             try {
-                const { status } = await Notifications.requestPermissionsAsync();
+                const { status } = await ExpoNotifications.requestPermissionsAsync();
                 if (status !== "granted") return;
-                const { data: pushToken } = await Notifications.getExpoPushTokenAsync();
+                const { data: pushToken } = await ExpoNotifications.getExpoPushTokenAsync();
                 await authApis(user.token).patch(endpoints["current-user"], { push_token: pushToken });
             } catch (_) {}
         };
@@ -493,6 +523,7 @@ const App = () => {
     }
 
     return (
+        <SafeAreaProvider>
         <PaperProvider>
             <MyUserContext.Provider value={user}>
                 <MyDispatchContext.Provider value={dispatch}>
@@ -502,6 +533,7 @@ const App = () => {
                 </MyDispatchContext.Provider>
             </MyUserContext.Provider>
         </PaperProvider>
+        </SafeAreaProvider>
     );
 };
 

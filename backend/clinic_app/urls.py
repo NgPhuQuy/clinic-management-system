@@ -1,8 +1,3 @@
-"""
-clinic_app/urls.py  — PHIÊN BẢN MỞ RỘNG (thêm doctor + staff endpoints)
-
-Thay thế file urls.py hiện tại bằng file này.
-"""
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
@@ -25,6 +20,7 @@ router.register(r"doctors",             views.DoctorViewSet,            basename
 router.register(r"schedules",           views.DoctorScheduleViewSet,    basename="schedule")
 router.register(r"appointments",        views.AppointmentViewSet,       basename="appointment")
 router.register(r"medical-records",     views.MedicalRecordViewSet,     basename="medical-record")
+router.register(r"test-results",        views.TestResultViewSet,        basename="test-result")
 router.register(r"medicine-categories", views.MedicineCategoryViewSet,  basename="medicine-category")
 router.register(r"medicines",           views.MedicineViewSet,          basename="medicine")
 router.register(r"inventory",           views.InventoryViewSet,         basename="inventory")
@@ -41,7 +37,6 @@ urlpatterns = [
     path("auth/register/",        views.RegisterView.as_view(),       name="register"),
     path("auth/me/",              views.MeView.as_view(),             name="me"),
     path("auth/change-password/", views.ChangePasswordView.as_view(), name="change-password"),
-    path("auth/firebase-token/",  views.FirebaseTokenView.as_view(),  name="firebase-token"),
 
     # ── Admin Dashboard ──────────────────────────────────────────────────
     path("admin/dashboard/",         views.DashboardView.as_view(),        name="dashboard"),

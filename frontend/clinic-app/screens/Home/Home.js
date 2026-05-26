@@ -5,12 +5,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
 const QUICK_ACTIONS = [
-    { icon: "calendar-check-outline", label: "Đặt khám", screen: "doctor-list", bg: "#e3f2fd", color: "#1565c0" },
+    { icon: "calendar-check-outline", label: "Đặt khám", screen: "specialty-select", bg: "#e3f2fd", color: "#1565c0" },
     { icon: "clipboard-text-clock-outline", label: "Lịch sử đặt khám", screen: "my-appointments", bg: "#f3e5f5", color: "#7b1fa2" },
     { icon: "credit-card-outline", label: "Thanh toán viện phí", screen: "payments", bg: "#fff3e0", color: "#ef6c00" },
     { icon: "receipt-text-outline", label: "Hoá đơn", screen: "payments", bg: "#e8f5e9", color: "#2e7d32" },
@@ -48,6 +49,7 @@ const STATUS_LABELS = {
 const Home = () => {
     const nav = useNavigation();
     const user = useContext(MyUserContext);
+    const { top } = useSafeAreaInsets();
 
     const [specialties, setSpecialties]   = useState([]);
     const [loadingSpec, setLoadingSpec]   = useState(true);
@@ -85,7 +87,7 @@ const Home = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
 
                 {/* ── HEADER ── */}
-                <View style={styles.header}>
+                <View style={[styles.header, { paddingTop: top + 16 }]}>
                     {/* Top row */}
                     <View style={styles.headerTop}>
                         <View style={styles.logoRow}>
@@ -310,7 +312,7 @@ const styles = StyleSheet.create({
     /* Header */
     header: {
         backgroundColor: COLORS.primaryDark,
-        paddingTop: 52,
+        paddingTop: 16,
         paddingHorizontal: 20,
         paddingBottom: 28,
     },

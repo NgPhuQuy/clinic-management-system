@@ -5,6 +5,7 @@ import {
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
@@ -22,6 +23,7 @@ const TYPE_MAP = {
 
 const Notifications = () => {
     const user = useContext(MyUserContext);
+    const { top } = useSafeAreaInsets();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState("all");
@@ -83,7 +85,7 @@ const Notifications = () => {
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: top + 16 }]}>
                 <View style={styles.headerLeft}>
                     <MaterialCommunityIcons name="bell" size={22} color="#fff" style={{ marginRight: 8 }} />
                     <Text style={styles.headerTitle}>Thông báo</Text>
@@ -153,7 +155,7 @@ const Notifications = () => {
 const styles = StyleSheet.create({
     header: {
         backgroundColor: COLORS.primaryDark,
-        paddingTop: 52,
+        paddingTop: 16,
         paddingHorizontal: 20,
         paddingBottom: 20,
         flexDirection: "row",

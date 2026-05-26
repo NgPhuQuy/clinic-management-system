@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
@@ -47,6 +48,7 @@ export const Profile = () => {
     const user = useContext(MyUserContext);
     const dispatch = useContext(MyDispatchContext);
     const nav = useNavigation();
+    const { top } = useSafeAreaInsets();
     const [patient, setPatient] = useState(null);
     const [stats, setStats] = useState({ appointments: 0, prescriptions: 0 });
 
@@ -86,7 +88,7 @@ export const Profile = () => {
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: top + 16 }]}>
                 <UserAvatar
                     uri={avatarUri}
                     size={84}
@@ -262,23 +264,35 @@ export const Prescriptions = () => {
 };
 
 // ─── Payments Screen ─────────────────────────────────────────────────────────
+const PAY_STATUS_COLORS = {
+    pending:  COLORS.orangeLight,
+    success:  COLORS.greenLight,
+    failed:   COLORS.redLight,
+    refunded: COLORS.purpleLight,
+};
+const PAY_STATUS_LABELS = {
+    pending:  "Chờ thanh toán",
+    success:  "Đã thanh toán",
+    failed:   "Thất bại",
+    refunded: "Đã hoàn tiền",
+};
+const PAY_METHOD_ICONS = {
+    momo: "wallet", vnpay: "qrcode-scan", cash: "cash",
+    banking: "bank-transfer", credit_card: "credit-card",
+};
+const PAY_METHOD_LABELS = {
+    momo: "MoMo", vnpay: "VNPay", cash: "Tiền mặt",
+    banking: "Chuyển khoản", credit_card: "Thẻ tín dụng",
+};
+const PAY_METHOD_COLORS = {
+    momo: "#ae2070", vnpay: "#005baf", cash: COLORS.green,
+    banking: COLORS.teal, credit_card: COLORS.purple,
+};
+
 export const Payments = () => {
     const user = useContext(MyUserContext);
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    const PAYMENT_COLORS = {
-        pending: COLORS.orangeLight,
-        completed: COLORS.greenLight,
-        failed: COLORS.redLight,
-        refunded: COLORS.purpleLight,
-    };
-    const PAYMENT_LABELS = {
-        pending: "Chờ thanh toán",
-        completed: "Đã thanh toán",
-        failed: "Thất bại",
-        refunded: "Hoàn tiền",
-    };
 
     useEffect(() => {
         authApis(user.token).get(endpoints["payments"])
@@ -293,11 +307,53 @@ export const Payments = () => {
         </View>
     );
 
+    const renderPayment = ({ item }) => {
+        const statusColor = PAY_STATUS_COLORS[item.status] || "#9e9e9e";
+        const methodIcon  = PAY_METHOD_ICONS[item.payment_method] || "credit-card-outline";
+        const methodColor = PAY_METHOD_COLORS[item.payment_method] || COLORS.primary;
+        const methodLabel = PAY_METHOD_LABELS[item.payment_method] || item.payment_method;
+        const date = item.paid_at || item.created_at;
+
+        return (
+            <View style={payStyles.card}>
+                {/* Left: method icon */}
+                <View style={[payStyles.methodIcon, { backgroundColor: methodColor + "18" }]}>
+                    <MaterialCommunityIcons name={methodIcon} size={22} color={methodColor} />
+                </View>
+
+                {/* Center: info */}
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={payStyles.topRow}>
+                        <Text style={payStyles.amount}>
+                            {Number(item.amount).toLocaleString("vi-VN")}đ
+                        </Text>
+                        <View style={[payStyles.badge, { backgroundColor: statusColor + "22" }]}>
+                            <Text style={[payStyles.badgeText, { color: statusColor }]}>
+                                {PAY_STATUS_LABELS[item.status] || item.status}
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={payStyles.bottomRow}>
+                        <MaterialCommunityIcons name={methodIcon} size={12} color={COLORS.textLight} />
+                        <Text style={payStyles.meta}>  {methodLabel}</Text>
+                        <Text style={payStyles.metaDot}>  ·  </Text>
+                        <Text style={payStyles.meta}>
+                            {new Date(date).toLocaleDateString("vi-VN")}
+                        </Text>
+                    </View>
+                    {item.note ? (
+                        <Text style={payStyles.note} numberOfLines={1}>{item.note}</Text>
+                    ) : null}
+                </View>
+            </View>
+        );
+    };
+
     return (
         <View style={Styles.container}>
             {payments.length === 0 ? (
                 <View style={[Styles.center, { flex: 1 }]}>
-                    <MaterialCommunityIcons name="credit-card-outline" size={64} color={COLORS.textLight} />
+                    <MaterialCommunityIcons name="receipt-text-outline" size={64} color={COLORS.textLight} />
                     <Text style={[Styles.text, { marginTop: 12, fontWeight: "600" }]}>Chưa có giao dịch nào</Text>
                 </View>
             ) : (
@@ -305,41 +361,52 @@ export const Payments = () => {
                     data={payments}
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={{ padding: 16 }}
-                    renderItem={({ item }) => (
-                        <View style={Styles.card}>
-                            <View style={[Styles.row, { justifyContent: "space-between" }]}>
-                                <View style={[styles.menuIcon, { backgroundColor: "#e8f5e9", marginRight: 12 }]}>
-                                    <MaterialCommunityIcons name="credit-card-outline" size={22} color={COLORS.green} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={Styles.subtitle}>
-                                        {Number(item.amount).toLocaleString("vi-VN")}đ
-                                    </Text>
-                                    <Text style={Styles.textSmall}>
-                                        {new Date(item.created_at).toLocaleDateString("vi-VN")}
-                                    </Text>
-                                </View>
-                                <View style={[Styles.badge, {
-                                    backgroundColor: PAYMENT_COLORS[item.status] || "#9e9e9e",
-                                }]}>
-                                    <Text style={Styles.badgeText}>
-                                        {PAYMENT_LABELS[item.status] || item.status}
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                    )}
+                    renderItem={renderPayment}
                 />
             )}
         </View>
     );
 };
 
+const payStyles = StyleSheet.create({
+    card: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#fff",
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 10,
+        elevation: 2,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+    },
+    methodIcon: {
+        width: 46, height: 46,
+        borderRadius: 13,
+        alignItems: "center", justifyContent: "center",
+    },
+    topRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 4,
+    },
+    amount: { fontSize: 16, fontWeight: "800", color: COLORS.text },
+    badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+    badgeText: { fontSize: 11, fontWeight: "700" },
+    bottomRow: { flexDirection: "row", alignItems: "center" },
+    meta: { fontSize: 11, color: COLORS.textMuted },
+    metaDot: { fontSize: 11, color: COLORS.textLight },
+    note: { fontSize: 11, color: COLORS.textLight, marginTop: 2 },
+});
+
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     header: {
         backgroundColor: COLORS.primaryDark,
-        paddingTop: 52,
+        paddingTop: 16,
         paddingHorizontal: 20,
         paddingBottom: 36,
         alignItems: "center",

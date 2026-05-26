@@ -5,6 +5,7 @@ import {
 import { Text } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useRef, useState, useCallback } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { COLORS } from "../../styles/Styles";
 
@@ -23,6 +24,7 @@ const PaymentWebView = () => {
     const nav   = useNavigation();
     const route = useRoute();
     const { paymentUrl, paymentId, method, fromBooking = false } = route.params;
+    const { top } = useSafeAreaInsets();
 
     const webViewRef = useRef(null);
     const [loadingPage, setLoadingPage] = useState(true);
@@ -99,7 +101,7 @@ const PaymentWebView = () => {
 
     return (
         <View style={{ flex: 1 }}>
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: top + 14 }]}>
                 <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
                     <Text style={styles.closeText}>✕  Đóng</Text>
                 </TouchableOpacity>
@@ -134,7 +136,7 @@ const PaymentWebView = () => {
 const styles = StyleSheet.create({
     header: {
         backgroundColor: COLORS.primaryDark,
-        paddingTop: Platform.OS === "ios" ? 52 : 36,
+        paddingTop: 14,
         paddingBottom: 14,
         paddingHorizontal: 16,
         flexDirection: "row",

@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
+import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Image } from "react-native";
 import { Text, Button } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -9,22 +9,54 @@ import Styles, { COLORS } from "../../styles/Styles";
 
 const STATUS_COLORS = {
     pending: "#ff9800", confirmed: "#4caf50", cancelled: "#f44336",
-    completed: "#2196f3", no_show: "#9e9e9e", in_progress: "#9c27b0"
+    completed: "#2196f3", no_show: "#9e9e9e", in_progress: "#9c27b0",
 };
 const STATUS_LABELS = {
     pending: "Chờ xác nhận", confirmed: "Đã xác nhận", cancelled: "Đã hủy",
-    completed: "Hoàn thành", no_show: "Không đến", in_progress: "Đang khám"
+    completed: "Hoàn thành", no_show: "Không đến", in_progress: "Đang khám",
 };
-
 const PAY_STATUS_COLORS = {
-    pending: "#ff9800", success: "#4caf50", failed: "#f44336", refunded: "#9c27b0"
+    pending: "#ff9800", success: "#4caf50", failed: "#f44336", refunded: "#9c27b0",
 };
 const PAY_STATUS_LABELS = {
-    pending: "Chờ thanh toán", success: "Đã thanh toán", failed: "Thất bại", refunded: "Hoàn tiền"
+    pending: "Chờ thanh toán", success: "Đã thanh toán", failed: "Thất bại", refunded: "Đã hoàn tiền",
 };
 const PAY_METHOD_LABELS = {
     momo: "MoMo", vnpay: "VNPay", cash: "Tiền mặt",
-    banking: "Chuyển khoản", credit_card: "Thẻ tín dụng"
+    banking: "Chuyển khoản", credit_card: "Thẻ tín dụng",
+};
+const PAY_METHOD_ICONS = {
+    momo: "wallet", vnpay: "qrcode-scan", cash: "cash",
+    banking: "bank-transfer", credit_card: "credit-card",
+};
+
+// Dòng thông tin có icon
+const InfoRow = ({ icon, iconColor = COLORS.primary, iconBg, label, value, last }) => (
+    <View style={[styles.infoRow, last && { borderBottomWidth: 0 }]}>
+        <View style={[styles.infoIcon, { backgroundColor: iconBg || COLORS.primaryPale }]}>
+            <MaterialCommunityIcons name={icon} size={16} color={iconColor} />
+        </View>
+        <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={styles.infoLabel}>{label}</Text>
+            <Text style={styles.infoValue}>{value}</Text>
+        </View>
+    </View>
+);
+
+const DoctorAvatar = ({ uri, size = 46 }) => {
+    const [err, setErr] = useState(false);
+    if (uri && !err) return (
+        <Image
+            source={{ uri }}
+            style={{ width: size, height: size, borderRadius: size / 2 }}
+            onError={() => setErr(true)}
+        />
+    );
+    return (
+        <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: COLORS.primaryPale, alignItems: "center", justifyContent: "center" }}>
+            <MaterialCommunityIcons name="doctor" size={size * 0.52} color={COLORS.primary} />
+        </View>
+    );
 };
 
 const AppointmentDetail = () => {
@@ -50,7 +82,6 @@ const AppointmentDetail = () => {
 
     useEffect(() => { loadAppt(); }, [id]);
 
-    // Tính tổng tiền từ dữ liệu appointment
     const calcTotal = (a) => {
         const fee = Number(a.doctor_info?.consultation_fee || 0);
         const svc = (a.appointment_services || []).reduce(
@@ -60,46 +91,48 @@ const AppointmentDetail = () => {
     };
 
     const cancelAppointment = () => {
-        Alert.alert("Xác nhận hủy", "Bạn có chắc muốn hủy lịch hẹn này?", [
-            { text: "Không", style: "cancel" },
-            {
-                text: "Hủy lịch",
-                style: "destructive",
-                onPress: async () => {
-                    try {
-                        setCancelling(true);
-                        await authApis(user.token).patch(endpoints["appointment-status"](id), { status: "cancelled" });
-                        setAppt({ ...appt, status: "cancelled" });
-                    } catch (e) {
-                        const msg = e?.response?.data?.status?.[0] || e?.response?.data?.detail || "Không thể hủy. Vui lòng thử lại!";
-                        Alert.alert("Lỗi", msg);
-                    } finally {
-                        setCancelling(false);
-                    }
+        Alert.alert(
+            "Xác nhận hủy lịch",
+            "Bạn có chắc muốn hủy lịch hẹn này?\nNếu đã thanh toán, tiền sẽ được hoàn lại.",
+            [
+                { text: "Không", style: "cancel" },
+                {
+                    text: "Hủy lịch",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            setCancelling(true);
+                            const res = await authApis(user.token).patch(
+                                endpoints["appointment-status"](id),
+                                { status: "cancelled" }
+                            );
+                            setAppt(res.data);
+                        } catch (e) {
+                            const msg = e?.response?.data?.status?.[0]
+                                || e?.response?.data?.detail
+                                || "Không thể hủy. Vui lòng thử lại!";
+                            Alert.alert("Lỗi", msg);
+                        } finally {
+                            setCancelling(false);
+                        }
+                    },
                 },
-            },
-        ]);
+            ]
+        );
     };
 
     const goToPayment = () => {
         const invoice = appt.invoice;
-        const invoiceId = invoice?.id;
-
-        if (!invoiceId) {
-            Alert.alert("Lỗi", "Không tìm thấy hóa đơn cho lịch hẹn này. Vui lòng thử lại sau.");
+        if (!invoice?.id) {
+            Alert.alert("Lỗi", "Không tìm thấy hóa đơn. Vui lòng thử lại sau.");
             return;
         }
-
-        // Ưu tiên dùng invoice.remaining (số tiền còn lại cần thanh toán)
         const amount = Number(invoice?.remaining ?? invoice?.total_amount ?? calcTotal(appt));
-
         nav.navigate("payment-screen", {
-            invoiceId,
-            invoiceId,
+            invoiceId: invoice.id,
             appointmentId: appt.id,
             doctorName: appt.doctor_info?.full_name || appt.doctor_name || `#${appt.doctor}`,
             appointmentDate: appt.appointment_date,
-            amount,
             amount,
         });
     };
@@ -107,139 +140,204 @@ const AppointmentDetail = () => {
     if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
     if (!appt) return <View style={[Styles.center, { flex: 1 }]}><Text>Không tìm thấy lịch hẹn</Text></View>;
 
-    // API trả về appt.invoice (InvoiceSerializer), không phải appt.payment
-    // Lấy payment mới nhất (payments sắp xếp -created_at)
-    const invoice    = appt.invoice;
-    const payments   = invoice?.payments ?? [];
-    // Payment hiển thị: ưu tiên success → pending → mới nhất
-    const payment    = payments.find(p => p.status === "success")
-                    ?? payments.find(p => p.status === "pending")
-                    ?? payments[0]
-                    ?? null;
-    const total      = calcTotal(appt);
-    const remaining  = Number(invoice?.remaining ?? total);
-    // Có thể thanh toán khi: lịch chưa hủy + còn tiền cần trả + không có payment đang pending
-    const hasPendingPayment = payments.some(p => p.status === "pending");
-    const canPay     = ["pending", "confirmed", "completed", "in_progress"].includes(appt.status)
-        && remaining > 0
-        && !hasPendingPayment;
-    const alreadyPaid = remaining <= 0 || payment?.status === "success";
+    const invoice   = appt.invoice;
+    const payments  = invoice?.payments ?? [];
+    const payment   = payments.find(p => p.status === "success")
+                   ?? payments.find(p => p.status === "pending")
+                   ?? payments[0]
+                   ?? null;
+    const total         = calcTotal(appt);
+    const remaining     = Number(invoice?.remaining ?? total);
+    const hasPending    = payments.some(p => p.status === "pending");
+    const canPay        = ["pending", "confirmed", "completed", "in_progress"].includes(appt.status)
+                       && remaining > 0 && !hasPending;
+    const alreadyPaid   = remaining <= 0 || payment?.status === "success";
+    const canCancel     = appt.status === "pending" || appt.status === "confirmed";
+    const wasRefunded   = payments.some(p => p.status === "refunded");
+
+    const doctorAvatar = appt.doctor_info?.avatar || appt.doctor_info?.avatar_url;
 
     return (
-        <ScrollView style={Styles.container}>
+        <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+            {/* Status banner */}
             <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[appt.status] || "#9e9e9e" }]}>
+                <MaterialCommunityIcons
+                    name={appt.status === "completed" ? "check-circle" : appt.status === "cancelled" ? "close-circle" : "clock-outline"}
+                    size={22} color="#fff"
+                />
                 <Text style={styles.statusText}>{STATUS_LABELS[appt.status] || appt.status}</Text>
             </View>
 
             <View style={Styles.padding}>
-                <View style={Styles.card}>
-                    <Text style={Styles.sectionHeader}>Thông tin lịch hẹn</Text>
-                    <Text style={Styles.text}>👨‍⚕️ Bác sĩ: BS. {appt.doctor_info?.full_name || appt.doctor_name || appt.doctor}</Text>
-                    <Text style={[Styles.text, { marginTop: 6 }]}>📅 Ngày giờ: {new Date(appt.appointment_date).toLocaleString("vi-VN")}</Text>
-                    {appt.reason && <Text style={[Styles.text, { marginTop: 6 }]}>📝 Lý do: {appt.reason}</Text>}
-                    {appt.notes  && <Text style={[Styles.text, { marginTop: 6 }]}>📌 Ghi chú: {appt.notes}</Text>}
-                    <Text style={[Styles.textSmall, { marginTop: 8 }]}>Đặt lúc: {new Date(appt.created_at).toLocaleString("vi-VN")}</Text>
+                {/* Doctor card */}
+                <View style={[Styles.card, styles.doctorCard]}>
+                    <DoctorAvatar uri={doctorAvatar} size={52} />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.doctorName}>
+                            BS. {appt.doctor_info?.full_name || appt.doctor_name || `#${appt.doctor}`}
+                        </Text>
+                        {appt.doctor_info?.specialty_name && (
+                            <Text style={styles.doctorSpec}>{appt.doctor_info.specialty_name}</Text>
+                        )}
+                    </View>
+                    <View style={[Styles.badge, { backgroundColor: STATUS_COLORS[appt.status] + "22" }]}>
+                        <Text style={[Styles.badgeText, { color: STATUS_COLORS[appt.status] }]}>
+                            #{appt.id}
+                        </Text>
+                    </View>
                 </View>
 
+                {/* Appointment info */}
+                <View style={Styles.card}>
+                    <Text style={styles.cardTitle}>Chi tiết lịch hẹn</Text>
+                    <InfoRow
+                        icon="calendar-clock"
+                        iconBg="#e3f2fd"
+                        label="Ngày giờ khám"
+                        value={new Date(appt.appointment_date).toLocaleString("vi-VN")}
+                    />
+                    {appt.reason && (
+                        <InfoRow
+                            icon="stethoscope"
+                            iconBg="#e8f5e9"
+                            iconColor={COLORS.green}
+                            label="Lý do khám"
+                            value={appt.reason}
+                        />
+                    )}
+                    {appt.notes && (
+                        <InfoRow
+                            icon="note-text-outline"
+                            iconBg="#fff3e0"
+                            iconColor={COLORS.orange}
+                            label="Ghi chú"
+                            value={appt.notes}
+                        />
+                    )}
+                    <InfoRow
+                        icon="clock-plus-outline"
+                        iconBg="#f3e5f5"
+                        iconColor={COLORS.purple}
+                        label="Đặt lúc"
+                        value={new Date(appt.created_at).toLocaleString("vi-VN")}
+                        last
+                    />
+                </View>
+
+                {/* Cost breakdown */}
                 {(appt.appointment_services?.length > 0 || appt.doctor_info?.consultation_fee > 0) && (
                     <View style={Styles.card}>
-                        <Text style={Styles.sectionHeader}>Chi phí khám</Text>
-
-                        {/* Phí khám */}
+                        <Text style={styles.cardTitle}>Chi phí khám</Text>
                         {appt.doctor_info?.consultation_fee > 0 && (
-                            <View style={[Styles.row, { justifyContent: "space-between", marginBottom: 6 }]}>
-                                <Text style={Styles.text}>Phí khám cơ bản</Text>
-                                <Text style={[Styles.text, { color: COLORS.primary, fontWeight: "600" }]}>
+                            <View style={styles.costRow}>
+                                <Text style={styles.costLabel}>Phí khám cơ bản</Text>
+                                <Text style={styles.costValue}>
                                     {Number(appt.doctor_info.consultation_fee).toLocaleString("vi-VN")}đ
                                 </Text>
                             </View>
                         )}
-
-                        {appt.appointment_services.map((s, idx) => (
-                            <View key={idx} style={[Styles.row, { justifyContent: "space-between", marginBottom: 6 }]}>
-                                <Text style={Styles.text}>{s.service_name || s.service}</Text>
-                                <Text style={[Styles.text, { color: COLORS.primary, fontWeight: "600" }]}>
+                        {(appt.appointment_services || []).map((s, i) => (
+                            <View key={i} style={styles.costRow}>
+                                <Text style={styles.costLabel}>{s.service_name || s.service}</Text>
+                                <Text style={styles.costValue}>
                                     {Number(s.price_at_time).toLocaleString("vi-VN")}đ
                                 </Text>
                             </View>
                         ))}
-
-                        <View style={Styles.divider} />
-                        <View style={[Styles.row, { justifyContent: "space-between" }]}>
-                            <Text style={{ fontSize: 14, fontWeight: "700", color: COLORS.text }}>Tổng cộng</Text>
-                            <Text style={{ fontSize: 16, fontWeight: "800", color: COLORS.primary }}>
-                                {total.toLocaleString("vi-VN")}đ
-                            </Text>
+                        <View style={styles.costDivider} />
+                        <View style={styles.costRow}>
+                            <Text style={[styles.costLabel, { fontWeight: "700", color: COLORS.text }]}>Tổng cộng</Text>
+                            <Text style={styles.totalValue}>{total.toLocaleString("vi-VN")}đ</Text>
                         </View>
                     </View>
                 )}
 
+                {/* Payment card */}
                 <View style={Styles.card}>
-                    <Text style={Styles.sectionHeader}>Thanh toán</Text>
+                    <Text style={styles.cardTitle}>Thanh toán</Text>
+
+                    {wasRefunded && (
+                        <View style={styles.refundBanner}>
+                            <MaterialCommunityIcons name="cash-refund" size={18} color={COLORS.purple} />
+                            <Text style={styles.refundText}>Đã hoàn tiền do hủy lịch</Text>
+                        </View>
+                    )}
 
                     {payment ? (
                         <>
-                            <View style={[Styles.row, { justifyContent: "space-between", marginBottom: 8 }]}>
-                                <Text style={Styles.text}>Trạng thái</Text>
-                                <View style={[Styles.badge, { backgroundColor: PAY_STATUS_COLORS[payment.status] || "#9e9e9e" }]}>
-                                    <Text style={Styles.badgeText}>{PAY_STATUS_LABELS[payment.status] || payment.status}</Text>
+                            <View style={styles.payRow}>
+                                <Text style={styles.payLabel}>Trạng thái</Text>
+                                <View style={[Styles.badge, { backgroundColor: PAY_STATUS_COLORS[payment.status] + "22" }]}>
+                                    <Text style={[Styles.badgeText, { color: PAY_STATUS_COLORS[payment.status] }]}>
+                                        {PAY_STATUS_LABELS[payment.status] || payment.status}
+                                    </Text>
                                 </View>
                             </View>
-
-                            <View style={[Styles.row, { justifyContent: "space-between", marginBottom: 6 }]}>
-                                <Text style={Styles.text}>Số tiền</Text>
-                                <Text style={{ fontSize: 15, fontWeight: "700", color: COLORS.primary }}>
+                            <View style={styles.payRow}>
+                                <Text style={styles.payLabel}>Số tiền</Text>
+                                <Text style={styles.payAmount}>
                                     {Number(payment.amount).toLocaleString("vi-VN")}đ
                                 </Text>
                             </View>
-
                             {payment.payment_method && (
-                                <View style={[Styles.row, { justifyContent: "space-between", marginBottom: 6 }]}>
-                                    <Text style={Styles.text}>Phương thức</Text>
-                                    <Text style={[Styles.text, { fontWeight: "600" }]}>
-                                        {PAY_METHOD_LABELS[payment.payment_method] || payment.payment_method}
+                                <View style={styles.payRow}>
+                                    <Text style={styles.payLabel}>Phương thức</Text>
+                                    <View style={styles.payMethodRow}>
+                                        <MaterialCommunityIcons
+                                            name={PAY_METHOD_ICONS[payment.payment_method] || "credit-card-outline"}
+                                            size={15} color={COLORS.primary}
+                                        />
+                                        <Text style={styles.payMethodText}>
+                                            {" "}{PAY_METHOD_LABELS[payment.payment_method] || payment.payment_method}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+                            {payment.paid_at && (
+                                <View style={[styles.payRow, { borderBottomWidth: 0 }]}>
+                                    <Text style={styles.payLabel}>Thanh toán lúc</Text>
+                                    <Text style={styles.payMeta}>
+                                        {new Date(payment.paid_at).toLocaleString("vi-VN")}
                                     </Text>
                                 </View>
                             )}
-
-                            {payment.paid_at && (
-                                <View style={[Styles.row, { justifyContent: "space-between" }]}>
-                                    <Text style={Styles.text}>Thời gian</Text>
-                                    <Text style={Styles.textSmall}>{new Date(payment.paid_at).toLocaleString("vi-VN")}</Text>
+                            {!payment.paid_at && (
+                                <View style={[styles.payRow, { borderBottomWidth: 0 }]}>
+                                    <Text style={styles.payLabel}>Tạo lúc</Text>
+                                    <Text style={styles.payMeta}>
+                                        {new Date(payment.created_at).toLocaleString("vi-VN")}
+                                    </Text>
                                 </View>
-                            )}
-
-                            {payment.status === "failed" && (
-                                <Text style={[Styles.textSmall, { color: COLORS.redLight, marginTop: 6 }]}>
-                                    ⚠ Giao dịch thất bại. Bạn có thể thử lại bên dưới.
-                                </Text>
                             )}
                         </>
                     ) : (
-                        <Text style={Styles.text}>Chưa có thông tin thanh toán.</Text>
+                        <Text style={[Styles.textSmall, { color: COLORS.textMuted, paddingVertical: 8 }]}>
+                            Chưa có thông tin thanh toán.
+                        </Text>
                     )}
 
-                    {/* Nút thanh toán ngay */}
                     {canPay && (
-                        <TouchableOpacity style={[styles.payBtn]} onPress={goToPayment} activeOpacity={0.85}>
-                            <MaterialCommunityIcons name="credit-card-outline" size={20} color="#fff" />
+                        <TouchableOpacity style={styles.payBtn} onPress={goToPayment} activeOpacity={0.85}>
+                            <MaterialCommunityIcons name="credit-card-outline" size={18} color="#fff" />
                             <Text style={styles.payBtnText}>
                                 {payment?.status === "failed" ? "Thanh toán lại" : "Thanh toán ngay"}
+                                {"  "}·{"  "}{remaining.toLocaleString("vi-VN")}đ
                             </Text>
                         </TouchableOpacity>
                     )}
 
-                    {alreadyPaid && (
+                    {alreadyPaid && !wasRefunded && (
                         <View style={styles.paidTag}>
-                            <Text style={styles.paidTagText}>✓ Đã thanh toán hoàn tất</Text>
+                            <MaterialCommunityIcons name="check-circle" size={16} color={COLORS.green} />
+                            <Text style={styles.paidTagText}> Đã thanh toán hoàn tất</Text>
                         </View>
                     )}
                 </View>
 
-                {/* Vào phòng khám trực tuyến */}
+                {/* Consultation room */}
                 {appt.consultation_id && ["confirmed", "in_progress"].includes(appt.status) && (
                     <TouchableOpacity
-                        style={[styles.consultBtn]}
+                        style={styles.consultBtn}
                         onPress={() => nav.navigate("consultation-room", { consultationId: appt.consultation_id })}
                         activeOpacity={0.85}
                     >
@@ -248,32 +346,32 @@ const AppointmentDetail = () => {
                     </TouchableOpacity>
                 )}
 
-                {/* Hồ sơ bệnh án */}
+                {/* Medical record */}
                 {appt.medical_record_id && (
                     <Button
                         mode="outlined"
                         icon="clipboard-medical"
                         onPress={() => nav.navigate("medical-record-detail", { id: appt.medical_record_id })}
-                        style={{ borderRadius: 8, marginBottom: 12 }}
+                        style={{ borderRadius: 10, marginBottom: 12 }}
                         textColor={COLORS.primary}
                     >
                         Xem hồ sơ bệnh án
                     </Button>
                 )}
 
-                {/* Hủy lịch */}
-                {(appt.status === "pending" || appt.status === "confirmed") && (
-                    <Button
-                        mode="contained"
-                        buttonColor="#f44336"
+                {/* Cancel */}
+                {canCancel && (
+                    <TouchableOpacity
+                        style={[styles.cancelBtn, cancelling && { opacity: 0.6 }]}
                         onPress={cancelAppointment}
-                        loading={cancelling}
                         disabled={cancelling}
-                        style={{ borderRadius: 8 }}
-                        icon="cancel"
+                        activeOpacity={0.8}
                     >
-                        Hủy lịch hẹn
-                    </Button>
+                        <MaterialCommunityIcons name="calendar-remove" size={18} color={COLORS.red} />
+                        <Text style={styles.cancelBtnText}>
+                            {cancelling ? "Đang hủy..." : "Hủy lịch hẹn"}
+                        </Text>
+                    </TouchableOpacity>
                 )}
             </View>
         </ScrollView>
@@ -282,14 +380,88 @@ const AppointmentDetail = () => {
 
 const styles = StyleSheet.create({
     statusBanner: {
-        padding: 16,
+        flexDirection: "row",
         alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        paddingVertical: 14,
     },
-    statusText: {
-        color: "#fff",
-        fontWeight: "bold",
-        fontSize: 16,
+    statusText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+
+    doctorCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#fff",
+        marginBottom: 12,
     },
+    doctorName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
+    doctorSpec: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+
+    cardTitle: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: COLORS.textMuted,
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+        marginBottom: 4,
+        paddingHorizontal: 16,
+        paddingTop: 14,
+    },
+    infoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 11,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    infoIcon: {
+        width: 30, height: 30,
+        borderRadius: 8,
+        alignItems: "center", justifyContent: "center",
+    },
+    infoLabel: { fontSize: 11, color: COLORS.textMuted, marginBottom: 1 },
+    infoValue: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+
+    costRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+    },
+    costLabel: { fontSize: 13, color: COLORS.textMuted },
+    costValue: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
+    costDivider: { height: 1, backgroundColor: COLORS.border, marginHorizontal: 16, marginVertical: 4 },
+    totalValue: { fontSize: 17, fontWeight: "800", color: COLORS.primary },
+
+    refundBanner: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        backgroundColor: COLORS.purplePale,
+        borderRadius: 8,
+        padding: 10,
+        marginHorizontal: 16,
+        marginBottom: 8,
+    },
+    refundText: { fontSize: 13, color: COLORS.purple, fontWeight: "600" },
+
+    payRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 9,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    payLabel: { fontSize: 12, color: COLORS.textMuted },
+    payAmount: { fontSize: 16, fontWeight: "800", color: COLORS.primary },
+    payMethodRow: { flexDirection: "row", alignItems: "center" },
+    payMethodText: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+    payMeta: { fontSize: 12, color: COLORS.textMuted },
+
     payBtn: {
         flexDirection: "row",
         alignItems: "center",
@@ -298,6 +470,8 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingVertical: 13,
         marginTop: 14,
+        marginHorizontal: 16,
+        marginBottom: 4,
         gap: 8,
         elevation: 3,
         shadowColor: COLORS.primary,
@@ -305,43 +479,49 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 6,
     },
-    payBtnText: {
-        color: "#fff",
-        fontWeight: "800",
-        fontSize: 15,
-    },
+    payBtnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
     paidTag: {
-        backgroundColor: "#e8f5e9",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: COLORS.greenPale,
         borderRadius: 8,
         paddingVertical: 8,
-        alignItems: "center",
-        marginTop: 12,
+        marginTop: 10,
+        marginHorizontal: 16,
+        marginBottom: 4,
     },
-    paidTagText: {
-        color: COLORS.green,
-        fontWeight: "700",
-        fontSize: 13,
-    },
+    paidTagText: { color: COLORS.green, fontWeight: "700", fontSize: 13 },
+
     consultBtn: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#2e7d32",
+        backgroundColor: COLORS.green,
         borderRadius: 12,
         paddingVertical: 13,
         marginBottom: 12,
         gap: 8,
         elevation: 3,
-        shadowColor: "#2e7d32",
+        shadowColor: COLORS.green,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.3,
         shadowRadius: 6,
     },
-    consultBtnText: {
-        color: "#fff",
-        fontWeight: "800",
-        fontSize: 15,
+    consultBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+
+    cancelBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        borderWidth: 1.5,
+        borderColor: COLORS.red,
+        borderRadius: 12,
+        paddingVertical: 12,
+        marginTop: 4,
     },
+    cancelBtnText: { color: COLORS.red, fontWeight: "700", fontSize: 14 },
 });
 
 export default AppointmentDetail;

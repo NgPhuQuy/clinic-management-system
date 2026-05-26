@@ -16,16 +16,6 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-def _get_firebase_app():
-    import firebase_admin
-    from firebase_admin import credentials
-    if not firebase_admin._apps:
-        cred_path = str(settings.FIREBASE_CREDENTIALS_PATH)
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-    return firebase_admin.get_app()
-
-
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -129,33 +119,3 @@ class ChangePasswordView(generics.UpdateAPIView):
         return Response({"detail": "Đổi mật khẩu thành công."})
 
 
-class FirebaseTokenView(APIView):
-    permission_classes = [IsAuthenticatedWithValidToken]
-
-    def post(self, request):
-        try:
-            _get_firebase_app()
-            from firebase_admin import auth as firebase_auth
-
-            uid = f"clinic_{request.user.pk}"
-            additional_claims = {
-                "role":       request.user.role,
-                "clinic_uid": request.user.pk,
-                "email":      request.user.email,
-            }
-            custom_token: bytes = firebase_auth.create_custom_token(uid, additional_claims)
-            return Response(
-                {"firebase_token": custom_token.decode("utf-8")},
-                status=status.HTTP_200_OK,
-            )
-        except ImportError:
-            return Response(
-                {"detail": "Firebase chưa được cấu hình trên server."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-        except Exception as exc:
-            logger.exception("Lỗi khi tạo Firebase custom token: %s", exc)
-            return Response(
-                {"detail": "Không thể tạo Firebase token."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
