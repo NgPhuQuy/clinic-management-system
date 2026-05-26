@@ -1,15 +1,11 @@
 /**
  * screens/Shared/StaffDoctorProfile.js
- * Màn hình hồ sơ cá nhân dùng chung cho bác sĩ và nhân viên y tế:
- *   - Xem thông tin tài khoản
- *   - Đổi mật khẩu
- *   - Đăng xuất
+ * Màn hình hồ sơ cá nhân dùng chung cho bác sĩ và nhân viên y tế
  */
 import {
-    View, ScrollView, StyleSheet, TouchableOpacity,
-    Alert, Image,
+    View, ScrollView, TouchableOpacity, Alert, Image,
 } from "react-native";
-import { Text, Button } from "react-native-paper";
+import { Text } from "react-native-paper";
 import { useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,37 +15,22 @@ import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
 const ROLE_CONFIG = {
-    doctor: {
-        label: "Bác sĩ",
-        icon:  "stethoscope",
-        color: COLORS.primary,
-        bg:    COLORS.primaryDark,
-    },
-    staff: {
-        label: "Nhân viên y tế",
-        icon:  "account-heart",
-        color: COLORS.teal,
-        bg:    COLORS.teal,
-    },
-    admin: {
-        label: "Quản trị viên",
-        icon:  "shield-crown",
-        color: COLORS.purple,
-        bg:    COLORS.purple,
-    },
+    doctor: { label: "Bác sĩ",           icon: "stethoscope",   color: COLORS.primary, bg: COLORS.primaryDark },
+    staff:  { label: "Nhân viên y tế",   icon: "account-heart",  color: COLORS.teal,    bg: COLORS.teal },
+    admin:  { label: "Quản trị viên",    icon: "shield-crown",   color: COLORS.purple,  bg: COLORS.purple },
 };
 
-const MenuItem = ({ icon, label, onPress, color, rightIcon }) => (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-        <View style={[styles.menuIcon, { backgroundColor: (color || COLORS.primary) + "20" }]}>
+const MenuItem = ({ icon, label, onPress, color, isLast }) => (
+    <TouchableOpacity
+        style={[Styles.menuItem, isLast && Styles.menuItemLast]}
+        onPress={onPress}
+        activeOpacity={0.7}
+    >
+        <View style={[Styles.menuIcon, { backgroundColor: (color || COLORS.primary) + "20" }]}>
             <MaterialCommunityIcons name={icon} size={20} color={color || COLORS.primary} />
         </View>
-        <Text style={styles.menuLabel}>{label}</Text>
-        <MaterialCommunityIcons
-            name={rightIcon || "chevron-right"}
-            size={20}
-            color={COLORS.textLight}
-        />
+        <Text style={Styles.menuLabel}>{label}</Text>
+        <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.textLight} />
     </TouchableOpacity>
 );
 
@@ -75,10 +56,11 @@ const StaffDoctorProfile = () => {
         ]);
     };
 
-    const avatarUri = user?.avatar;
+    const displayName = [user?.last_name, user?.first_name].filter(Boolean).join(" ")
+        || user?.username || user?.email;
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={Styles.container}>
             {/* Profile header */}
             <View style={[styles.header, { backgroundColor: roleCfg.bg, paddingTop: top + 24 }]}>
                 <View style={styles.avatarWrap}>
@@ -89,123 +71,120 @@ const StaffDoctorProfile = () => {
                             onError={() => {}}
                         />
                     ) : (
-                        <View style={styles.avatarPlaceholder}>
-                            <MaterialCommunityIcons
-                                name={roleCfg.icon}
-                                size={44}
-                                color={roleCfg.color}
-                            />
-                        </View>
+                        <MaterialCommunityIcons name={roleCfg.icon} size={44} color="rgba(255,255,255,0.9)" />
                     )}
                 </View>
 
-                <Text style={styles.name}>
-                    {user?.first_name || user?.username || user?.email}
-                </Text>
-                <Text style={styles.email}>{user?.email}</Text>
+                <Text style={Styles.profileName}>{displayName}</Text>
+                <Text style={[Styles.headerSubtitle, { textAlign: "center" }]}>{user?.email}</Text>
 
-                <View style={styles.roleBadge}>
-                    <MaterialCommunityIcons name={roleCfg.icon} size={14} color={roleCfg.color} />
-                    <Text style={[styles.roleLabel, { color: roleCfg.color }]}>
-                        {roleCfg.label}
-                    </Text>
+                <View style={Styles.profileRoleTag}>
+                    <MaterialCommunityIcons name={roleCfg.icon} size={13} color="#fff" />
+                    <Text style={Styles.profileRoleText}>{roleCfg.label}</Text>
+                </View>
+
+                {/* Stats row */}
+                <View style={Styles.profileInfoRow}>
+                    {user?.role === "doctor" && (
+                        <>
+                            <View style={Styles.profileInfoItem}>
+                                <Text style={Styles.profileInfoVal}>{user?.doctor_info?.experience_years ?? "–"}</Text>
+                                <Text style={Styles.profileInfoLbl}>Năm KN</Text>
+                            </View>
+                            <View style={Styles.profileInfoItem}>
+                                <Text style={Styles.profileInfoVal}>{user?.doctor_info?.specialty || "–"}</Text>
+                                <Text style={Styles.profileInfoLbl}>Chuyên khoa</Text>
+                            </View>
+                        </>
+                    )}
+                    {user?.role === "staff" && (
+                        <View style={Styles.profileInfoItem}>
+                            <Text style={Styles.profileInfoVal}>{user?.staff_info?.position || roleCfg.label}</Text>
+                            <Text style={Styles.profileInfoLbl}>Chức vụ</Text>
+                        </View>
+                    )}
                 </View>
             </View>
 
             {/* Account info */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Thông tin tài khoản</Text>
-
-                <View style={styles.infoCard}>
+            <View style={Styles.section}>
+                <Text style={Styles.sectionTitle}>Thông tin tài khoản</Text>
+                <View style={Styles.menuCard}>
                     {[
                         { icon: "account",       label: "Tên đăng nhập", value: user?.username },
                         { icon: "email-outline", label: "Email",          value: user?.email },
                         { icon: "shield-check",  label: "Vai trò",        value: roleCfg.label },
-                    ].map(({ icon, label, value }) => (
-                        <View key={label} style={styles.infoRow}>
-                            <MaterialCommunityIcons name={icon} size={16} color={COLORS.primary} style={{ width: 22 }} />
-                            <Text style={styles.infoLabel}>{label}</Text>
-                            <Text style={styles.infoValue}>{value || "—"}</Text>
+                    ].map(({ icon, label, value }, i, arr) => (
+                        <View
+                            key={label}
+                            style={[
+                                Styles.menuItem,
+                                i === arr.length - 1 && Styles.menuItemLast,
+                                { cursor: "default" },
+                            ]}
+                        >
+                            <View style={[Styles.menuIcon, { backgroundColor: COLORS.primaryPale }]}>
+                                <MaterialCommunityIcons name={icon} size={18} color={COLORS.primary} />
+                            </View>
+                            <Text style={[Styles.menuLabel, { color: COLORS.textMuted, fontSize: 13 }]}>{label}</Text>
+                            <Text style={{ fontSize: 13, color: COLORS.text, fontWeight: "600", maxWidth: 160 }} numberOfLines={1}>
+                                {value || "—"}
+                            </Text>
                         </View>
                     ))}
                 </View>
             </View>
 
-            {/* Menu */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Cài đặt</Text>
-                <View style={styles.menuCard}>
-                    <MenuItem
-                        icon="lock-reset"
-                        label="Đổi mật khẩu"
-                        color={COLORS.primary}
-                        onPress={() => nav.navigate("change-password")}
-                    />
-                    <View style={styles.divider} />
-                    <MenuItem
-                        icon="bell-outline"
-                        label="Thông báo"
-                        color={COLORS.orange}
-                        onPress={() => nav.navigate("notifications")}
-                    />
+            {/* Settings */}
+            <View style={Styles.section}>
+                <Text style={Styles.sectionTitle}>Cài đặt</Text>
+                <View style={Styles.menuCard}>
+                    <MenuItem icon="lock-reset"   label="Đổi mật khẩu" color={COLORS.primary} onPress={() => nav.navigate("change-password")} />
+                    <MenuItem icon="bell-outline" label="Thông báo"     color={COLORS.orange}  onPress={() => nav.navigate("notifications")} isLast />
                 </View>
             </View>
 
-            {/* Role-specific quick links */}
+            {/* Doctor quick links */}
             {user?.role === "doctor" && (
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Bác sĩ</Text>
-                    <View style={styles.menuCard}>
-                        <MenuItem
-                            icon="calendar-edit"
-                            label="Quản lý lịch làm việc"
-                            color={COLORS.primary}
-                            onPress={() => nav.navigate("doctor-schedules")}
-                        />
-                        <View style={styles.divider} />
-                        <MenuItem
-                            icon="file-document-outline"
-                            label="Hồ sơ bệnh án của tôi"
-                            color={COLORS.green}
-                            onPress={() => nav.navigate("doctor-medical-records")}
-                        />
-                        <View style={styles.divider} />
-                        <MenuItem
-                            icon="pill"
-                            label="Đơn thuốc đã kê"
-                            color={COLORS.orange}
-                            onPress={() => nav.navigate("doctor-prescriptions")}
-                        />
+                <View style={Styles.section}>
+                    <Text style={Styles.sectionTitle}>Chức năng bác sĩ</Text>
+                    <View style={Styles.menuCard}>
+                        <MenuItem icon="calendar-edit"        label="Quản lý lịch làm việc" color={COLORS.primary} onPress={() => nav.navigate("doctor-schedules")} />
+                        <MenuItem icon="file-document-outline" label="Hồ sơ bệnh án"         color={COLORS.green}   onPress={() => nav.navigate("doctor-medical-records")} />
+                        <MenuItem icon="pill"                  label="Đơn thuốc đã kê"       color={COLORS.orange}  onPress={() => nav.navigate("doctor-prescriptions")} isLast />
                     </View>
                 </View>
             )}
 
+            {/* Staff quick links */}
             {user?.role === "staff" && (
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Nhân viên y tế</Text>
-                    <View style={styles.menuCard}>
-                        <MenuItem
-                            icon="package-variant"
-                            label="Quản lý kho thuốc"
-                            color={COLORS.teal}
-                            onPress={() => nav.navigate("staff-inventory")}
-                        />
-                        <View style={styles.divider} />
-                        <MenuItem
-                            icon="cash-register"
-                            label="Lịch sử thu tiền"
-                            color={COLORS.orange}
-                            onPress={() => nav.navigate("staff-payments")}
-                        />
+                <View style={Styles.section}>
+                    <Text style={Styles.sectionTitle}>Chức năng nhân viên</Text>
+                    <View style={Styles.menuCard}>
+                        <MenuItem icon="package-variant" label="Quản lý kho thuốc" color={COLORS.teal}   onPress={() => nav.navigate("staff-inventory")} />
+                        <MenuItem icon="cash-register"   label="Lịch sử thu tiền"  color={COLORS.orange} onPress={() => nav.navigate("staff-payments")} isLast />
                     </View>
                 </View>
             )}
 
             {/* Logout */}
             <View style={{ margin: 16 }}>
-                <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+                <TouchableOpacity
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        padding: 14,
+                        borderRadius: 14,
+                        borderWidth: 1.5,
+                        borderColor: COLORS.red,
+                        backgroundColor: COLORS.redPale,
+                    }}
+                    onPress={logout}
+                >
                     <MaterialCommunityIcons name="logout" size={20} color={COLORS.red} />
-                    <Text style={styles.logoutText}>Đăng xuất</Text>
+                    <Text style={{ color: COLORS.red, fontWeight: "700", fontSize: 15 }}>Đăng xuất</Text>
                 </TouchableOpacity>
             </View>
 

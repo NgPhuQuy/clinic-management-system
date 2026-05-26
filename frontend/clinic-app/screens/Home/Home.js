@@ -8,7 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, homeStyles as S } from "../../styles/Styles";
 
 const QUICK_ACTIONS = [
     { icon: "calendar-check-outline", label: "Đặt khám", screen: "specialty-select", bg: "#e3f2fd", color: "#1565c0" },
@@ -89,18 +89,18 @@ const Home = () => {
                 {/* ── HEADER ── */}
                 <View style={[styles.header, { paddingTop: top + 16 }]}>
                     {/* Top row */}
-                    <View style={styles.headerTop}>
-                        <View style={styles.logoRow}>
-                            <View style={styles.logoBox}>
+                    <View style={S.headerTop}>
+                        <View style={S.logoRow}>
+                            <View style={S.logoBox}>
                                 <MaterialCommunityIcons name="hospital-building" size={18} color={COLORS.primary} />
                             </View>
                             <View>
-                                <Text style={styles.appName}>ClinicCare</Text>
-                                <Text style={styles.appSub}>Ứng dụng dành cho Người bệnh</Text>
+                                <Text style={S.appName}>ClinicCare</Text>
+                                <Text style={S.appSub}>Ứng dụng dành cho Người bệnh</Text>
                             </View>
                         </View>
                         <TouchableOpacity
-                            style={styles.bellBtn}
+                            style={S.bellBtn}
                             onPress={() => nav.navigate("notifications")}
                         >
                             <MaterialCommunityIcons name="bell-outline" size={20} color={COLORS.primaryDark} />
@@ -126,32 +126,32 @@ const Home = () => {
                             onSubmitEditing={handleSearch}
                             returnKeyType="search"
                         />
-                        <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
-                            <Text style={styles.searchBtnText}>Tìm</Text>
+                        <TouchableOpacity style={S.searchBtn} onPress={handleSearch}>
+                            <Text style={S.searchBtnText}>Tìm</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* ── QUICK ACTIONS ── */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Chức năng</Text>
+                <View style={S.section}>
+                    <View style={S.sectionHeader}>
+                        <Text style={S.sectionTitle}>Chức năng</Text>
                         <TouchableOpacity onPress={() => nav.navigate("doctor-list")}>
-                            <Text style={styles.sectionLink}>Xem tất cả</Text>
+                            <Text style={S.sectionLink}>Xem tất cả</Text>
                         </TouchableOpacity>
                     </View>
-                    <View style={styles.quickGrid}>
+                    <View style={S.quickGrid}>
                         {QUICK_ACTIONS.map((a, i) => (
                             <TouchableOpacity
                                 key={i}
-                                style={styles.quickItem}
+                                style={S.quickItem}
                                 onPress={() => nav.navigate(a.screen)}
                                 activeOpacity={0.75}
                             >
-                                <View style={[styles.quickIconWrap, { backgroundColor: a.bg }]}>
+                                <View style={[S.quickIconWrap, { backgroundColor: a.bg }]}>
                                     <MaterialCommunityIcons name={a.icon} size={26} color={a.color} />
                                 </View>
-                                <Text style={styles.quickLabel}>{a.label}</Text>
+                                <Text style={S.quickLabel}>{a.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -159,37 +159,37 @@ const Home = () => {
 
                 {/* ── LỊCH HẸN SẮP TỚI ── */}
                 {upcomingAppts.length > 0 && (
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Lịch hẹn sắp tới</Text>
+                    <View style={S.section}>
+                        <View style={S.sectionHeader}>
+                            <Text style={S.sectionTitle}>Lịch hẹn sắp tới</Text>
                             <TouchableOpacity onPress={() => nav.navigate("my-appointments")}>
-                                <Text style={styles.sectionLink}>Xem tất cả</Text>
+                                <Text style={S.sectionLink}>Xem tất cả</Text>
                             </TouchableOpacity>
                         </View>
                         {upcomingAppts.map(appt => (
                             <TouchableOpacity
                                 key={appt.id}
-                                style={styles.apptCard}
+                                style={S.apptCard}
                                 onPress={() => nav.navigate("appointment-detail", { id: appt.id })}
                                 activeOpacity={0.85}
                             >
-                                <View style={styles.apptAvatar}>
+                                <View style={S.apptAvatar}>
                                     <MaterialCommunityIcons name="doctor" size={28} color={COLORS.primary} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.apptDoctor}>
+                                    <Text style={S.apptDoctor}>
                                         BS. {appt.doctor_name || "Bác sĩ"}
                                     </Text>
-                                    <Text style={styles.apptTime}>
+                                    <Text style={S.apptTime}>
                                         {new Date(appt.appointment_date).toLocaleString("vi-VN")}
                                     </Text>
                                 </View>
                                 <View style={[
-                                    styles.apptBadge,
+                                    S.apptBadge,
                                     { backgroundColor: STATUS_COLORS[appt.status] + "33" },
                                 ]}>
                                     <Text style={[
-                                        styles.apptBadgeText,
+                                        S.apptBadgeText,
                                         { color: STATUS_COLORS[appt.status] },
                                     ]}>
                                         {STATUS_LABELS[appt.status] || appt.status}
@@ -201,11 +201,11 @@ const Home = () => {
                 )}
 
                 {/* ── CHUYÊN KHOA ── */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Chuyên khoa</Text>
+                <View style={S.section}>
+                    <View style={S.sectionHeader}>
+                        <Text style={S.sectionTitle}>Chuyên khoa</Text>
                         <TouchableOpacity onPress={() => nav.navigate("doctor-list")}>
-                            <Text style={styles.sectionLink}>Xem thêm</Text>
+                            <Text style={S.sectionLink}>Xem thêm</Text>
                         </TouchableOpacity>
                     </View>
                     {loadingSpec ? (
@@ -215,7 +215,7 @@ const Home = () => {
                             {(specialties.length > 0 ? specialties : SPECIALTIES).map((s, i) => (
                                 <TouchableOpacity
                                     key={s.id ?? i}
-                                    style={styles.specChip}
+                                    style={S.specChip}
                                     onPress={() => nav.navigate("doctor-list", {
                                         specialtyId: s.id,
                                         specialtyName: s.name,
@@ -223,7 +223,7 @@ const Home = () => {
                                     activeOpacity={0.75}
                                 >
                                     <MaterialCommunityIcons name={s.icon || "hospital-box-outline"} size={18} color={COLORS.primary} />
-                                    <Text style={styles.specText}>{s.name}</Text>
+                                    <Text style={S.specText}>{s.name}</Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -231,11 +231,11 @@ const Home = () => {
                 </View>
 
                 {/* ── BÁC SĨ NỔI BẬT ── */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Bác sĩ nổi bật</Text>
+                <View style={S.section}>
+                    <View style={S.sectionHeader}>
+                        <Text style={S.sectionTitle}>Bác sĩ nổi bật</Text>
                         <TouchableOpacity onPress={() => nav.navigate("doctor-list")}>
-                            <Text style={styles.sectionLink}>Xem tất cả</Text>
+                            <Text style={S.sectionLink}>Xem tất cả</Text>
                         </TouchableOpacity>
                     </View>
                     {doctors.length === 0 ? (
@@ -250,35 +250,35 @@ const Home = () => {
                         doctors.map(doc => (
                             <TouchableOpacity
                                 key={doc.id}
-                                style={styles.docCard}
+                                style={S.docCard}
                                 onPress={() => nav.navigate("doctor-detail", { doctorId: doc.id })}
                                 activeOpacity={0.8}
                             >
-                                <View style={styles.docAvatar}>
+                                <View style={S.docAvatar}>
                                     <MaterialCommunityIcons name="doctor" size={28} color={COLORS.primary} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.docName}>BS. {doc.full_name}</Text>
-                                    <Text style={styles.docSpec}>{doc.specialty_name || "Đa khoa"}</Text>
+                                    <Text style={S.docName}>BS. {doc.full_name}</Text>
+                                    <Text style={S.docSpec}>{doc.specialty_name || "Đa khoa"}</Text>
                                     <View style={Styles.row}>
-                                        <View style={styles.docTag}>
-                                            <Text style={styles.docTagText}>{doc.experience_years} năm KN</Text>
+                                        <View style={S.docTag}>
+                                            <Text style={S.docTagText}>{doc.experience_years} năm KN</Text>
                                         </View>
                                         {doc.is_available && (
-                                            <View style={[styles.docTag, { backgroundColor: "#e8f5e9", marginLeft: 6 }]}>
-                                                <Text style={[styles.docTagText, { color: COLORS.greenLight }]}>● Nhận bệnh</Text>
+                                            <View style={[S.docTag, { backgroundColor: "#e8f5e9", marginLeft: 6 }]}>
+                                                <Text style={[S.docTagText, { color: COLORS.greenLight }]}>● Nhận bệnh</Text>
                                             </View>
                                         )}
                                     </View>
                                 </View>
                                 <TouchableOpacity
-                                    style={styles.docBtn}
+                                    style={S.docBtn}
                                     onPress={() => nav.navigate("book-appointment", {
                                         doctorId: doc.id,
                                         doctorName: doc.full_name,
                                     })}
                                 >
-                                    <Text style={styles.docBtnText}>Đặt khám</Text>
+                                    <Text style={S.docBtnText}>Đặt khám</Text>
                                 </TouchableOpacity>
                             </TouchableOpacity>
                         ))
@@ -287,16 +287,16 @@ const Home = () => {
 
                 {/* ── BANNER: THEO DÕI SỨC KHOẺ ── */}
                 <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-                    <TouchableOpacity style={styles.healthBanner} activeOpacity={0.85}>
+                    <TouchableOpacity style={S.healthBanner} activeOpacity={0.85}>
                         <Text style={{ fontSize: 36 }}>📊</Text>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.healthTitle}>Theo dõi sức khoẻ tại nhà</Text>
-                            <Text style={styles.healthSub}>
+                            <Text style={S.healthTitle}>Theo dõi sức khoẻ tại nhà</Text>
+                            <Text style={S.healthSub}>
                                 Ghi nhận huyết áp, đường huyết hàng ngày
                             </Text>
                         </View>
-                        <View style={styles.healthBtn}>
-                            <Text style={styles.healthBtnText}>Bắt đầu</Text>
+                        <View style={S.healthBtn}>
+                            <Text style={S.healthBtnText}>Bắt đầu</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -306,7 +306,7 @@ const Home = () => {
         </View>
     );
 };
-
+export default Home;
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     /* Header */

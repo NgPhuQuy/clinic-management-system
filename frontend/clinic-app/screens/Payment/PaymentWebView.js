@@ -105,15 +105,15 @@ const PaymentWebView = () => {
                 <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
                     <Text style={styles.closeText}>✕  Đóng</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>
+                <Text style={S.headerTitle}>
                     {method === "momo" ? "🟣 Thanh toán MoMo" : "🔵 Thanh toán VNPay"}
                 </Text>
             </View>
 
             {loadingPage && (
-                <View style={styles.loadingOverlay}>
+                <View style={S.loadingOverlay}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={styles.loadingText}>Đang kết nối cổng thanh toán…</Text>
+                    <Text style={S.loadingText}>Đang kết nối cổng thanh toán…</Text>
                 </View>
             )}
 

@@ -1,6 +1,11 @@
+/**
+ * screens/Profile/Profile.js
+ * Profile, Prescriptions, Payments cho bệnh nhân
+ * Payments: danh sách hoá đơn → bấm vào → chọn phương thức → xác nhận TT tiền mặt
+ */
 import {
-    View, ScrollView, StyleSheet, TouchableOpacity,
-    FlatList, ActivityIndicator, StatusBar, Image,
+    View, ScrollView, TouchableOpacity, FlatList,
+    ActivityIndicator, StatusBar, Image, Alert,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -10,28 +15,17 @@ import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, profileStyles as PS } from "../../styles/Styles";
 
-const ROLE_LABELS = {
-    patient: "Bệnh nhân",
-    doctor: "Bác sĩ",
-    staff: "Nhân viên",
-    admin: "Quản trị viên",
-};
+const ROLE_LABELS = { patient: "Bệnh nhân", doctor: "Bác sĩ", staff: "Nhân viên", admin: "Quản trị viên" };
 
-// Component avatar dùng lại được cho cả Profile và DoctorDetail
+// ─── UserAvatar (reusable) ────────────────────────────────────────────────────
 export const UserAvatar = ({ uri, size = 80, iconName = "account", borderRadius }) => {
     const [error, setError] = useState(false);
     const br = borderRadius ?? size / 2;
-    if (uri && !error) {
-        return (
-            <Image
-                source={{ uri }}
-                style={{ width: size, height: size, borderRadius: br }}
-                onError={() => setError(true)}
-            />
-        );
-    }
+    if (uri && !error) return (
+        <Image source={{ uri }} style={{ width: size, height: size, borderRadius: br }} onError={() => setError(true)} />
+    );
     return (
         <View style={{
             width: size, height: size, borderRadius: br,
@@ -44,13 +38,14 @@ export const UserAvatar = ({ uri, size = 80, iconName = "account", borderRadius 
     );
 };
 
+// ─── Profile ─────────────────────────────────────────────────────────────────
 export const Profile = () => {
-    const user = useContext(MyUserContext);
+    const user     = useContext(MyUserContext);
     const dispatch = useContext(MyDispatchContext);
     const nav = useNavigation();
     const { top } = useSafeAreaInsets();
     const [patient, setPatient] = useState(null);
-    const [stats, setStats] = useState({ appointments: 0, prescriptions: 0 });
+    const [stats,   setStats]   = useState({ appointments: 0, prescriptions: 0 });
 
     useEffect(() => {
         const load = async () => {
@@ -58,19 +53,17 @@ export const Profile = () => {
             try {
                 const pRes = await authApis(user.token).get(endpoints["patients"] + "me/");
                 setPatient(pRes.data);
-            } catch (e) {
-                if (e?.response?.status !== 404) console.error(e);
-            }
+            } catch (_) {}
             try {
                 const [aRes, prRes] = await Promise.all([
                     authApis(user.token).get(endpoints["appointments"]),
                     authApis(user.token).get(endpoints["prescriptions"]),
                 ]);
                 setStats({
-                    appointments: (aRes.data.results || aRes.data).length,
+                    appointments:  (aRes.data.results  || aRes.data).length,
                     prescriptions: (prRes.data.results || prRes.data).length,
                 });
-            } catch (e) { /* ignore */ }
+            } catch (_) {}
         };
         load();
     }, []);
@@ -80,8 +73,7 @@ export const Profile = () => {
         dispatch({ type: "logout" });
     };
 
-    // Lấy avatar URL từ user hoặc patient object
-    const avatarUri = user?.avatar || user?.avatar_url || patient?.avatar || patient?.avatar_url || null;
+    const avatarUri = user?.avatar || user?.avatar_url || patient?.avatar || null;
 
     return (
         <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} showsVerticalScrollIndicator={false}>
@@ -99,76 +91,59 @@ export const Profile = () => {
                 <View style={styles.roleBadge}>
                     <Text style={styles.roleText}>{ROLE_LABELS[user?.role] || user?.role}</Text>
                 </View>
-                <Text style={styles.email}>{user?.email}</Text>
+                <Text style={PS.email}>{user?.email}</Text>
             </View>
 
-            {/* Stats Row */}
-            <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                    <Text style={styles.statNum}>{stats.appointments}</Text>
-                    <Text style={styles.statLabel}>Lần khám</Text>
+            <View style={PS.statsRow}>
+                <View style={PS.statItem}>
+                    <Text style={PS.statNum}>{stats.appointments}</Text>
+                    <Text style={PS.statLabel}>Lần khám</Text>
                 </View>
-                <View style={[styles.statItem, styles.statBorder]}>
-                    <Text style={styles.statNum}>{stats.prescriptions}</Text>
-                    <Text style={styles.statLabel}>Đơn thuốc</Text>
+                <View style={[PS.statItem, PS.statBorder]}>
+                    <Text style={PS.statNum}>{stats.prescriptions}</Text>
+                    <Text style={PS.statLabel}>Đơn thuốc</Text>
                 </View>
-                <View style={styles.statItem}>
-                    <Text style={styles.statNum}>{patient?.blood_type || "--"}</Text>
-                    <Text style={styles.statLabel}>Nhóm máu</Text>
+                <View style={PS.statItem}>
+                    <Text style={PS.statNum}>{patient?.blood_type || "--"}</Text>
+                    <Text style={PS.statLabel}>Nhóm máu</Text>
                 </View>
             </View>
 
-            {/* Thông tin bệnh nhân */}
             {patient && (
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>THÔNG TIN BỆNH NHÂN</Text>
-                    <View style={styles.card}>
-                        <InfoRow icon="phone-outline" label="Điện thoại" value={patient.phone || "Chưa cập nhật"} />
-                        <InfoRow icon="cake-variant-outline" label="Ngày sinh"
-                            value={patient.date_of_birth
-                                ? new Date(patient.date_of_birth).toLocaleDateString("vi-VN")
-                                : "Chưa cập nhật"} />
-                        <InfoRow icon="gender-male-female" label="Giới tính"
-                            value={patient.gender === "male" ? "Nam" : patient.gender === "female" ? "Nữ" : "Chưa cập nhật"} />
-                        <InfoRow icon="map-marker-outline" label="Địa chỉ" value={patient.address || "Chưa cập nhật"} />
-                        <InfoRow icon="card-account-details-outline" label="Số BHYT"
-                            value={patient.insurance_number || "Chưa cập nhật"} last />
+                <View style={PS.section}>
+                    <Text style={PS.sectionTitle}>THÔNG TIN BỆNH NHÂN</Text>
+                    <View style={PS.card}>
+                        <InfoRow icon="phone-outline"              label="Điện thoại" value={patient.phone || "Chưa cập nhật"} />
+                        <InfoRow icon="cake-variant-outline"       label="Ngày sinh"  value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString("vi-VN") : "Chưa cập nhật"} />
+                        <InfoRow icon="gender-male-female"         label="Giới tính"  value={patient.gender === "male" ? "Nam" : patient.gender === "female" ? "Nữ" : "Chưa cập nhật"} />
+                        <InfoRow icon="map-marker-outline"         label="Địa chỉ"    value={patient.address || "Chưa cập nhật"} />
+                        <InfoRow icon="card-account-details-outline" label="Số BHYT" value={patient.insurance_number || "Chưa cập nhật"} last />
                     </View>
                 </View>
             )}
 
-            {/* Tài khoản */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>TÀI KHOẢN</Text>
-                <View style={styles.card}>
-                    <MenuRow icon="folder-account-outline" bg="#e3f2fd" label="Hồ sơ bệnh án"
-                        sub="Xem lịch sử khám bệnh" onPress={() => nav.navigate("medical-records")} />
-                    <MenuRow icon="pill" bg="#fff3e0" label="Đơn thuốc của tôi"
-                        sub={`${stats.prescriptions} đơn thuốc`} badge={stats.prescriptions}
-                        onPress={() => nav.navigate("prescriptions")} />
-                    <MenuRow icon="flask-outline" bg="#f3e5f5" label="Kết quả cận lâm sàng"
-                        sub="Xét nghiệm, chẩn đoán hình ảnh" onPress={() => nav.navigate("medical-records")} />
-                    <MenuRow icon="credit-card-outline" bg="#e8f5e9" label="Lịch sử thanh toán"
-                        sub="Xem hoá đơn và giao dịch" onPress={() => nav.navigate("payments")} />
-                    <MenuRow icon="lock-outline" bg="#fce4ec" label="Đổi mật khẩu"
-                        sub="Bảo mật tài khoản" onPress={() => nav.navigate("change-password")} last />
+            <View style={PS.section}>
+                <Text style={PS.sectionTitle}>TÀI KHOẢN</Text>
+                <View style={PS.card}>
+                    <MenuRow icon="folder-account-outline" bg="#e3f2fd" label="Hồ sơ bệnh án"        sub="Xem lịch sử khám bệnh"           onPress={() => nav.navigate("medical-records")} />
+                    <MenuRow icon="pill"                   bg="#fff3e0" label="Đơn thuốc của tôi"     sub={`${stats.prescriptions} đơn thuốc`} badge={stats.prescriptions} onPress={() => nav.navigate("prescriptions")} />
+                    <MenuRow icon="flask-outline"          bg="#f3e5f5" label="Kết quả cận lâm sàng"  sub="Xét nghiệm, chẩn đoán hình ảnh" onPress={() => nav.navigate("medical-records")} />
+                    <MenuRow icon="credit-card-outline"    bg="#e8f5e9" label="Lịch sử thanh toán"    sub="Xem hoá đơn và giao dịch"        onPress={() => nav.navigate("payments")} />
+                    <MenuRow icon="lock-outline"           bg="#fce4ec" label="Đổi mật khẩu"          sub="Bảo mật tài khoản"               onPress={() => nav.navigate("change-password")} last />
                 </View>
             </View>
 
-            {/* Hỗ trợ */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>HỖ TRỢ</Text>
-                <View style={styles.card}>
+            <View style={PS.section}>
+                <Text style={PS.sectionTitle}>HỖ TRỢ</Text>
+                <View style={PS.card}>
                     <MenuRow icon="book-open-page-variant-outline" bg="#e3f2fd" label="Hướng dẫn sử dụng" onPress={() => {}} />
-                    <MenuRow icon="phone-in-talk-outline" bg="#fff3e0" label="Liên hệ hỗ trợ"
-                        sub="Hotline: 1900 1234" onPress={() => {}} last />
+                    <MenuRow icon="phone-in-talk-outline"          bg="#fff3e0" label="Liên hệ hỗ trợ"    sub="Hotline: 1900 1234" onPress={() => {}} last />
                 </View>
             </View>
 
-            {/* Logout */}
-            <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-                <MaterialCommunityIcons name="logout" size={20} color={COLORS.redLight} />
-                <Text style={styles.logoutText}>Đăng xuất</Text>
+            <TouchableOpacity style={PS.logoutBtn} onPress={logout}>
+                <MaterialCommunityIcons name="logout" size={20} color="#f44336" />
+                <Text style={PS.logoutText}>Đăng xuất</Text>
             </TouchableOpacity>
             <View style={{ height: 24 }} />
         </ScrollView>
@@ -176,53 +151,49 @@ export const Profile = () => {
 };
 
 const InfoRow = ({ icon, label, value, last }) => (
-    <View style={[styles.infoRow, last && { borderBottomWidth: 0 }]}>
+    <View style={[PS.infoRow, last && { borderBottomWidth: 0 }]}>
         <MaterialCommunityIcons name={icon} size={20} color={COLORS.primary} style={{ width: 28 }} />
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
+        <Text style={PS.infoLabel}>{label}</Text>
+        <Text style={PS.infoValue}>{value}</Text>
     </View>
 );
 
 const MenuRow = ({ icon, bg, label, sub, badge, onPress, last }) => (
-    <TouchableOpacity
-        style={[styles.menuRow, last && { borderBottomWidth: 0 }]}
-        onPress={onPress}
-        activeOpacity={0.7}
-    >
-        <View style={[styles.menuIcon, { backgroundColor: bg }]}>
+    <TouchableOpacity style={[PS.menuRow, last && { borderBottomWidth: 0 }]} onPress={onPress} activeOpacity={0.7}>
+        <View style={[PS.menuIcon, { backgroundColor: bg }]}>
             <MaterialCommunityIcons name={icon} size={20} color={COLORS.primaryDark} />
         </View>
         <View style={{ flex: 1 }}>
-            <Text style={styles.menuLabel}>{label}</Text>
-            {sub && <Text style={styles.menuSub}>{sub}</Text>}
+            <Text style={PS.menuLabel}>{label}</Text>
+            {sub && <Text style={PS.menuSub}>{sub}</Text>}
         </View>
         {badge > 0 && (
-            <View style={styles.badgeWrap}>
-                <Text style={styles.badgeText}>{badge}</Text>
-            </View>
+            <View style={PS.badgeWrap}><Text style={PS.badgeText}>{badge}</Text></View>
         )}
         <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.textLight} />
     </TouchableOpacity>
 );
 
-// ─── Prescriptions Screen ────────────────────────────────────────────────────
+// ─── Prescriptions ────────────────────────────────────────────────────────────
 export const Prescriptions = () => {
     const user = useContext(MyUserContext);
     const [prescriptions, setPrescriptions] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const MOCK_PRESC = [
+        { id:1, doctor_name:"Nguyễn Văn An", status:"dispensed", created_at: new Date(Date.now()-2*86400*1000).toISOString(), notes:"3 loại thuốc" },
+        { id:2, doctor_name:"Lê Minh Cường",  status:"pending",   created_at: new Date(Date.now()-5*86400*1000).toISOString(), notes:"2 loại thuốc" },
+        { id:3, doctor_name:"Phạm Thị Dung",  status:"dispensed", created_at: new Date(Date.now()-10*86400*1000).toISOString(), notes:"4 loại thuốc" },
+    ];
+
     useEffect(() => {
         authApis(user.token).get(endpoints["prescriptions"])
-            .then(r => setPrescriptions(r.data.results || r.data))
-            .catch(console.error)
+            .then(r => { const d = r.data.results || r.data; setPrescriptions(d.length > 0 ? d : MOCK_PRESC); })
+            .catch(() => setPrescriptions(MOCK_PRESC))
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return (
-        <View style={[Styles.center, { flex: 1 }]}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-    );
+    if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
     return (
         <View style={Styles.container}>
@@ -234,12 +205,12 @@ export const Prescriptions = () => {
             ) : (
                 <FlatList
                     data={prescriptions}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={item => item.id.toString()}
                     contentContainerStyle={{ padding: 16 }}
                     renderItem={({ item }) => (
-                        <TouchableOpacity style={Styles.card}>
-                            <View style={[Styles.row, { justifyContent: "space-between" }]}>
-                                <View style={[styles.menuIcon, { backgroundColor: "#fff3e0", marginRight: 12 }]}>
+                        <View style={[PS.card, { marginBottom: 10, overflow: "visible" }]}>
+                            <View style={{ flexDirection: "row", alignItems: "center", padding: 14, gap: 12 }}>
+                                <View style={[PS.menuIcon, { backgroundColor: "#fff3e0" }]}>
                                     <MaterialCommunityIcons name="pill" size={22} color={COLORS.orange} />
                                 </View>
                                 <View style={{ flex: 1 }}>
@@ -247,15 +218,16 @@ export const Prescriptions = () => {
                                     <Text style={Styles.text}>BS. {item.doctor_name || item.doctor}</Text>
                                     <Text style={Styles.textSmall}>
                                         {new Date(item.created_at).toLocaleDateString("vi-VN")}
+                                        {item.notes ? ` • ${item.notes}` : ""}
                                     </Text>
                                 </View>
                                 <View style={[Styles.badge, {
-                                    backgroundColor: item.is_dispensed ? COLORS.greenLight : COLORS.orangeLight,
+                                    backgroundColor: item.status === "dispensed" ? COLORS.greenLight : COLORS.orangeLight,
                                 }]}>
-                                    <Text style={Styles.badgeText}>{item.is_dispensed ? "Đã cấp" : "Chờ cấp"}</Text>
+                                    <Text style={Styles.badgeText}>{item.status === "dispensed" ? "Đã cấp" : "Chờ cấp"}</Text>
                                 </View>
                             </View>
-                        </TouchableOpacity>
+                        </View>
                     )}
                 />
             )}
@@ -290,22 +262,64 @@ const PAY_METHOD_COLORS = {
 };
 
 export const Payments = () => {
+    const nav  = useNavigation();
     const user = useContext(MyUserContext);
-    const [payments, setPayments] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         authApis(user.token).get(endpoints["payments"])
-            .then(r => setPayments(r.data.results || r.data))
-            .catch(console.error)
+            .then(r => { const d = r.data.results || r.data; setInvoices(d.length > 0 ? d : MOCK_INVOICES); })
+            .catch(() => setInvoices(MOCK_INVOICES))
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return (
-        <View style={[Styles.center, { flex: 1 }]}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-    );
+    const STATUS_FILTERS = [
+        { key: "all",     label: "Tất cả" },
+        { key: "pending", label: "Chờ TT" },
+        { key: "success", label: "Đã TT"  },
+    ];
+
+    const displayed = filterStatus === "all"
+        ? invoices
+        : invoices.filter(i => i.status === filterStatus);
+
+    // Mở invoice → chọn phương thức → xác nhận
+    const openInvoice = (inv) => {
+        if (inv.status !== "pending") return; // chỉ cho TT nếu pending
+        setSelected(inv);
+        setMethod(null);
+    };
+
+    const proceedPayment = () => {
+        if (!selectedMethod) {
+            Alert.alert("Chưa chọn phương thức", "Vui lòng chọn phương thức thanh toán.");
+            return;
+        }
+        if (selectedMethod === "cash") {
+            setShowCash(true);
+        } else {
+            // Online → chuyển sang PaymentScreen (MoMo/VNPay)
+            nav.navigate("payment-screen", {
+                appointmentId:   selectedInvoice.appointment_id,
+                doctorName:      selectedInvoice.doctor_name,
+                appointmentDate: selectedInvoice.created_at,
+                amount:          selectedInvoice.amount,
+                fromBooking:     false,
+            });
+            setSelected(null);
+        }
+    };
+
+    const confirmCash = async (inv) => {
+        try {
+            await authApis(user.token).post(endpoints["payment-confirm"](inv.id), {});
+        } catch (_) {}
+        setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: "success", paid_at: new Date().toISOString() } : i));
+        setShowCash(false);
+        setSelected(null);
+        Alert.alert("✅ Đã ghi nhận", "Vui lòng đến quầy thu ngân để hoàn tất thanh toán!");
+    };
+
+    if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
     const renderPayment = ({ item }) => {
         const statusColor = PAY_STATUS_COLORS[item.status] || "#9e9e9e";

@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, appointmentDetailStyles as S } from "../../styles/Styles";
 
 const STATUS_COLORS = {
     pending: "#ff9800", confirmed: "#4caf50", cancelled: "#f44336",

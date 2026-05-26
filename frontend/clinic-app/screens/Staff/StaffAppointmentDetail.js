@@ -15,7 +15,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, staffAppointmentDetailStyles as S } from "../../styles/Styles";
 
 const STATUS_COLORS = {
     pending: COLORS.orange, confirmed: COLORS.green, cancelled: COLORS.red,
@@ -38,17 +38,17 @@ const PAY_METHOD_LABELS = {
 };
 
 const Section = ({ title, children }) => (
-    <View style={styles.card}>
-        <Text style={styles.cardTitle}>{title}</Text>
+    <View style={S.card}>
+        <Text style={S.cardTitle}>{title}</Text>
         {children}
     </View>
 );
 
 const InfoRow = ({ icon, label, value, valueColor }) => (
-    <View style={styles.infoRow}>
+    <View style={S.infoRow}>
         <MaterialCommunityIcons name={icon} size={15} color={COLORS.primary} style={{ width: 20 }} />
-        <Text style={styles.infoLabel}>{label}:</Text>
-        <Text style={[styles.infoValue, valueColor && { color: valueColor }]}>{value || "—"}</Text>
+        <Text style={S.infoLabel}>{label}:</Text>
+        <Text style={[S.infoValue, valueColor && { color: valueColor }]}>{value || "—"}</Text>
     </View>
 );
 
@@ -132,11 +132,11 @@ const StaffAppointmentDetail = () => {
         ["confirmed", "in_progress", "completed"].includes(appt.status);
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={S.container}>
             {/* Status banner */}
-            <View style={[styles.statusBanner, { backgroundColor: statusColor }]}>
-                <Text style={styles.statusBannerLabel}>{statusLabel}</Text>
-                <Text style={styles.statusBannerDate}>
+            <View style={[S.statusBanner, { backgroundColor: statusColor }]}>
+                <Text style={S.statusBannerLabel}>{statusLabel}</Text>
+                <Text style={S.statusBannerDate}>
                     {apptDate.toLocaleDateString("vi-VN")} •{" "}
                     {apptDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                 </Text>
@@ -165,14 +165,14 @@ const StaffAppointmentDetail = () => {
                 <InfoRow icon="text-box-outline" label="Lý do khám" value={appt.reason} />
                 <InfoRow icon="note-outline"     label="Ghi chú"    value={appt.notes} />
                 {appt.appointment_services?.length > 0 && (
-                    <View style={styles.services}>
-                        <Text style={styles.serviceTitle}>Dịch vụ / Xét nghiệm:</Text>
+                    <View style={S.services}>
+                        <Text style={S.serviceTitle}>Dịch vụ / Xét nghiệm:</Text>
                         {appt.appointment_services.map((s) => (
-                            <View key={s.id} style={styles.serviceRow}>
-                                <Text style={styles.serviceName}>
+                            <View key={s.id} style={S.serviceRow}>
+                                <Text style={S.serviceName}>
                                     • {s.service_name || `Dịch vụ #${s.service}`}
                                 </Text>
-                                <Text style={styles.servicePrice}>
+                                <Text style={S.servicePrice}>
                                     {Number(s.price_at_time).toLocaleString("vi-VN")}đ
                                 </Text>
                             </View>
@@ -211,14 +211,14 @@ const StaffAppointmentDetail = () => {
             )}
 
             {/* Action buttons */}
-            <View style={styles.actions}>
+            <View style={S.actions}>
                 {canConfirm && (
                     <Button
                         mode="contained"
                         icon="check-circle-outline"
                         loading={updating}
                         onPress={() => doUpdateStatus("confirmed", STATUS_LABELS.confirmed)}
-                        style={[styles.btn, { backgroundColor: COLORS.green }]}
+                        style={[S.btn, { backgroundColor: COLORS.green }]}
                     >
                         Xác nhận lịch hẹn
                     </Button>
@@ -229,7 +229,7 @@ const StaffAppointmentDetail = () => {
                         icon="account-check-outline"
                         loading={updating}
                         onPress={() => doUpdateStatus("in_progress", STATUS_LABELS.in_progress)}
-                        style={[styles.btn, { backgroundColor: COLORS.purple }]}
+                        style={[S.btn, { backgroundColor: COLORS.purple }]}
                     >
                         Bệnh nhân đã check-in
                     </Button>
@@ -240,7 +240,7 @@ const StaffAppointmentDetail = () => {
                         icon="check-all"
                         loading={updating}
                         onPress={() => doUpdateStatus("completed", STATUS_LABELS.completed)}
-                        style={[styles.btn, { backgroundColor: COLORS.primary }]}
+                        style={[S.btn, { backgroundColor: COLORS.primary }]}
                     >
                         Hoàn thành khám
                     </Button>
@@ -257,7 +257,7 @@ const StaffAppointmentDetail = () => {
                                 appointmentId:   appt.id,
                             })
                         }
-                        style={[styles.btn, { backgroundColor: COLORS.orange }]}
+                        style={[S.btn, { backgroundColor: COLORS.orange }]}
                     >
                         Thu tiền mặt
                     </Button>
@@ -268,7 +268,7 @@ const StaffAppointmentDetail = () => {
                         icon="account-off-outline"
                         loading={updating}
                         onPress={() => doUpdateStatus("no_show", STATUS_LABELS.no_show)}
-                        style={styles.btn}
+                        style={S.btn}
                         textColor={COLORS.textMuted}
                     >
                         Bệnh nhân không đến
@@ -280,7 +280,7 @@ const StaffAppointmentDetail = () => {
                         icon="close-circle-outline"
                         loading={updating}
                         onPress={() => doUpdateStatus("cancelled", STATUS_LABELS.cancelled)}
-                        style={styles.btn}
+                        style={S.btn}
                         textColor={COLORS.red}
                     >
                         Hủy lịch hẹn
@@ -292,29 +292,4 @@ const StaffAppointmentDetail = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    container:    { flex: 1, backgroundColor: COLORS.bg },
-    statusBanner: { padding: 20, alignItems: "center" },
-    statusBannerLabel: { fontSize: 18, fontWeight: "800", color: "#fff" },
-    statusBannerDate:  { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 4 },
-    card: {
-        margin: 12, marginBottom: 0, backgroundColor: "#fff",
-        borderRadius: 14, padding: 16,
-        elevation: 2, shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    cardTitle: { fontSize: 13, fontWeight: "700", color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
-    infoRow:   { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
-    infoLabel: { fontSize: 13, color: COLORS.textMuted, marginLeft: 6, minWidth: 90 },
-    infoValue: { fontSize: 13, color: COLORS.text, flex: 1, fontWeight: "500" },
-    services:  { marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: COLORS.border },
-    serviceTitle: { fontSize: 12, color: COLORS.textMuted, marginBottom: 4 },
-    serviceRow:   { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
-    serviceName:  { fontSize: 13, color: COLORS.text },
-    servicePrice: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
-    actions: { margin: 12, gap: 10 },
-    btn:     { borderRadius: 10, paddingVertical: 4 },
-});
-
 export default StaffAppointmentDetail;

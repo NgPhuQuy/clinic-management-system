@@ -6,7 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Apis, { authApis, endpoints } from "../../configs/Apis";
 import { useNavigation } from "@react-navigation/native";
 import { MyDispatchContext } from "../../contexts/MyContext";
-import Styles from "../../styles/Styles";
+import Styles, { registerStyles as S } from "../../styles/Styles";
 
 const Register = () => {
     const fields = [
@@ -93,7 +93,7 @@ const Register = () => {
 
     return (
         <ScrollView style={Styles.container}>
-            <View style={[Styles.padding, styles.form]}>
+            <View style={[Styles.padding, S.form]}>
                 <Text style={Styles.title}>Tạo tài khoản</Text>
 
                 <HelperText type="error" visible={!!err} style={Styles.margin}>
@@ -121,7 +121,7 @@ const Register = () => {
                 ))}
 
                 {/* Avatar picker */}
-                <TouchableOpacity onPress={pickAvatar} style={styles.avatarPicker}>
+                <TouchableOpacity onPress={pickAvatar} style={S.avatarPicker}>
                     <Text style={{ color: "#1565c0" }}>📷  Chọn ảnh đại diện...</Text>
                 </TouchableOpacity>
                 {user.avatar && (
@@ -136,7 +136,7 @@ const Register = () => {
                     onPress={register}
                     loading={loading}
                     disabled={loading}
-                    style={styles.btn}
+                    style={S.btn}
                     buttonColor="#1565c0"
                 >
                     Đăng ký
@@ -149,30 +149,4 @@ const Register = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    form: {
-        backgroundColor: "#fff",
-        margin: 16,
-        borderRadius: 16,
-        elevation: 3,
-        padding: 20,
-    },
-    avatarPicker: {
-        borderWidth: 1,
-        borderColor: "#1565c0",
-        borderStyle: "dashed",
-        borderRadius: 8,
-        padding: 12,
-        alignItems: "center",
-        marginBottom: 12,
-    },
-    btn: {
-        borderRadius: 8,
-        paddingVertical: 4,
-        marginTop: 8,
-        marginBottom: 8,
-    },
-});
-
 export default Register;

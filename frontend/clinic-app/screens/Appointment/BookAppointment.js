@@ -29,10 +29,123 @@ const DoctorAvatar = ({ uri, size = 52 }) => {
     );
 };
 
+const { width: SCREEN_W } = Dimensions.get("window");
+const DAY_NAMES = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+const MONTH_NAMES = [
+    "Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
+    "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12",
+];
+const TIME_SLOTS = [
+    "07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00",
+    "13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30",
+];
+
+// ─── Mini calendar component ─────────────────────────────────────────────────
+const CalendarPicker = ({ selectedDate, onSelect, onClose }) => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const [viewYear,  setViewYear]  = useState(selectedDate ? selectedDate.getFullYear()  : today.getFullYear());
+    const [viewMonth, setViewMonth] = useState(selectedDate ? selectedDate.getMonth()      : today.getMonth());
+
+    const prevMonth = () => {
+        if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+        else setViewMonth(m => m - 1);
+    };
+    const nextMonth = () => {
+        if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+        else setViewMonth(m => m + 1);
+    };
+
+    const firstDay  = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const DAY_SIZE = Math.floor((SCREEN_W - 80) / 7);
+
+    const cells = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+    return (
+        <View style={Styles.calendarWrap}>
+            {/* Month nav */}
+            <View style={Styles.calendarHeader}>
+                <TouchableOpacity onPress={prevMonth} hitSlop={{top:10,bottom:10,left:10,right:10}}>
+                    <MaterialCommunityIcons name="chevron-left" size={24} color={COLORS.primary} />
+                </TouchableOpacity>
+                <Text style={Styles.calendarMonthTxt}>
+                    {MONTH_NAMES[viewMonth]} {viewYear}
+                </Text>
+                <TouchableOpacity onPress={nextMonth} hitSlop={{top:10,bottom:10,left:10,right:10}}>
+                    <MaterialCommunityIcons name="chevron-right" size={24} color={COLORS.primary} />
+                </TouchableOpacity>
+            </View>
+
+            {/* Day headers */}
+            <View style={{ flexDirection: "row" }}>
+                {DAY_NAMES.map(d => (
+                    <Text key={d} style={[Styles.calendarDayName, { width: DAY_SIZE }]}>{d}</Text>
+                ))}
+            </View>
+
+            {/* Day cells */}
+            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {cells.map((day, idx) => {
+                    if (!day) return <View key={`e${idx}`} style={{ width: DAY_SIZE, height: DAY_SIZE }} />;
+                    const cellDate = new Date(viewYear, viewMonth, day);
+                    const isPast     = cellDate < today;
+                    const isToday    = cellDate.getTime() === today.getTime();
+                    const isSelected = selectedDate && cellDate.getTime() === new Date(
+                        selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()
+                    ).getTime();
+                    return (
+                        <TouchableOpacity
+                            key={day}
+                            disabled={isPast}
+                            onPress={() => onSelect(cellDate)}
+                            style={[
+                                Styles.calendarDay,
+                                { width: DAY_SIZE, height: DAY_SIZE, margin: 1 },
+                                isToday    && Styles.calendarDayToday,
+                                isSelected && Styles.calendarDaySelected,
+                                isPast     && Styles.calendarDayDisabled,
+                            ]}
+                        >
+                            <Text style={[
+                                Styles.calendarDayText,
+                                isSelected && Styles.calendarDaySelectedText,
+                            ]}>
+                                {day}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+        </View>
+    );
+};
+
+// ─── Time slot picker ────────────────────────────────────────────────────────
+const TimePicker = ({ selectedTime, onSelect }) => (
+    <View style={Styles.timeSlotRow}>
+        {TIME_SLOTS.map(t => (
+            <TouchableOpacity
+                key={t}
+                style={[Styles.timeSlot, selectedTime === t && Styles.timeSlotSelected]}
+                onPress={() => onSelect(t)}
+            >
+                <Text style={[Styles.timeSlotText, selectedTime === t && Styles.timeSlotTextSelected]}>
+                    {t}
+                </Text>
+            </TouchableOpacity>
+        ))}
+    </View>
+);
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 const BookAppointment = () => {
-    const nav = useNavigation();
-    const route = useRoute();
-    const user = useContext(MyUserContext);
+    const nav    = useNavigation();
+    const route  = useRoute();
+    const user   = useContext(MyUserContext);
     const { doctorId, scheduleId, doctorName, schedule } = route.params || {};
 
     const doctorAvatar = schedule?.doctorAvatar || route.params?.doctorAvatar || null;
@@ -79,15 +192,14 @@ const BookAppointment = () => {
             setLoading(true);
             setErr(null);
             const payload = {
-                doctor: doctorId,
-                appointment_date: form.appointment_date,
-                reason: form.reason,
-                notes: form.notes,
+                doctor:           doctorId,
+                appointment_date: appointmentDatetime,
+                reason,
+                notes,
             };
             if (scheduleId) payload.schedule = scheduleId;
 
             const res = await authApis(user.token).post(endpoints["appointments"], payload);
-
             if (res.status === 201) {
                 const appt = res.data;
                 nav.navigate("payment-screen", {
@@ -100,7 +212,6 @@ const BookAppointment = () => {
                 });
             }
         } catch (ex) {
-            console.error(ex);
             const detail = ex?.response?.data;
             let msg = "Đặt lịch thất bại. Vui lòng thử lại!";
             if (detail) {
@@ -182,8 +293,8 @@ const BookAppointment = () => {
 
                 <TextInput
                     label="Lý do khám *"
-                    value={form.reason}
-                    onChangeText={(t) => setForm({ ...form, reason: t })}
+                    value={reason}
+                    onChangeText={setReason}
                     style={Styles.margin}
                     mode="outlined"
                     multiline
@@ -196,8 +307,8 @@ const BookAppointment = () => {
 
                 <TextInput
                     label="Ghi chú thêm"
-                    value={form.notes}
-                    onChangeText={(t) => setForm({ ...form, notes: t })}
+                    value={notes}
+                    onChangeText={setNotes}
                     style={Styles.margin}
                     mode="outlined"
                     multiline
