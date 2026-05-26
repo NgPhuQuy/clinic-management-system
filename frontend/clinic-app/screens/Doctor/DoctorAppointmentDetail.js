@@ -13,7 +13,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, doctorAppointmentDetailStyles as S } from "../../styles/Styles";
 
 const STATUS_CONFIG = {
     pending: { label: "Chờ xác nhận", color: COLORS.orange },
@@ -25,10 +25,10 @@ const STATUS_CONFIG = {
 };
 
 const InfoRow = ({ icon, label, value }) => (
-    <View style={styles.infoRow}>
+    <View style={S.infoRow}>
         <MaterialCommunityIcons name={icon} size={16} color={COLORS.primary} style={{ width: 22 }} />
-        <Text style={styles.infoLabel}>{label}:</Text>
-        <Text style={styles.infoValue}>{value || "—"}</Text>
+        <Text style={S.infoLabel}>{label}:</Text>
+        <Text style={S.infoValue}>{value || "—"}</Text>
     </View>
 );
 
@@ -62,11 +62,11 @@ const MedicalRecordModal = ({ visible, onClose, appointmentId, patientId, onSucc
 
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-            <View style={styles.modalHeader}>
+            <View style={S.modalHeader}>
                 <TouchableOpacity onPress={onClose}>
                     <MaterialCommunityIcons name="close" size={24} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.modalTitle}>Ghi hồ sơ bệnh án</Text>
+                <Text style={S.modalTitle}>Ghi hồ sơ bệnh án</Text>
                 <View style={{ width: 24 }} />
             </View>
             <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ padding: 16 }}>
@@ -77,28 +77,28 @@ const MedicalRecordModal = ({ visible, onClose, appointmentId, patientId, onSucc
                     value={form.symptoms}
                     onChangeText={(t) => setForm({ ...form, symptoms: t })}
                     mode="outlined" multiline numberOfLines={3}
-                    style={styles.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
                 <TextInput
                     label="Chẩn đoán *"
                     value={form.diagnosis}
                     onChangeText={(t) => setForm({ ...form, diagnosis: t })}
                     mode="outlined" multiline numberOfLines={3}
-                    style={styles.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
                 <TextInput
                     label="Hướng điều trị"
                     value={form.treatment_notes}
                     onChangeText={(t) => setForm({ ...form, treatment_notes: t })}
                     mode="outlined" multiline numberOfLines={3}
-                    style={styles.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
                 <TextInput
                     label="Ngày tái khám (YYYY-MM-DD)"
                     value={form.follow_up_date}
                     onChangeText={(t) => setForm({ ...form, follow_up_date: t })}
                     mode="outlined" placeholder="2025-01-01"
-                    style={styles.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
                 <Button
                     mode="contained" onPress={save} loading={saving} disabled={saving}
@@ -188,11 +188,11 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
 
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-            <View style={styles.modalHeader}>
+            <View style={S.modalHeader}>
                 <TouchableOpacity onPress={onClose}>
                     <MaterialCommunityIcons name="close" size={24} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.modalTitle}>Kê đơn thuốc</Text>
+                <Text style={S.modalTitle}>Kê đơn thuốc</Text>
                 {prescriptionId ? (
                     <TouchableOpacity onPress={done}>
                         <Text style={{ color: "#fff", fontWeight: "700" }}>Xong</Text>
@@ -210,7 +210,7 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
                             value={notes}
                             onChangeText={setNotes}
                             mode="outlined" multiline numberOfLines={3}
-                            style={styles.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                            style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                         />
                         <Button
                             mode="contained" onPress={createPrescription} loading={saving}
@@ -223,12 +223,12 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
                     <>
                         {/* Danh sách thuốc đã thêm */}
                         {medicines.length > 0 && (
-                            <View style={styles.medList}>
-                                <Text style={styles.subTitle}>Thuốc đã kê:</Text>
+                            <View style={S.medList}>
+                                <Text style={S.subTitle}>Thuốc đã kê:</Text>
                                 {medicines.map((m, i) => (
-                                    <View key={i} style={styles.medItem}>
-                                        <Text style={styles.medName}>{m.medicine_name || `Thuốc #${m.medicine}`}</Text>
-                                        <Text style={styles.medDetail}>
+                                    <View key={i} style={S.medItem}>
+                                        <Text style={S.medName}>{m.medicine_name || `Thuốc #${m.medicine}`}</Text>
+                                        <Text style={S.medDetail}>
                                             {m.quantity} {m.medicine_unit} • {m.dosage} • {m.frequency}
                                         </Text>
                                     </View>
@@ -237,11 +237,11 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
                         )}
 
                         {/* Thêm thuốc */}
-                        <Text style={[styles.subTitle, { marginTop: 12 }]}>Thêm thuốc vào đơn</Text>
+                        <Text style={[S.subTitle, { marginTop: 12 }]}>Thêm thuốc vào đơn</Text>
 
                         {/* Chọn thuốc */}
                         <TouchableOpacity
-                            style={styles.pickerBtn}
+                            style={S.pickerBtn}
                             onPress={() => setShowMedPicker(true)}
                         >
                             <Text style={{ color: medForm.medicine ? COLORS.text : COLORS.textLight }}>
@@ -251,55 +251,55 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
                         </TouchableOpacity>
 
                         {showMedPicker && (
-                            <View style={styles.medDropdown}>
+                            <View style={S.medDropdown}>
                                 <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
                                     {allMedicines.map((m) => (
                                         <TouchableOpacity
                                             key={m.id}
-                                            style={styles.medOption}
+                                            style={S.medOption}
                                             onPress={() => {
                                                 setMedForm({ ...medForm, medicine: m.id });
                                                 setShowMedPicker(false);
                                             }}
                                         >
-                                            <Text style={styles.medOptionText}>{m.code} - {m.name}</Text>
-                                            <Text style={styles.medOptionSub}>{m.unit} • {Number(m.price).toLocaleString("vi-VN")}đ</Text>
+                                            <Text style={S.medOptionText}>{m.code} - {m.name}</Text>
+                                            <Text style={S.medOptionSub}>{m.unit} • {Number(m.price).toLocaleString("vi-VN")}đ</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </ScrollView>
                             </View>
                         )}
 
-                        <View style={styles.row}>
+                        <View style={S.row}>
                             <TextInput
                                 label="Số lượng *" value={medForm.quantity}
                                 onChangeText={(t) => setMedForm({ ...medForm, quantity: t })}
-                                mode="outlined" keyboardType="numeric" style={[styles.input, { flex: 1 }]}
+                                mode="outlined" keyboardType="numeric" style={[S.input, { flex: 1 }]}
                                 outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                             />
                             <TextInput
                                 label="Số ngày dùng" value={medForm.duration_days}
                                 onChangeText={(t) => setMedForm({ ...medForm, duration_days: t })}
-                                mode="outlined" keyboardType="numeric" style={[styles.input, { flex: 1 }]}
+                                mode="outlined" keyboardType="numeric" style={[S.input, { flex: 1 }]}
                                 outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                             />
                         </View>
                         <TextInput
                             label="Liều dùng (vd: 1 viên)" value={medForm.dosage}
                             onChangeText={(t) => setMedForm({ ...medForm, dosage: t })}
-                            mode="outlined" style={styles.input}
+                            mode="outlined" style={S.input}
                             outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                         />
                         <TextInput
                             label="Tần suất (vd: 3 lần/ngày)" value={medForm.frequency}
                             onChangeText={(t) => setMedForm({ ...medForm, frequency: t })}
-                            mode="outlined" style={styles.input}
+                            mode="outlined" style={S.input}
                             outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                         />
                         <TextInput
                             label="Hướng dẫn sử dụng" value={medForm.instructions}
                             onChangeText={(t) => setMedForm({ ...medForm, instructions: t })}
-                            mode="outlined" style={styles.input}
+                            mode="outlined" style={S.input}
                             outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                         />
                         <Button
@@ -377,26 +377,26 @@ const DoctorAppointmentDetail = () => {
 
     return (
         <>
-            <ScrollView style={styles.container}>
+            <ScrollView style={S.container}>
                 {/* Status Header */}
-                <View style={[styles.statusHeader, { backgroundColor: statusCfg.color }]}>
-                    <Text style={styles.statusHeaderText}>{statusCfg.label}</Text>
-                    <Text style={styles.statusHeaderDate}>
+                <View style={[S.statusHeader, { backgroundColor: statusCfg.color }]}>
+                    <Text style={S.statusHeaderText}>{statusCfg.label}</Text>
+                    <Text style={S.statusHeaderDate}>
                         {apptDate.toLocaleDateString("vi-VN")} lúc {apptDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                     </Text>
                 </View>
 
                 {/* Patient Info */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Thông tin bệnh nhân</Text>
+                <View style={S.card}>
+                    <Text style={S.cardTitle}>Thông tin bệnh nhân</Text>
                     <InfoRow icon="account" label="Họ tên" value={patient.full_name} />
                     <InfoRow icon="phone" label="Điện thoại" value={patient.phone} />
                     <InfoRow icon="cake-variant" label="Ngày sinh" value={patient.date_of_birth} />
                 </View>
 
                 {/* Appointment Info */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Thông tin khám</Text>
+                <View style={S.card}>
+                    <Text style={S.cardTitle}>Thông tin khám</Text>
                     <InfoRow icon="stethoscope" label="Bác sĩ" value={doctor.full_name} />
                     <InfoRow icon="hospital" label="Chuyên khoa" value={doctor.specialty_name} />
                     <InfoRow icon="text-box-outline" label="Lý do khám" value={appt.reason} />
@@ -405,9 +405,9 @@ const DoctorAppointmentDetail = () => {
 
                 {/* Medical Record */}
                 {record ? (
-                    <View style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <Text style={styles.cardTitle}>Hồ sơ bệnh án</Text>
+                    <View style={S.card}>
+                        <View style={S.cardHeader}>
+                            <Text style={S.cardTitle}>Hồ sơ bệnh án</Text>
                             <TouchableOpacity onPress={() => nav.navigate("doctor-medical-record-detail", { id: record.id })}>
                                 <Text style={{ color: COLORS.primary, fontWeight: "600", fontSize: 13 }}>Xem chi tiết</Text>
                             </TouchableOpacity>
@@ -421,21 +421,21 @@ const DoctorAppointmentDetail = () => {
                     </View>
                 ) : (
                     appt.status === "in_progress" && (
-                        <View style={styles.emptyCard}>
+                        <View style={S.emptyCard}>
                             <MaterialCommunityIcons name="file-document-outline" size={36} color={COLORS.border} />
-                            <Text style={styles.emptyText}>Chưa có hồ sơ bệnh án</Text>
+                            <Text style={S.emptyText}>Chưa có hồ sơ bệnh án</Text>
                         </View>
                     )
                 )}
 
                 {/* Action Buttons */}
-                <View style={styles.actions}>
+                <View style={S.actions}>
                     {appt.status === "confirmed" && (
                         <Button
                             mode="contained"
                             icon="stethoscope"
                             onPress={() => updateStatus("in_progress")}
-                            style={[styles.btn, { backgroundColor: COLORS.purple }]}
+                            style={[S.btn, { backgroundColor: COLORS.purple }]}
                         >
                             Bắt đầu khám
                         </Button>
@@ -446,7 +446,7 @@ const DoctorAppointmentDetail = () => {
                                 mode="contained"
                                 icon="check-circle-outline"
                                 onPress={() => updateStatus("confirmed")}
-                                style={[styles.btn, { backgroundColor: COLORS.green }]}
+                                style={[S.btn, { backgroundColor: COLORS.green }]}
                             >
                                 Xác nhận lịch hẹn
                             </Button>
@@ -454,7 +454,7 @@ const DoctorAppointmentDetail = () => {
                                 mode="outlined"
                                 icon="close-circle-outline"
                                 onPress={() => updateStatus("cancelled")}
-                                style={styles.btn}
+                                style={S.btn}
                                 textColor={COLORS.red}
                             >
                                 Hủy lịch
@@ -468,7 +468,7 @@ const DoctorAppointmentDetail = () => {
                                     mode="contained"
                                     icon="file-edit-outline"
                                     onPress={() => setShowRecordModal(true)}
-                                    style={[styles.btn, { backgroundColor: COLORS.primary }]}
+                                    style={[S.btn, { backgroundColor: COLORS.primary }]}
                                 >
                                     Ghi hồ sơ bệnh án
                                 </Button>
@@ -478,7 +478,7 @@ const DoctorAppointmentDetail = () => {
                                     mode="contained"
                                     icon="pill"
                                     onPress={() => setShowPrescModal(true)}
-                                    style={[styles.btn, { backgroundColor: COLORS.orange }]}
+                                    style={[S.btn, { backgroundColor: COLORS.orange }]}
                                 >
                                     Kê đơn thuốc
                                 </Button>
@@ -487,7 +487,7 @@ const DoctorAppointmentDetail = () => {
                                 mode="contained"
                                 icon="check-all"
                                 onPress={() => updateStatus("completed")}
-                                style={[styles.btn, { backgroundColor: COLORS.green }]}
+                                style={[S.btn, { backgroundColor: COLORS.green }]}
                             >
                                 Hoàn thành khám
                             </Button>
@@ -495,7 +495,7 @@ const DoctorAppointmentDetail = () => {
                                 mode="outlined"
                                 icon="account-off-outline"
                                 onPress={() => updateStatus("no_show")}
-                                style={styles.btn}
+                                style={S.btn}
                                 textColor={COLORS.textMuted}
                             >
                                 Bệnh nhân không đến
@@ -525,62 +525,4 @@ const DoctorAppointmentDetail = () => {
         </>
     );
 };
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
-    statusHeader: { padding: 20, alignItems: "center" },
-    statusHeaderText: { fontSize: 18, fontWeight: "800", color: "#fff" },
-    statusHeaderDate: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 4 },
-    card: {
-        margin: 16, marginBottom: 0, backgroundColor: "#fff",
-        borderRadius: 14, padding: 16, elevation: 2,
-        shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-    cardTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 12 },
-    infoRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
-    infoLabel: { fontSize: 13, color: COLORS.textMuted, marginLeft: 4, marginRight: 6, minWidth: 80 },
-    infoValue: { fontSize: 13, color: COLORS.text, flex: 1, fontWeight: "500" },
-    emptyCard: {
-        margin: 16, marginBottom: 0, backgroundColor: "#fff",
-        borderRadius: 14, padding: 24, alignItems: "center",
-        elevation: 1,
-    },
-    emptyText: { color: COLORS.textMuted, marginTop: 8, fontSize: 14 },
-    actions: { margin: 16, gap: 10 },
-    btn: { borderRadius: 10, paddingVertical: 4 },
-    // Modal styles
-    modalHeader: {
-        backgroundColor: COLORS.primaryDark,
-        paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
-        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    },
-    modalTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
-    input: { backgroundColor: "#fff", marginBottom: 10 },
-    row: { flexDirection: "row", gap: 10 },
-    subTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
-    medList: {
-        backgroundColor: COLORS.primaryPale, borderRadius: 10,
-        padding: 12, marginBottom: 12,
-    },
-    medItem: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-    medName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
-    medDetail: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    pickerBtn: {
-        flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-        borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
-        padding: 14, backgroundColor: "#fff", marginBottom: 10,
-    },
-    medDropdown: {
-        borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
-        backgroundColor: "#fff", marginBottom: 10, overflow: "hidden",
-    },
-    medOption: {
-        padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border,
-    },
-    medOptionText: { fontSize: 14, fontWeight: "600", color: COLORS.text },
-    medOptionSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-});
-
 export default DoctorAppointmentDetail;

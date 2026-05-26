@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, appointmentDetailStyles as S } from "../../styles/Styles";
 
 const STATUS_COLORS = {
     pending: "#ff9800", confirmed: "#4caf50", cancelled: "#f44336",
@@ -221,17 +221,17 @@ const AppointmentDetail = () => {
 
                     {/* Nút thanh toán ngay */}
                     {canPay && (
-                        <TouchableOpacity style={[styles.payBtn]} onPress={goToPayment} activeOpacity={0.85}>
+                        <TouchableOpacity style={[S.payBtn]} onPress={goToPayment} activeOpacity={0.85}>
                             <MaterialCommunityIcons name="credit-card-outline" size={20} color="#fff" />
-                            <Text style={styles.payBtnText}>
+                            <Text style={S.payBtnText}>
                                 {payment?.status === "failed" ? "Thanh toán lại" : "Thanh toán ngay"}
                             </Text>
                         </TouchableOpacity>
                     )}
 
                     {alreadyPaid && (
-                        <View style={styles.paidTag}>
-                            <Text style={styles.paidTagText}>✓ Đã thanh toán hoàn tất</Text>
+                        <View style={S.paidTag}>
+                            <Text style={S.paidTagText}>✓ Đã thanh toán hoàn tất</Text>
                         </View>
                     )}
                 </View>

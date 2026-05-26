@@ -15,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, staffPrescriptionsStyles as S } from "../../styles/Styles";
 
 const STATUS_CONFIG = {
     all:       { label: "Tất cả",       color: COLORS.textMuted },
@@ -29,51 +29,51 @@ const PrescriptionCard = ({ item, onDispense, onPress }) => {
     const isPending = item.status === "pending";
 
     return (
-        <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+        <TouchableOpacity style={S.card} onPress={onPress} activeOpacity={0.85}>
             {/* Header */}
-            <View style={styles.cardTop}>
+            <View style={S.cardTop}>
                 <MaterialCommunityIcons
                     name={isPending ? "pill" : "pill-multiple"}
                     size={22}
                     color={isPending ? COLORS.orange : COLORS.green}
                 />
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={styles.patientName} numberOfLines={1}>
+                    <Text style={S.patientName} numberOfLines={1}>
                         {item.patient_name || `Bệnh nhân #${item.patient}`}
                     </Text>
-                    <Text style={styles.doctorName}>
+                    <Text style={S.doctorName}>
                         BS. {item.doctor_name || `#${item.doctor}`}
                     </Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: cfg.color + "20" }]}>
-                    <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                <View style={[S.statusBadge, { backgroundColor: cfg.color + "20" }]}>
+                    <Text style={[S.statusText, { color: cfg.color }]}>{cfg.label}</Text>
                 </View>
             </View>
 
             {/* Medicines summary */}
             {item.details?.length > 0 && (
-                <View style={styles.medList}>
+                <View style={S.medList}>
                     {item.details.slice(0, 3).map((d, i) => (
-                        <View key={i} style={styles.medRow}>
-                            <Text style={styles.medBullet}>•</Text>
-                            <Text style={styles.medText} numberOfLines={1}>
+                        <View key={i} style={S.medRow}>
+                            <Text style={S.medBullet}>•</Text>
+                            <Text style={S.medText} numberOfLines={1}>
                                 {d.medicine_name} — {d.quantity} {d.medicine_unit}
                             </Text>
                         </View>
                     ))}
                     {item.details.length > 3 && (
-                        <Text style={styles.moreText}>+{item.details.length - 3} loại thuốc khác</Text>
+                        <Text style={S.moreText}>+{item.details.length - 3} loại thuốc khác</Text>
                     )}
                 </View>
             )}
 
             {/* Footer */}
-            <View style={styles.cardBottom}>
-                <Text style={styles.dateText}>
+            <View style={S.cardBottom}>
+                <Text style={S.dateText}>
                     {new Date(item.created_at).toLocaleDateString("vi-VN")}
                 </Text>
                 {item.total_amount > 0 && (
-                    <Text style={styles.totalText}>
+                    <Text style={S.totalText}>
                         Tổng: {Number(item.total_amount).toLocaleString("vi-VN")}đ
                     </Text>
                 )}
@@ -82,12 +82,12 @@ const PrescriptionCard = ({ item, onDispense, onPress }) => {
             {/* Cấp phát button */}
             {isPending && (
                 <TouchableOpacity
-                    style={styles.dispenseBtn}
+                    style={S.dispenseBtn}
                     onPress={() => onDispense(item)}
                     activeOpacity={0.8}
                 >
                     <MaterialCommunityIcons name="package-up" size={16} color="#fff" />
-                    <Text style={styles.dispenseBtnText}>Cấp phát thuốc</Text>
+                    <Text style={S.dispenseBtnText}>Cấp phát thuốc</Text>
                 </TouchableOpacity>
             )}
         </TouchableOpacity>
@@ -99,63 +99,63 @@ const PrescriptionDetail = ({ item, onClose, onDispense }) => {
     if (!item) return null;
     const isPending = item.status === "pending";
     return (
-        <View style={styles.detailOverlay}>
-            <View style={styles.detailBox}>
-                <View style={styles.detailHeader}>
-                    <Text style={styles.detailTitle}>Đơn thuốc #{item.id}</Text>
+        <View style={S.detailOverlay}>
+            <View style={S.detailBox}>
+                <View style={S.detailHeader}>
+                    <Text style={S.detailTitle}>Đơn thuốc #{item.id}</Text>
                     <TouchableOpacity onPress={onClose}>
                         <MaterialCommunityIcons name="close" size={24} color={COLORS.text} />
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.detailPatient}>
+                <Text style={S.detailPatient}>
                     Bệnh nhân: {item.patient_name}
                 </Text>
-                <Text style={styles.detailDoctor}>
+                <Text style={S.detailDoctor}>
                     Bác sĩ: BS. {item.doctor_name}
                 </Text>
                 {item.notes ? (
-                    <Text style={styles.detailNotes}>Ghi chú: {item.notes}</Text>
+                    <Text style={S.detailNotes}>Ghi chú: {item.notes}</Text>
                 ) : null}
 
-                <View style={styles.divider} />
+                <View style={S.divider} />
 
                 <ScrollView style={{ maxHeight: 280 }}>
                     {item.details?.map((d) => (
-                        <View key={d.id} style={styles.detailMed}>
-                            <Text style={styles.detailMedName}>{d.medicine_name}</Text>
-                            <View style={styles.detailMedRow}>
-                                <Text style={styles.detailMedInfo}>
+                        <View key={d.id} style={S.detailMed}>
+                            <Text style={S.detailMedName}>{d.medicine_name}</Text>
+                            <View style={S.detailMedRow}>
+                                <Text style={S.detailMedInfo}>
                                     Số lượng: {d.quantity} {d.medicine_unit}
                                 </Text>
-                                <Text style={styles.detailMedInfo}>
+                                <Text style={S.detailMedInfo}>
                                     {Number(d.price_at_time).toLocaleString("vi-VN")}đ/{d.medicine_unit}
                                 </Text>
                             </View>
-                            <Text style={styles.detailMedInfo}>
+                            <Text style={S.detailMedInfo}>
                                 Liều: {d.dosage} | {d.frequency} | {d.duration_days} ngày
                             </Text>
                             {d.instructions ? (
-                                <Text style={styles.detailMedInstr}>{d.instructions}</Text>
+                                <Text style={S.detailMedInstr}>{d.instructions}</Text>
                             ) : null}
                         </View>
                     ))}
                 </ScrollView>
 
-                <View style={styles.detailTotal}>
-                    <Text style={styles.detailTotalLabel}>Tổng tiền thuốc:</Text>
-                    <Text style={styles.detailTotalValue}>
+                <View style={S.detailTotal}>
+                    <Text style={S.detailTotalLabel}>Tổng tiền thuốc:</Text>
+                    <Text style={S.detailTotalValue}>
                         {Number(item.total_amount || 0).toLocaleString("vi-VN")}đ
                     </Text>
                 </View>
 
                 {isPending && (
                     <TouchableOpacity
-                        style={styles.dispenseBtn}
+                        style={S.dispenseBtn}
                         onPress={() => { onClose(); onDispense(item); }}
                     >
                         <MaterialCommunityIcons name="package-up" size={16} color="#fff" />
-                        <Text style={styles.dispenseBtnText}>Cấp phát thuốc</Text>
+                        <Text style={S.dispenseBtnText}>Cấp phát thuốc</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -230,9 +230,9 @@ const StaffPrescriptions = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={S.container}>
             {/* Filter tabs */}
-            <View style={styles.filterBar}>
+            <View style={S.filterBar}>
                 <FlatList
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -241,7 +241,7 @@ const StaffPrescriptions = () => {
                     renderItem={({ item: [key, cfg] }) => (
                         <TouchableOpacity
                             style={[
-                                styles.chip,
+                                S.chip,
                                 activeFilter === key && {
                                     backgroundColor: cfg.color,
                                     borderColor: cfg.color,
@@ -249,7 +249,7 @@ const StaffPrescriptions = () => {
                             ]}
                             onPress={() => setActiveFilter(key)}
                         >
-                            <Text style={[styles.chipText, activeFilter === key && { color: "#fff" }]}>
+                            <Text style={[S.chipText, activeFilter === key && { color: "#fff" }]}>
                                 {cfg.label}
                             </Text>
                         </TouchableOpacity>
@@ -283,7 +283,7 @@ const StaffPrescriptions = () => {
                     ListEmptyComponent={
                         <View style={[Styles.center, { marginTop: 60 }]}>
                             <MaterialCommunityIcons name="pill-off" size={52} color={COLORS.border} />
-                            <Text style={styles.emptyText}>
+                            <Text style={S.emptyText}>
                                 {activeFilter === "pending"
                                     ? "Không có đơn thuốc chờ cấp phát"
                                     : "Không có đơn thuốc nào"}
@@ -305,65 +305,4 @@ const StaffPrescriptions = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
-    filterBar: { backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: COLORS.border },
-    chip: {
-        paddingHorizontal: 14, paddingVertical: 6,
-        borderRadius: 20, borderWidth: 1.5,
-        borderColor: COLORS.border, backgroundColor: "#fff",
-    },
-    chipText: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
-    card: {
-        backgroundColor: "#fff", borderRadius: 14, padding: 14,
-        elevation: 2, shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4,
-    },
-    cardTop:     { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-    patientName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
-    doctorName:  { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    statusText:  { fontSize: 11, fontWeight: "700" },
-    medList:     { backgroundColor: COLORS.bg, borderRadius: 8, padding: 10, marginBottom: 8 },
-    medRow:      { flexDirection: "row", alignItems: "flex-start", gap: 4, marginBottom: 3 },
-    medBullet:   { color: COLORS.primary, fontWeight: "700" },
-    medText:     { fontSize: 13, color: COLORS.text, flex: 1 },
-    moreText:    { fontSize: 12, color: COLORS.textMuted, fontStyle: "italic" },
-    cardBottom:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-    dateText:    { fontSize: 12, color: COLORS.textMuted },
-    totalText:   { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-    dispenseBtn: {
-        flexDirection: "row", alignItems: "center", justifyContent: "center",
-        gap: 8, backgroundColor: COLORS.green,
-        borderRadius: 10, paddingVertical: 10,
-    },
-    dispenseBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
-    emptyText: { color: COLORS.textMuted, marginTop: 12, fontSize: 14 },
-    // Detail overlay
-    detailOverlay: {
-        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        justifyContent: "flex-end",
-    },
-    detailBox: {
-        backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20,
-        padding: 20, maxHeight: "85%",
-    },
-    detailHeader:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-    detailTitle:   { fontSize: 17, fontWeight: "800", color: COLORS.text },
-    detailPatient: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 2 },
-    detailDoctor:  { fontSize: 13, color: COLORS.textMuted, marginBottom: 2 },
-    detailNotes:   { fontSize: 13, color: COLORS.textMuted, fontStyle: "italic", marginBottom: 8 },
-    divider:       { height: 1, backgroundColor: COLORS.border, marginVertical: 12 },
-    detailMed:     { padding: 10, backgroundColor: COLORS.bg, borderRadius: 10, marginBottom: 8 },
-    detailMedName: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginBottom: 4 },
-    detailMedRow:  { flexDirection: "row", justifyContent: "space-between" },
-    detailMedInfo: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    detailMedInstr: { fontSize: 12, color: COLORS.primary, marginTop: 4, fontStyle: "italic" },
-    detailTotal:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderTopWidth: 1, borderTopColor: COLORS.border, marginBottom: 12 },
-    detailTotalLabel: { fontSize: 14, fontWeight: "600", color: COLORS.textMuted },
-    detailTotalValue: { fontSize: 18, fontWeight: "800", color: COLORS.primary },
-});
-
 export default StaffPrescriptions;

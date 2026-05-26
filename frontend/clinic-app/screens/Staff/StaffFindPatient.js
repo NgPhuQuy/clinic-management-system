@@ -15,33 +15,33 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, staffFindPatientStyles as S } from "../../styles/Styles";
 
 const PatientCard = ({ item, onPress }) => (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={S.card} onPress={onPress} activeOpacity={0.85}>
         {/* Avatar placeholder */}
-        <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
+        <View style={S.avatar}>
+            <Text style={S.avatarText}>
                 {(item.full_name || "?").charAt(0).toUpperCase()}
             </Text>
         </View>
 
         <View style={{ flex: 1 }}>
-            <Text style={styles.patientName}>{item.full_name}</Text>
-            <View style={styles.infoRow}>
+            <Text style={S.patientName}>{item.full_name}</Text>
+            <View style={S.infoRow}>
                 <MaterialCommunityIcons name="phone" size={12} color={COLORS.textMuted} />
-                <Text style={styles.infoText}>{item.phone || "Chưa cập nhật"}</Text>
+                <Text style={S.infoText}>{item.phone || "Chưa cập nhật"}</Text>
             </View>
             {item.date_of_birth && (
-                <View style={styles.infoRow}>
+                <View style={S.infoRow}>
                     <MaterialCommunityIcons name="cake-variant" size={12} color={COLORS.textMuted} />
-                    <Text style={styles.infoText}>{item.date_of_birth}</Text>
+                    <Text style={S.infoText}>{item.date_of_birth}</Text>
                 </View>
             )}
             {item.insurance_number && (
-                <View style={styles.infoRow}>
+                <View style={S.infoRow}>
                     <MaterialCommunityIcons name="card-account-details" size={12} color={COLORS.primary} />
-                    <Text style={[styles.infoText, { color: COLORS.primary }]}>
+                    <Text style={[S.infoText, { color: COLORS.primary }]}>
                         BHYT: {item.insurance_number}
                     </Text>
                 </View>
@@ -81,18 +81,18 @@ const PatientDetailModal = ({ patient, onClose, nav }) => {
     };
 
     return (
-        <View style={styles.modalOverlay}>
-            <View style={styles.modalBox}>
+        <View style={S.modalOverlay}>
+            <View style={S.modalBox}>
                 {/* Header */}
-                <View style={styles.modalHeader}>
-                    <View style={styles.modalAvatar}>
-                        <Text style={styles.modalAvatarText}>
+                <View style={S.modalHeader}>
+                    <View style={S.modalAvatar}>
+                        <Text style={S.modalAvatarText}>
                             {patient.full_name.charAt(0).toUpperCase()}
                         </Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.modalName}>{patient.full_name}</Text>
-                        <Text style={styles.modalEmail}>{patient.email || ""}</Text>
+                        <Text style={S.modalName}>{patient.full_name}</Text>
+                        <Text style={S.modalEmail}>{patient.email || ""}</Text>
                     </View>
                     <TouchableOpacity onPress={onClose}>
                         <MaterialCommunityIcons name="close" size={24} color={COLORS.textMuted} />
@@ -100,7 +100,7 @@ const PatientDetailModal = ({ patient, onClose, nav }) => {
                 </View>
 
                 {/* Patient Info */}
-                <View style={styles.patientInfo}>
+                <View style={S.patientInfo}>
                     {[
                         { icon: "phone",             label: "Điện thoại",    value: patient.phone },
                         { icon: "cake-variant",      label: "Ngày sinh",     value: patient.date_of_birth },
@@ -109,16 +109,16 @@ const PatientDetailModal = ({ patient, onClose, nav }) => {
                         { icon: "water",             label: "Nhóm máu",      value: patient.blood_type },
                         { icon: "phone-alert",       label: "Liên hệ khẩn",  value: patient.emergency_contact },
                     ].filter((r) => r.value).map(({ icon, label, value }) => (
-                        <View key={label} style={styles.patientInfoRow}>
+                        <View key={label} style={S.patientInfoRow}>
                             <MaterialCommunityIcons name={icon} size={14} color={COLORS.primary} style={{ width: 18 }} />
-                            <Text style={styles.patientInfoLabel}>{label}:</Text>
-                            <Text style={styles.patientInfoValue}>{value}</Text>
+                            <Text style={S.patientInfoLabel}>{label}:</Text>
+                            <Text style={S.patientInfoValue}>{value}</Text>
                         </View>
                     ))}
                 </View>
 
                 {/* Appointment history */}
-                <Text style={styles.historyTitle}>
+                <Text style={S.historyTitle}>
                     Lịch sử khám ({appointments.length} lần)
                 </Text>
 
@@ -136,18 +136,18 @@ const PatientDetailModal = ({ patient, onClose, nav }) => {
                             const color = STATUS_COLORS[appt.status] || COLORS.textMuted;
                             return (
                                 <TouchableOpacity
-                                    style={styles.apptRow}
+                                    style={S.apptRow}
                                     onPress={() => {
                                         onClose();
                                         nav.navigate("staff-appointment-detail", { id: appt.id });
                                     }}
                                 >
-                                    <View style={[styles.apptDot, { backgroundColor: color }]} />
+                                    <View style={[S.apptDot, { backgroundColor: color }]} />
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.apptDate}>
+                                        <Text style={S.apptDate}>
                                             {d.toLocaleDateString("vi-VN")} — BS. {appt.doctor_info?.full_name || "#" + appt.doctor}
                                         </Text>
-                                        <Text style={[styles.apptStatus, { color }]}>
+                                        <Text style={[S.apptStatus, { color }]}>
                                             {STATUS_LABELS[appt.status] || appt.status}
                                         </Text>
                                     </View>
@@ -156,7 +156,7 @@ const PatientDetailModal = ({ patient, onClose, nav }) => {
                             );
                         }}
                         ListEmptyComponent={
-                            <Text style={styles.emptyAppt}>Chưa có lịch sử khám</Text>
+                            <Text style={S.emptyAppt}>Chưa có lịch sử khám</Text>
                         }
                     />
                 )}
@@ -201,18 +201,18 @@ const StaffFindPatient = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={S.container}>
             {/* Search bar */}
-            <View style={styles.searchBox}>
+            <View style={S.searchBox}>
                 <Searchbar
                     placeholder="Nhập tên, SĐT hoặc số BHYT..."
                     value={query}
                     onChangeText={onSearch}
-                    style={styles.searchInput}
+                    style={S.searchInput}
                     iconColor={COLORS.primary}
                     autoFocus
                 />
-                <Text style={styles.hint}>
+                <Text style={S.hint}>
                     Nhập ít nhất 2 ký tự để tìm kiếm
                 </Text>
             </View>
@@ -235,12 +235,12 @@ const StaffFindPatient = () => {
                         query.length >= 2 ? (
                             <View style={[Styles.center, { marginTop: 60 }]}>
                                 <MaterialCommunityIcons name="account-search" size={52} color={COLORS.border} />
-                                <Text style={styles.emptyText}>Không tìm thấy bệnh nhân nào</Text>
+                                <Text style={S.emptyText}>Không tìm thấy bệnh nhân nào</Text>
                             </View>
                         ) : (
                             <View style={[Styles.center, { marginTop: 60 }]}>
                                 <MaterialCommunityIcons name="magnify" size={52} color={COLORS.border} />
-                                <Text style={styles.emptyText}>Nhập từ khóa để tìm kiếm</Text>
+                                <Text style={S.emptyText}>Nhập từ khóa để tìm kiếm</Text>
                             </View>
                         )
                     }
@@ -259,63 +259,4 @@ const StaffFindPatient = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container:   { flex: 1, backgroundColor: COLORS.bg },
-    searchBox:   { backgroundColor: "#fff", padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-    searchInput: { backgroundColor: COLORS.bg, elevation: 0 },
-    hint:        { fontSize: 12, color: COLORS.textLight, marginTop: 4, marginLeft: 4 },
-    card: {
-        backgroundColor: "#fff", borderRadius: 14, padding: 14,
-        flexDirection: "row", alignItems: "center", gap: 12,
-        elevation: 2, shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4,
-    },
-    avatar: {
-        width: 48, height: 48, borderRadius: 24,
-        backgroundColor: COLORS.primaryPale,
-        alignItems: "center", justifyContent: "center",
-    },
-    avatarText:  { fontSize: 20, fontWeight: "800", color: COLORS.primary },
-    patientName: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 2 },
-    infoRow:     { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-    infoText:    { fontSize: 12, color: COLORS.textMuted },
-    emptyText:   { color: COLORS.textMuted, marginTop: 12, fontSize: 14 },
-    // Modal
-    modalOverlay: {
-        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end",
-    },
-    modalBox: {
-        backgroundColor: "#fff",
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        padding: 20, maxHeight: "85%",
-    },
-    modalHeader:     { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 12 },
-    modalAvatar: {
-        width: 52, height: 52, borderRadius: 26,
-        backgroundColor: COLORS.primaryPale,
-        alignItems: "center", justifyContent: "center",
-    },
-    modalAvatarText: { fontSize: 22, fontWeight: "800", color: COLORS.primary },
-    modalName:       { fontSize: 17, fontWeight: "800", color: COLORS.text },
-    modalEmail:      { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
-    patientInfo: {
-        backgroundColor: COLORS.bg, borderRadius: 10,
-        padding: 12, marginBottom: 14,
-    },
-    patientInfoRow:   { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
-    patientInfoLabel: { fontSize: 12, color: COLORS.textMuted, minWidth: 80 },
-    patientInfoValue: { fontSize: 13, color: COLORS.text, fontWeight: "500", flex: 1 },
-    historyTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginBottom: 10 },
-    apptRow: {
-        flexDirection: "row", alignItems: "center", gap: 10,
-        paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border,
-    },
-    apptDot:    { width: 10, height: 10, borderRadius: 5 },
-    apptDate:   { fontSize: 13, fontWeight: "600", color: COLORS.text },
-    apptStatus: { fontSize: 11, fontWeight: "600", marginTop: 2 },
-    emptyAppt:  { color: COLORS.textMuted, textAlign: "center", paddingVertical: 12 },
-});
-
 export default StaffFindPatient;
