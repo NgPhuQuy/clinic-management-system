@@ -11,15 +11,11 @@ from ..permissions import HasAdminScope, IsOwnerOrAdmin, HasDoctorOrAdminScope
 
 
 class DoctorViewSet(viewsets.ModelViewSet):
-    """
-    GET  /api/doctors/        — Danh sách bác sĩ (public)
-    GET  /api/doctors/{id}/   — Chi tiết
-    """
     queryset = Doctor.objects.select_related("user", "specialty").filter(is_available=True)
     serializer_class = DoctorSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["specialty", "is_available"]
-    search_fields = ["full_name", "license_number"]
+    search_fields = ["user__first_name", "user__last_name", "license_number"]
 
     def get_permissions(self):
         if self.action in ("list", "retrieve", "schedules"):
@@ -32,7 +28,6 @@ class DoctorViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def schedules(self, request, pk=None):
-        """GET /api/doctors/{id}/schedules/?date=YYYY-MM-DD — Lịch khám còn trống."""
         doctor = self.get_object()
         date = request.query_params.get("date")
         qs = doctor.schedules.filter(is_available=True, date__gte=timezone.now().date())
@@ -43,7 +38,7 @@ class DoctorViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def appointments(self, request, pk=None):
-        """GET /api/doctors/{id}/appointments/ — Lịch hẹn của bác sĩ."""
+        """GET /api/doctors/{id}/appointments/"""
         doctor = self.get_object()
         qs = doctor.appointments.select_related("patient").order_by("appointment_date")
         status_filter = request.query_params.get("status")
@@ -54,10 +49,6 @@ class DoctorViewSet(viewsets.ModelViewSet):
 
 
 class DoctorScheduleViewSet(viewsets.ModelViewSet):
-    """
-    POST /api/schedules/       — Bác sĩ tạo lịch làm việc
-    GET  /api/schedules/       — Xem lịch (lọc theo doctor, date)
-    """
     queryset = DoctorSchedule.objects.select_related("doctor").all()
     serializer_class = DoctorScheduleSerializer
     filter_backends = [DjangoFilterBackend]
