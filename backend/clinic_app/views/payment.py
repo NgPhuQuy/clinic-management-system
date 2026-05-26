@@ -287,13 +287,15 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     def momo_return(self, request):
         result_code = request.query_params.get("resultCode")
         order_id    = request.query_params.get("orderId", "")
+        trans_id    = request.query_params.get("transId", "")
         success     = result_code == "0"
         try:
             payment = Payment.objects.get(transaction_id=order_id)
-            payment.status  = Payment.Status.SUCCESS if success else Payment.Status.FAILED
+            payment.status = Payment.Status.SUCCESS if success else Payment.Status.FAILED
             if success:
-                payment.paid_at = timezone.now()
-            payment.save(update_fields=["status", "paid_at"])
+                payment.paid_at        = timezone.now()
+                payment.transaction_id = trans_id or order_id
+            payment.save(update_fields=["status", "paid_at", "transaction_id"])
         except Payment.DoesNotExist:
             pass
         return Response({"success": success, "message": "Thanh toán thành công" if success else "Thanh toán thất bại", "order_id": order_id})

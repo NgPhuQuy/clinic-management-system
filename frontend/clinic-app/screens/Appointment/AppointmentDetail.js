@@ -90,13 +90,16 @@ const AppointmentDetail = () => {
             return;
         }
 
+        // Ưu tiên dùng invoice.remaining (số tiền còn lại cần thanh toán)
         const amount = Number(invoice?.remaining ?? invoice?.total_amount ?? calcTotal(appt));
 
         nav.navigate("payment-screen", {
             invoiceId,
+            invoiceId,
             appointmentId: appt.id,
             doctorName: appt.doctor_info?.full_name || appt.doctor_name || `#${appt.doctor}`,
             appointmentDate: appt.appointment_date,
+            amount,
             amount,
         });
     };
@@ -104,14 +107,18 @@ const AppointmentDetail = () => {
     if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
     if (!appt) return <View style={[Styles.center, { flex: 1 }]}><Text>Không tìm thấy lịch hẹn</Text></View>;
 
+    // API trả về appt.invoice (InvoiceSerializer), không phải appt.payment
+    // Lấy payment mới nhất (payments sắp xếp -created_at)
     const invoice    = appt.invoice;
     const payments   = invoice?.payments ?? [];
+    // Payment hiển thị: ưu tiên success → pending → mới nhất
     const payment    = payments.find(p => p.status === "success")
                     ?? payments.find(p => p.status === "pending")
                     ?? payments[0]
                     ?? null;
     const total      = calcTotal(appt);
     const remaining  = Number(invoice?.remaining ?? total);
+    // Có thể thanh toán khi: lịch chưa hủy + còn tiền cần trả + không có payment đang pending
     const hasPendingPayment = payments.some(p => p.status === "pending");
     const canPay     = ["pending", "confirmed", "completed", "in_progress"].includes(appt.status)
         && remaining > 0

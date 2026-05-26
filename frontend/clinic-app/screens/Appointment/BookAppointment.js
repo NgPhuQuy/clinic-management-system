@@ -46,7 +46,8 @@ const BookAppointment = () => {
                 const appt = res.data;
 
                 const invoiceId = appt.invoice?.id;
-                const amount = appt.invoice?.total_amount ?? appt.invoice?.remaining ?? 0;
+                // API trả về total_amount (từ @property Invoice.total_amount)
+                const amount = appt.invoice?.total_amount_amount ?? appt.invoice?.remaining ?? 0;
                 const appointmentId = appt.id;
                 const appointmentDate = appt.appointment_date;
 
