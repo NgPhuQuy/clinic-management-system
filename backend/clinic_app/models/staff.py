@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from .user import User
 from .specialty import Specialty
 from django.utils import timezone
@@ -19,10 +19,11 @@ class Staff(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.employee_id:
-            prefix = self.position[:2].upper()
-            year   = timezone.now().year
-            count  = Staff.objects.filter(position=self.position).count() + 1
-            self.employee_id = f"{prefix}{year}{count:03d}"
+            with transaction.atomic():
+                count = Staff.objects.select_for_update().filter(position=self.position).count() + 1
+                prefix = self.position[:2].upper()
+                year   = timezone.now().year
+                self.employee_id = f"{prefix}{year}{count:03d}"
         super().save(*args, **kwargs)
 
 

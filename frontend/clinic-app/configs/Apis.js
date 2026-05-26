@@ -85,6 +85,10 @@ export const endpoints = {
     // Consultations
     'consultations': '/consultations/',
     'consultation-detail': (id) => `/consultations/${id}/`,
+    'consultation-enter': (id) => `/consultations/${id}/enter/`,
+    'consultation-start': (id) => `/consultations/${id}/start/`,
+    'consultation-end': (id) => `/consultations/${id}/end/`,
+    'consultation-messages': (id) => `/consultations/${id}/messages/`,
 
     // Admin dashboard
     'admin-dashboard': '/admin/dashboard/',

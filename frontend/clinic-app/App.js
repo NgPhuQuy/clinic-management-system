@@ -30,6 +30,11 @@ import DoctorAppointments from "./screens/Doctor/DoctorAppointments";
 import DoctorAppointmentDetail from "./screens/Doctor/DoctorAppointmentDetail";
 import DoctorMedicalRecords from "./screens/Doctor/DoctorMedicalRecords";
 import DoctorSchedules from "./screens/Doctor/DoctorSchedules";
+import DoctorConsultations from "./screens/Doctor/DoctorConsultations";
+
+// Consultation screens
+import ConsultationRoom from "./screens/Consultation/ConsultationRoom";
+import VideoCallScreen from "./screens/Consultation/VideoCallScreen";
 
 // Staff screens
 import StaffDashboard from "./screens/Staff/StaffDashboard";
@@ -96,6 +101,8 @@ const HomeStack = () => (
         <Stack.Screen name="payment-result" component={PaymentResult} options={{ headerShown: false }} />
         <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
         <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
+        <Stack.Screen name="consultation-room" component={ConsultationRoom} options={{ title: "Phòng khám trực tuyến" }} />
+        <Stack.Screen name="video-call" component={VideoCallScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
 );
 
@@ -194,6 +201,9 @@ const DoctorHomeStack = () => (
         <Stack.Screen name="doctor-prescriptions" component={Prescriptions} options={{ title: "Đơn thuốc" }} />
         <Stack.Screen name="doctor-schedules" component={DoctorSchedules} options={{ title: "Lịch làm việc" }} />
         <Stack.Screen name="doctor-profile" component={StaffDoctorProfile} options={{ headerShown: false }} />
+        <Stack.Screen name="doctor-consultations" component={DoctorConsultations} options={{ title: "Tư vấn trực tuyến" }} />
+        <Stack.Screen name="consultation-room" component={ConsultationRoom} options={{ title: "Phòng khám trực tuyến" }} />
+        <Stack.Screen name="video-call" component={VideoCallScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
 );
 
@@ -203,6 +213,8 @@ const DoctorAppointmentsStack = () => (
         <Stack.Screen name="doctor-appointment-detail" component={DoctorAppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
         <Stack.Screen name="doctor-medical-records" component={DoctorMedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
         <Stack.Screen name="doctor-medical-record-detail" component={DoctorMedicalRecords} options={{ title: "Chi tiết bệnh án" }} />
+        <Stack.Screen name="consultation-room" component={ConsultationRoom} options={{ title: "Phòng khám trực tuyến" }} />
+        <Stack.Screen name="video-call" component={VideoCallScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
 );
 

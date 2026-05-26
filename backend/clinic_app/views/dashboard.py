@@ -1,6 +1,6 @@
 from datetime import timedelta
-from django.db.models import Count, Sum, Q, F
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, ExtractYear
+from django.db.models import Case, CharField, Count, Sum, Q, F, Value, When
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -106,30 +106,25 @@ class DashboardReportsView(APIView):
         return Response({"type": report_type, "period": period, "days": days, "data": data})
 
     def _report_age_group(self, since, **kwargs):
-        from django.db.models import Case, When, IntegerField
         current_year = timezone.now().year
-
-        patients = Patient.objects.annotate(
-            age=current_year - ExtractYear("date_of_birth")
-        ).values("age")
-
-        buckets = {"<18": 0, "18-30": 0, "31-45": 0, "46-60": 0, ">60": 0}
-        for p in patients:
-            age = p.get("age")
-            if age is None:
-                continue
-            if age < 18:
-                buckets["<18"] += 1
-            elif age <= 30:
-                buckets["18-30"] += 1
-            elif age <= 45:
-                buckets["31-45"] += 1
-            elif age <= 60:
-                buckets["46-60"] += 1
-            else:
-                buckets[">60"] += 1
-
-        return [{"age_group": k, "count": v} for k, v in buckets.items()]
+        data = (
+            Patient.objects
+            .annotate(
+                age_group=Case(
+                    When(date_of_birth__isnull=True, then=Value("unknown")),
+                    When(date_of_birth__year__gte=current_year - 17, then=Value("<18")),
+                    When(date_of_birth__year__gte=current_year - 30, then=Value("18-30")),
+                    When(date_of_birth__year__gte=current_year - 45, then=Value("31-45")),
+                    When(date_of_birth__year__gte=current_year - 60, then=Value("46-60")),
+                    default=Value(">60"),
+                    output_field=CharField(),
+                )
+            )
+            .values("age_group")
+            .annotate(count=Count("id"))
+            .order_by("age_group")
+        )
+        return [{"age_group": item["age_group"], "count": item["count"]} for item in data]
 
     # ── 2. Bệnh nhân theo giới tính ────────────────────────────────────────
 

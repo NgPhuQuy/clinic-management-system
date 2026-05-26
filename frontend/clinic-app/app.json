@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Ứng dụng cần truy cập camera để thực hiện video call khám bệnh.",
+        "NSMicrophoneUsageDescription": "Ứng dụng cần truy cập microphone để thực hiện video call khám bệnh."
+      }
     },
     "android": {
       "adaptiveIcon": {

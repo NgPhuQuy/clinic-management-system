@@ -11,13 +11,7 @@ from ..permissions import (
     HasDoctorOrStaffScope,
     IsAuthenticatedWithValidToken,
 )
-
-
-def _get_token_scopes(request) -> set:
-    token = getattr(request, "auth", None)
-    if token is None:
-        return set()
-    return set(token.scope.split())
+from ..utils import get_token_scopes
 
 
 class MedicalRecordViewSet(viewsets.ModelViewSet):
@@ -54,7 +48,7 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user   = self.request.user
         qs     = super().get_queryset()
-        scopes = _get_token_scopes(self.request)
+        scopes = get_token_scopes(self.request)
 
         if "admin"   in scopes: return qs
         if "staff"   in scopes: return qs        

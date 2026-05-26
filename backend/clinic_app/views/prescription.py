@@ -13,7 +13,13 @@ BUG ĐÃ SỬA:
   3. dispense() không có permission check → HasStaffOrAdminScope
   4. CRITICAL: Double-deduction — dispense() view tự trừ kho, signal cũng trừ.
      Đã sửa: chỉ view trừ kho, signal chỉ gửi notification (xem signals.py).
+  5. select_related("patient","doctor") sai field → medical_record__*
+  6. filterset_fields có "patient","doctor" không tồn tại trên model
+  7. __import__ hack → import chuẩn
+  8. perform_create truyền doctor= (không tồn tại trên model) → bỏ
 """
+from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -28,13 +34,7 @@ from ..permissions import (
     HasStaffOrAdminScope,
     IsAuthenticatedWithValidToken,
 )
-
-
-def _get_token_scopes(request) -> set:
-    token = getattr(request, "auth", None)
-    if token is None:
-        return set()
-    return set(token.scope.split())
+from ..utils import get_token_scopes
 
 
 class PrescriptionViewSet(viewsets.ModelViewSet):
@@ -45,12 +45,13 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
     POST /prescriptions/{id}/dispense/ — Staff cấp phát thuốc
     POST /prescriptions/{id}/add_medicine/ — Bác sĩ thêm thuốc
     """
-    queryset = Prescription.objects.prefetch_related(
-        "details__medicine"
-    ).select_related("patient", "doctor").all()
+    queryset = Prescription.objects.select_related(
+        "medical_record__doctor__user",
+        "medical_record__patient__user",
+    ).prefetch_related("details__medicine").all()
     serializer_class  = PrescriptionSerializer
     filter_backends   = [DjangoFilterBackend]
-    filterset_fields  = ["status", "patient", "doctor"]
+    filterset_fields  = ["status"]
 
     def get_permissions(self):
         if self.action == "create":
@@ -60,26 +61,19 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         if self.action == "add_medicine":
             return [HasDoctorScope()]
         if self.action == "dispense":
-            # BUG FIX: chỉ staff và admin mới cấp phát thuốc
             return [HasStaffOrAdminScope()]
-        # BUG FIX: fallback dùng OAuth2-aware permission
         return [IsAuthenticatedWithValidToken()]
 
     def get_queryset(self):
         user   = self.request.user
         qs     = super().get_queryset()
-        # BUG FIX: dùng token scope thay vì user.role
-        scopes = _get_token_scopes(self.request)
+        scopes = get_token_scopes(self.request)
 
-        if "admin"  in scopes: return qs
-        if "staff"  in scopes: return qs          # staff thấy tất cả để quản lý quầy thuốc
-        if "doctor" in scopes: return qs.filter(doctor__user=user)
-        if "patient" in scopes: return qs.filter(patient__user=user)
+        if "admin"   in scopes: return qs
+        if "staff"   in scopes: return qs
+        if "doctor"  in scopes: return qs.filter(medical_record__doctor__user=user)
+        if "patient" in scopes: return qs.filter(medical_record__patient__user=user)
         return qs.none()
-
-    def perform_create(self, serializer):
-        doctor = self.request.user.doctor_profile
-        serializer.save(doctor=doctor)
 
     @action(detail=True, methods=["post"])
     def dispense(self, request, pk=None):
@@ -98,12 +92,12 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         """
         prescription = self.get_object()
 
-        if prescription.status == "dispensed":
+        if prescription.status == Prescription.Status.DISPENSED:
             return Response(
                 {"detail": "Đơn thuốc đã được cấp phát rồi."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if prescription.status == "cancelled":
+        if prescription.status == Prescription.Status.CANCELLED:
             return Response(
                 {"detail": "Đơn thuốc đã bị hủy, không thể cấp phát."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -119,7 +113,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
                     expiry_date__gt=timezone.now().date(),
                     quantity__gt=0,
                 )
-                .aggregate(total=__import__("django.db.models", fromlist=["Sum"]).Sum("quantity"))
+                .aggregate(total=Sum("quantity"))
             )["total"] or 0
 
             if available < detail.quantity:
@@ -134,32 +128,32 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # ── Bước 2: Trừ kho theo FEFO ──
-        for detail in prescription.details.select_related("medicine").all():
-            remaining = detail.quantity
-            batches   = (
-                Inventory.objects
-                .filter(
-                    medicine=detail.medicine,
-                    expiry_date__gt=timezone.now().date(),
-                    quantity__gt=0,
+        # ── Bước 2 & 3: Trừ kho theo FEFO + cập nhật đơn (atomic) ──
+        with transaction.atomic():
+            for detail in prescription.details.select_related("medicine").all():
+                remaining = detail.quantity
+                batches = (
+                    Inventory.objects
+                    .filter(
+                        medicine=detail.medicine,
+                        expiry_date__gt=timezone.now().date(),
+                        quantity__gt=0,
+                    )
+                    .order_by("expiry_date")
                 )
-                .order_by("expiry_date")   # FEFO: lô gần hết hạn dùng trước
-            )
 
-            for batch in batches:
-                if remaining <= 0:
-                    break
-                deduct         = min(batch.quantity, remaining)
-                batch.quantity -= deduct
-                batch.save(update_fields=["quantity"])  # trigger check_inventory_alerts signal
-                remaining      -= deduct
+                for batch in batches:
+                    if remaining <= 0:
+                        break
+                    deduct         = min(batch.quantity, remaining)
+                    batch.quantity -= deduct
+                    batch.save(update_fields=["quantity"])
+                    remaining      -= deduct
 
-        # ── Bước 3: Cập nhật đơn thuốc ──
-        prescription.status       = "dispensed"
-        prescription.dispensed_at = timezone.now()
-        prescription.save()
-        # Signal on_prescription_saved sẽ gửi notification cho bệnh nhân tự động
+            prescription.status       = Prescription.Status.DISPENSED
+            prescription.dispensed_at = timezone.now()
+            prescription.dispensed_by = request.user.staff_profile if hasattr(request.user, "staff_profile") else None
+            prescription.save()
 
         return Response(PrescriptionSerializer(prescription).data)
 
@@ -167,7 +161,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
     def add_medicine(self, request, pk=None):
         """POST /prescriptions/{id}/add_medicine/ — Thêm thuốc vào đơn."""
         prescription = self.get_object()
-        if prescription.status != "pending":
+        if prescription.status != Prescription.Status.PENDING:
             return Response(
                 {"detail": "Chỉ có thể thêm thuốc vào đơn đang chờ cấp phát."},
                 status=status.HTTP_400_BAD_REQUEST,

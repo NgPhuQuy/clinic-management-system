@@ -28,7 +28,6 @@ class Appointment(models.Model):
         verbose_name        = "Lịch hẹn"
         verbose_name_plural = "Lịch hẹn"
         ordering = ["-appointment_date"]
-        unique_together = ("patient", "doctor", "appointment_date")
 
     def __str__(self):
         return f"{self.patient} → {self.doctor} | {self.appointment_date}"
@@ -44,6 +43,7 @@ class AppointmentService(models.Model):
         db_table            = "appointment_services"
         verbose_name        = "Dịch vụ trong lịch hẹn"
         verbose_name_plural = "Dịch vụ trong lịch hẹn"
+        ordering = ["id"]
 
     def get_subtotal(self):
         return self.quantity * self.price_at_time

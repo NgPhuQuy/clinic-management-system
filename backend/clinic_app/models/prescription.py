@@ -42,6 +42,7 @@ class PrescriptionDetail(models.Model):
         db_table            = "prescription_details"
         verbose_name        = "Chi tiết đơn thuốc"
         verbose_name_plural = "Chi tiết đơn thuốc"
+        ordering = ["id"]
 
     def get_subtotal(self):
         return self.quantity * self.price_at_time

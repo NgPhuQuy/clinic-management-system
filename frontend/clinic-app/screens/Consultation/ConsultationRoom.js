@@ -1,0 +1,464 @@
+import {
+    View, ScrollView, StyleSheet, TextInput, TouchableOpacity,
+    FlatList, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+} from "react-native";
+import { Text } from "react-native-paper";
+import { useState, useEffect, useRef, useContext } from "react";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { authApis, endpoints } from "../../configs/Apis";
+import { MyUserContext } from "../../contexts/MyContext";
+import Styles, { COLORS } from "../../styles/Styles";
+
+const STATUS_COLOR = {
+    waiting: "#ff9800",
+    active:  "#4caf50",
+    ended:   "#9e9e9e",
+};
+const STATUS_LABEL = {
+    waiting: "Chờ kết nối",
+    active:  "Đang khám",
+    ended:   "Đã kết thúc",
+};
+
+const ConsultationRoom = () => {
+    const nav  = useNavigation();
+    const route = useRoute();
+    const user  = useContext(MyUserContext);
+    const isDoctor = user.role === "doctor";
+
+    const { consultationId } = route.params;
+
+    const [consultation, setConsultation]   = useState(null);
+    const [loading, setLoading]             = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [entered, setEntered]             = useState(false);
+    const [message, setMessage]             = useState("");
+    const [sendingMsg, setSendingMsg]       = useState(false);
+    const flatListRef = useRef(null);
+    const pollRef     = useRef(null);
+
+    // ── Load consultation ────────────────────
+    const loadConsultation = async () => {
+        try {
+            const res = await authApis(user.token).get(endpoints["consultation-detail"](consultationId));
+            setConsultation(res.data);
+            return res.data;
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    useEffect(() => {
+        loadConsultation().finally(() => setLoading(false));
+    }, [consultationId]);
+
+    // ── Poll every 4s while waiting ──────────
+    useEffect(() => {
+        if (!consultation || consultation.status === "ended") {
+            clearInterval(pollRef.current);
+            return;
+        }
+        pollRef.current = setInterval(async () => {
+            const updated = await loadConsultation();
+            // Patient: auto-detect when doctor started
+            if (!isDoctor && updated?.status === "active" && entered) {
+                clearInterval(pollRef.current);
+            }
+        }, 4000);
+        return () => clearInterval(pollRef.current);
+    }, [consultation?.id, consultation?.status, entered]);
+
+    // ── Patient: vào phòng chờ ───────────────
+    const enterRoom = async () => {
+        setActionLoading(true);
+        try {
+            const res = await authApis(user.token).post(endpoints["consultation-enter"](consultationId));
+            if (res.data.status === "active") {
+                // Bác sĩ đã mở → vào thẳng video
+                joinVideoCall(res.data);
+            } else {
+                setEntered(true);
+                await loadConsultation();
+            }
+        } catch (e) {
+            const msg = e?.response?.data?.detail || "Không thể vào phòng chờ.";
+            Alert.alert("Lỗi", msg);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // ── Patient: tham gia video khi active ───
+    const joinAsPatient = async () => {
+        setActionLoading(true);
+        try {
+            const res = await authApis(user.token).post(endpoints["consultation-enter"](consultationId));
+            if (res.data.agora_token) {
+                joinVideoCall(res.data);
+            }
+        } catch (e) {
+            Alert.alert("Lỗi", e?.response?.data?.detail || "Không thể vào phòng khám.");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // ── Doctor: bắt đầu khám ─────────────────
+    const startConsultation = async () => {
+        setActionLoading(true);
+        try {
+            const res = await authApis(user.token).post(endpoints["consultation-start"](consultationId));
+            joinVideoCall(res.data);
+            await loadConsultation();
+        } catch (e) {
+            Alert.alert("Lỗi", e?.response?.data?.detail || "Không thể bắt đầu khám.");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    // ── Kết thúc ────────────────────────────
+    const endConsultation = () => {
+        Alert.alert("Kết thúc khám", "Kết thúc phiên khám này?", [
+            { text: "Hủy", style: "cancel" },
+            {
+                text: "Kết thúc",
+                style: "destructive",
+                onPress: async () => {
+                    try {
+                        await authApis(user.token).post(endpoints["consultation-end"](consultationId));
+                        await loadConsultation();
+                    } catch (e) {
+                        Alert.alert("Lỗi", e?.response?.data?.detail || "Không thể kết thúc.");
+                    }
+                },
+            },
+        ]);
+    };
+
+    // ── Navigate tới video call ──────────────
+    const joinVideoCall = (data) => {
+        nav.navigate("video-call", {
+            agoraAppId:    data.agora_app_id  || "",
+            agoraToken:    data.agora_token   || "",
+            channelName:   data.channel_name  || "",
+            uid:           data.uid           || 0,
+            consultationId,
+        });
+    };
+
+    // ── Gửi tin nhắn ────────────────────────
+    const sendMessage = async () => {
+        const text = message.trim();
+        if (!text) return;
+        setSendingMsg(true);
+        try {
+            await authApis(user.token).post(endpoints["consultation-messages"](consultationId), {
+                message: text,
+            });
+            setMessage("");
+            await loadConsultation();
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        } catch (e) {
+            Alert.alert("Lỗi", "Không thể gửi tin nhắn.");
+        } finally {
+            setSendingMsg(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <View style={[Styles.center, { flex: 1 }]}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+        );
+    }
+
+    if (!consultation) {
+        return (
+            <View style={[Styles.center, { flex: 1 }]}>
+                <Text>Không tìm thấy phòng khám.</Text>
+            </View>
+        );
+    }
+
+    const messages = consultation.messages || [];
+    const isEnded  = consultation.status === "ended";
+    const isActive = consultation.status === "active";
+    const isWaiting = consultation.status === "waiting";
+
+    return (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+            {/* ── Status banner ── */}
+            <View style={[styles.statusBar, { backgroundColor: STATUS_COLOR[consultation.status] || "#9e9e9e" }]}>
+                <MaterialCommunityIcons name={isActive ? "video" : "clock-outline"} size={16} color="#fff" />
+                <Text style={styles.statusText}>{STATUS_LABEL[consultation.status] || consultation.status}</Text>
+            </View>
+
+            <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 8 }}>
+                {/* ── Thông tin phòng ── */}
+                <View style={[Styles.card, { margin: 16, marginBottom: 8 }]}>
+                    <Text style={Styles.sectionHeader}>Phòng tư vấn</Text>
+                    <Text style={Styles.text}>Mã phòng: {consultation.room_id || "—"}</Text>
+                    {consultation.started_at && (
+                        <Text style={Styles.textSmall}>
+                            Bắt đầu: {new Date(consultation.started_at).toLocaleString("vi-VN")}
+                        </Text>
+                    )}
+                </View>
+
+                {/* ── Hành động theo role + trạng thái ── */}
+                <View style={[Styles.card, { marginHorizontal: 16, marginBottom: 8 }]}>
+                    {/* PATIENT */}
+                    {!isDoctor && !isEnded && (
+                        <>
+                            {!entered && !isActive && (
+                                <TouchableOpacity
+                                    style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
+                                    onPress={enterRoom}
+                                    disabled={actionLoading}
+                                >
+                                    {actionLoading
+                                        ? <ActivityIndicator color="#fff" />
+                                        : <>
+                                            <MaterialCommunityIcons name="door-open" size={20} color="#fff" />
+                                            <Text style={styles.actionBtnText}>Vào phòng chờ</Text>
+                                        </>
+                                    }
+                                </TouchableOpacity>
+                            )}
+
+                            {entered && isWaiting && (
+                                <View style={styles.waitingBox}>
+                                    <ActivityIndicator color={COLORS.primary} />
+                                    <Text style={styles.waitingText}>Đang chờ bác sĩ vào phòng...</Text>
+                                    <Text style={styles.waitingSubText}>Bác sĩ sẽ bắt đầu sớm</Text>
+                                </View>
+                            )}
+
+                            {isActive && (
+                                <TouchableOpacity
+                                    style={[styles.actionBtn, { backgroundColor: "#2e7d32" }]}
+                                    onPress={joinAsPatient}
+                                    disabled={actionLoading}
+                                >
+                                    {actionLoading
+                                        ? <ActivityIndicator color="#fff" />
+                                        : <>
+                                            <MaterialCommunityIcons name="video" size={20} color="#fff" />
+                                            <Text style={styles.actionBtnText}>Tham gia video call</Text>
+                                        </>
+                                    }
+                                </TouchableOpacity>
+                            )}
+                        </>
+                    )}
+
+                    {/* DOCTOR */}
+                    {isDoctor && !isEnded && (
+                        <>
+                            {isWaiting && (
+                                <TouchableOpacity
+                                    style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
+                                    onPress={startConsultation}
+                                    disabled={actionLoading}
+                                >
+                                    {actionLoading
+                                        ? <ActivityIndicator color="#fff" />
+                                        : <>
+                                            <MaterialCommunityIcons name="play-circle" size={20} color="#fff" />
+                                            <Text style={styles.actionBtnText}>Bắt đầu khám</Text>
+                                        </>
+                                    }
+                                </TouchableOpacity>
+                            )}
+
+                            {isActive && (
+                                <TouchableOpacity
+                                    style={[styles.actionBtn, { backgroundColor: "#2e7d32" }]}
+                                    onPress={startConsultation}
+                                    disabled={actionLoading}
+                                >
+                                    {actionLoading
+                                        ? <ActivityIndicator color="#fff" />
+                                        : <>
+                                            <MaterialCommunityIcons name="video" size={20} color="#fff" />
+                                            <Text style={styles.actionBtnText}>Vào video call</Text>
+                                        </>
+                                    }
+                                </TouchableOpacity>
+                            )}
+
+                            {!isEnded && (
+                                <TouchableOpacity
+                                    style={[styles.actionBtn, { backgroundColor: "#c62828", marginTop: 8 }]}
+                                    onPress={endConsultation}
+                                >
+                                    <MaterialCommunityIcons name="stop-circle" size={20} color="#fff" />
+                                    <Text style={styles.actionBtnText}>Kết thúc phiên khám</Text>
+                                </TouchableOpacity>
+                            )}
+                        </>
+                    )}
+
+                    {isEnded && (
+                        <View style={styles.endedBox}>
+                            <MaterialCommunityIcons name="check-circle" size={24} color={COLORS.green} />
+                            <Text style={styles.endedText}>Phiên khám đã kết thúc</Text>
+                            {consultation.duration_minutes && (
+                                <Text style={Styles.textSmall}>
+                                    Thời lượng: {consultation.duration_minutes} phút
+                                </Text>
+                            )}
+                        </View>
+                    )}
+                </View>
+
+                {/* ── Chat ── */}
+                <View style={[Styles.card, { marginHorizontal: 16 }]}>
+                    <Text style={Styles.sectionHeader}>Tin nhắn</Text>
+
+                    {messages.length === 0 ? (
+                        <Text style={[Styles.textSmall, { textAlign: "center", marginVertical: 12 }]}>
+                            Chưa có tin nhắn nào
+                        </Text>
+                    ) : (
+                        <FlatList
+                            ref={flatListRef}
+                            data={messages}
+                            keyExtractor={(m) => String(m.id)}
+                            scrollEnabled={false}
+                            renderItem={({ item }) => {
+                                const isMe = item.sender === user.id;
+                                return (
+                                    <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
+                                        {!isMe && (
+                                            <Text style={styles.bubbleSender}>{item.sender_name}</Text>
+                                        )}
+                                        <Text style={[styles.bubbleText, isMe && { color: "#fff" }]}>
+                                            {item.message}
+                                        </Text>
+                                        <Text style={[styles.bubbleTime, isMe && { color: "rgba(255,255,255,0.7)" }]}>
+                                            {new Date(item.sent_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                                        </Text>
+                                    </View>
+                                );
+                            }}
+                            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                        />
+                    )}
+                </View>
+            </ScrollView>
+
+            {/* ── Chat input ── */}
+            {!isEnded && (
+                <View style={styles.inputRow}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Nhập tin nhắn..."
+                        value={message}
+                        onChangeText={setMessage}
+                        multiline
+                        maxLength={500}
+                    />
+                    <TouchableOpacity
+                        style={[styles.sendBtn, (!message.trim() || sendingMsg) && { opacity: 0.4 }]}
+                        onPress={sendMessage}
+                        disabled={!message.trim() || sendingMsg}
+                    >
+                        {sendingMsg
+                            ? <ActivityIndicator size={20} color="#fff" />
+                            : <MaterialCommunityIcons name="send" size={20} color="#fff" />
+                        }
+                    </TouchableOpacity>
+                </View>
+            )}
+        </KeyboardAvoidingView>
+    );
+};
+
+const styles = StyleSheet.create({
+    statusBar: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 10,
+        gap: 6,
+    },
+    statusText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+
+    actionBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 12,
+        paddingVertical: 14,
+        gap: 8,
+    },
+    actionBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+
+    waitingBox: {
+        alignItems: "center",
+        paddingVertical: 16,
+        gap: 8,
+    },
+    waitingText: { fontSize: 15, fontWeight: "600", color: COLORS.text, marginTop: 4 },
+    waitingSubText: { fontSize: 12, color: COLORS.textMuted },
+
+    endedBox: { alignItems: "center", paddingVertical: 12, gap: 6 },
+    endedText: { fontSize: 15, fontWeight: "600", color: COLORS.green },
+
+    bubble: {
+        maxWidth: "78%",
+        borderRadius: 14,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginBottom: 8,
+    },
+    bubbleMe: {
+        backgroundColor: COLORS.primary,
+        alignSelf: "flex-end",
+        borderBottomRightRadius: 4,
+    },
+    bubbleThem: {
+        backgroundColor: "#f0f4ff",
+        alignSelf: "flex-start",
+        borderBottomLeftRadius: 4,
+    },
+    bubbleSender: { fontSize: 11, fontWeight: "700", color: COLORS.primary, marginBottom: 2 },
+    bubbleText: { fontSize: 14, color: COLORS.text },
+    bubbleTime: { fontSize: 10, color: COLORS.textMuted, marginTop: 3, textAlign: "right" },
+
+    inputRow: {
+        flexDirection: "row",
+        alignItems: "flex-end",
+        padding: 10,
+        paddingBottom: Platform.OS === "ios" ? 24 : 10,
+        backgroundColor: "#fff",
+        borderTopWidth: 1,
+        borderTopColor: COLORS.border,
+        gap: 8,
+    },
+    input: {
+        flex: 1,
+        backgroundColor: "#f5f7fa",
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        fontSize: 14,
+        maxHeight: 100,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    sendBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: COLORS.primary,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+});
+
+export default ConsultationRoom;

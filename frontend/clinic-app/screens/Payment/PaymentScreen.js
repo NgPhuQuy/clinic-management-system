@@ -10,7 +10,7 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
-const METHODS = [
+const ALL_METHODS = [
     {
         key: "momo",
         label: "Ví MoMo",
@@ -44,6 +44,10 @@ const PaymentScreen = () => {
 
     // fromBooking = true khi đến từ BookAppointment, false khi đến từ AppointmentDetail
     const { invoiceId, appointmentId, doctorName, appointmentDate, amount, fromBooking = false } = route.params;
+
+    const METHODS = fromBooking
+        ? ALL_METHODS.filter((m) => m.key !== "cash")
+        : ALL_METHODS;
 
     const [selectedMethod, setSelectedMethod] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -138,6 +142,15 @@ const PaymentScreen = () => {
 
             <Text style={styles.sectionLabel}>CHỌN PHƯƠNG THỨC THANH TOÁN</Text>
 
+            {fromBooking && (
+                <View style={styles.onlineNote}>
+                    <MaterialCommunityIcons name="shield-check" size={14} color="#1565c0" />
+                    <Text style={styles.onlineNoteText}>
+                        Đặt lịch trực tuyến yêu cầu thanh toán qua ví điện tử hoặc chuyển khoản
+                    </Text>
+                </View>
+            )}
+
             {METHODS.map((m) => {
                 const selected = selectedMethod === m.key;
                 return (
@@ -174,9 +187,7 @@ const PaymentScreen = () => {
                     {loading
                         ? <ActivityIndicator color="#fff" />
                         : <Text style={Styles.btnPrimaryText}>
-                            {selectedMethod === "cash"
-                                ? "Xác nhận thanh toán tiền mặt"
-                                : "Tiến hành thanh toán →"}
+                            {selectedMethod === "cash" ? "Xác nhận thanh toán tiền mặt" : "Tiến hành thanh toán →"}
                         </Text>
                     }
                 </TouchableOpacity>
@@ -257,6 +268,17 @@ const styles = StyleSheet.create({
     },
     radioSelected: { borderColor: COLORS.primary },
     radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
+    onlineNote: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#e3f2fd",
+        marginHorizontal: 16,
+        marginBottom: 10,
+        borderRadius: 8,
+        padding: 10,
+        gap: 6,
+    },
+    onlineNoteText: { fontSize: 12, color: "#1565c0", flex: 1 },
 });
 
 export default PaymentScreen;

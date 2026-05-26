@@ -15,8 +15,8 @@ Endpoints:
   PATCH  /api/inventory-alerts/{id}/resolve/    — Đánh dấu đã xử lý  [staff|admin]
 """
 from datetime import timedelta
-
-from django.db.models import F
+from django.conf import settings
+from django.db.models import F, Q, Sum
 from django.utils import timezone
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
@@ -44,11 +44,19 @@ class MedicineCategoryViewSet(viewsets.ModelViewSet):
 
 class MedicineViewSet(viewsets.ModelViewSet):
     """Danh sách thuốc — chỉ admin tạo/sửa/xóa."""
-    queryset         = Medicine.objects.select_related("category").filter(is_active=True)
     serializer_class = MedicineSerializer
     filter_backends  = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["category", "requires_prescription"]
     search_fields    = ["name", "code", "generic_name"]
+
+    def get_queryset(self):
+        today = timezone.now().date()
+        return Medicine.objects.select_related("category").filter(is_active=True).annotate(
+            total_stock=Sum(
+                "inventory_batches__quantity",
+                filter=Q(inventory_batches__expiry_date__gt=today),
+            )
+        )
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
@@ -83,7 +91,7 @@ class InventoryViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def near_expiry(self, request):
         """GET /api/inventory/near_expiry/ — Thuốc hết hạn trong 30 ngày."""
-        threshold = timezone.now().date() + timedelta(days=30)
+        threshold = timezone.now().date() + timedelta(days=settings.INVENTORY_NEAR_EXPIRY_DAYS)
         qs = self.get_queryset().filter(
             expiry_date__lte=threshold,
             expiry_date__gt=timezone.now().date(),
