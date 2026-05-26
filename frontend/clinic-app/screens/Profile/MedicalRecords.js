@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles from "../../styles/Styles";
+import Styles, { medicalRecordsStyles as S } from "../../styles/Styles";
 
 export const MedicalRecords = () => {
     const nav = useNavigation();
@@ -42,7 +42,7 @@ export const MedicalRecords = () => {
                             style={Styles.card}
                             onPress={() => nav.navigate("medical-record-detail", { id: item.id })}
                         >
-                            <View style={styles.row}>
+                            <View style={S.row}>
                                 <Text style={{ fontSize: 28, marginRight: 12 }}>📋</Text>
                                 <View style={{ flex: 1 }}>
                                     <Text style={Styles.subtitle}>Khám ngày: {new Date(item.visit_date || item.created_at).toLocaleDateString("vi-VN")}</Text>
@@ -120,7 +120,7 @@ export const MedicalRecordDetail = () => {
                     <View style={Styles.card}>
                         <Text style={Styles.sectionHeader}>Kết quả xét nghiệm</Text>
                         {record.test_results.map((t, i) => (
-                            <View key={i} style={[styles.testResult, i > 0 && { borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 8, marginTop: 8 }]}>
+                            <View key={i} style={[S.testResult, i > 0 && { borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 8, marginTop: 8 }]}>
                                 <Text style={Styles.subtitle}>{t.test_name}</Text>
                                 <Text style={Styles.text}>Kết quả: {t.result}</Text>
                                 {t.normal_range && <Text style={Styles.textSmall}>Bình thường: {t.normal_range}</Text>}
@@ -132,11 +132,4 @@ export const MedicalRecordDetail = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    row: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    testResult: {},
-});
+export default MedicalRecords;

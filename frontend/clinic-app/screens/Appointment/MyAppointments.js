@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles from "../../styles/Styles";
+import Styles, { myAppointmentsStyles as S } from "../../styles/Styles";
 
 const STATUS_FILTERS = [
     { label: "Tất cả", value: null },
@@ -72,7 +72,7 @@ const MyAppointments = () => {
             style={Styles.card}
             onPress={() => nav.navigate("appointment-detail", { id: item.id })}
         >
-            <View style={styles.header}>
+            <View style={S.header}>
                 <Text style={Styles.subtitle}>BS. {item.doctor_name || "Bác sĩ"}</Text>
                 <View style={[Styles.badge, { backgroundColor: STATUS_COLORS[item.status] || "#9e9e9e" }]}>
                     <Text style={Styles.badgeText}>{STATUS_LABELS[item.status] || item.status}</Text>
@@ -86,13 +86,13 @@ const MyAppointments = () => {
 
     return (
         <View style={Styles.container}>
-            <View style={styles.filterRow}>
+            <View style={S.filterRow}>
                 {STATUS_FILTERS.map((f) => (
                     <Chip
                         key={f.label}
                         selected={filter === f.value}
                         onPress={() => setFilter(f.value)}
-                        style={[styles.chip, filter === f.value && styles.chipSelected]}
+                        style={[S.chip, filter === f.value && S.chipSelected]}
                         textStyle={filter === f.value ? { color: "#fff", fontSize: 12 } : { fontSize: 12 }}
                     >
                         {f.label}
@@ -128,29 +128,5 @@ const MyAppointments = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    filterRow: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 6,
-        padding: 12,
-        backgroundColor: "#fff",
-        elevation: 1,
-    },
-    chip: {
-        backgroundColor: "#e3f2fd",
-        marginBottom: 4,
-    },
-    chipSelected: {
-        backgroundColor: "#1565c0",
-    },
-    header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 8,
-    },
-});
 
 export default MyAppointments;

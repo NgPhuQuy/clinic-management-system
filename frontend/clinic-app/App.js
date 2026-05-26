@@ -20,6 +20,7 @@ import AppointmentDetail from "./screens/Appointment/AppointmentDetail";
 import { Profile, Prescriptions, Payments } from "./screens/Profile/Profile";
 import { MedicalRecords, MedicalRecordDetail } from "./screens/Profile/MedicalRecords";
 import Notifications from "./screens/Notification/Notifications";
+import NotificationDetail from "./screens/Notification/NotificationDetail";
 import PaymentScreen from "./screens/Payment/PaymentScreen";
 import PaymentWebView from "./screens/Payment/PaymentWebView";
 import PaymentResult from "./screens/Payment/PaymentResult";
@@ -61,19 +62,21 @@ const TAB_STYLE = {
     tabBarActiveTintColor: COLORS.primary,
     tabBarInactiveTintColor: COLORS.textLight,
     tabBarStyle: {
-        height: Platform.OS === "ios" ? 84 : 72,
-        paddingBottom: Platform.OS === "ios" ? 28 : 14,
-        paddingTop: 8,
+        height: Platform.OS === "ios" ? 90 : 68,
+        paddingBottom: Platform.OS === "ios" ? 30 : 10,
+        paddingTop: 10,
         borderTopWidth: 1,
         borderTopColor: COLORS.border,
         backgroundColor: "#fff",
-        elevation: 12,
+        elevation: 16,
         shadowColor: "#1565c0",
         shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
+        shadowOpacity: 0.10,
+        shadowRadius: 16,
     },
-    tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
+    tabBarLabelStyle: { fontSize: 11, fontWeight: "700", marginTop: 2 },
+    tabBarIconStyle:  { marginBottom: 0 },
+    tabBarItemStyle:  { paddingVertical: 4 },
 };
 
 // ─────────────────────────── PATIENT STACKS ───────────────────────────
@@ -94,7 +97,8 @@ const HomeStack = () => (
         <Stack.Screen name="payment-screen" component={PaymentScreen} options={{ title: "Chọn phương thức thanh toán" }} />
         <Stack.Screen name="payment-webview" component={PaymentWebView} options={{ headerShown: false }} />
         <Stack.Screen name="payment-result" component={PaymentResult} options={{ headerShown: false }} />
-        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
+        <Stack.Screen name="notifications"      component={Notifications}      options={{ title: "Thông báo" }} />
+        <Stack.Screen name="notification-detail" component={NotificationDetail} options={{ title: "Chi tiết thông báo" }} />
         <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
     </Stack.Navigator>
 );
@@ -114,7 +118,8 @@ const BookingStack = () => (
 
 const NotifStack = () => (
     <Stack.Navigator screenOptions={HS}>
-        <Stack.Screen name="notif-main" component={Notifications} options={{ headerShown: false }} />
+        <Stack.Screen name="notif-main"          component={Notifications}      options={{ headerShown: false }} />
+        <Stack.Screen name="notification-detail" component={NotificationDetail} options={{ title: "Chi tiết thông báo" }} />
     </Stack.Navigator>
 );
 
@@ -190,7 +195,8 @@ const DoctorHomeStack = () => (
         <Stack.Screen name="doctor-appointment-detail" component={DoctorAppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
         <Stack.Screen name="doctor-medical-records" component={DoctorMedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
         <Stack.Screen name="doctor-medical-record-detail" component={DoctorMedicalRecords} options={{ title: "Chi tiết bệnh án" }} />
-        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
+        <Stack.Screen name="notifications"      component={Notifications}      options={{ title: "Thông báo" }} />
+        <Stack.Screen name="notification-detail" component={NotificationDetail} options={{ title: "Chi tiết thông báo" }} />
     </Stack.Navigator>
 );
 
@@ -225,8 +231,9 @@ const DoctorProfileStack = () => (
         <Stack.Screen name="doctor-my-schedules" component={DoctorSchedules} options={{ title: "Ca trực của tôi" }} />
         <Stack.Screen name="doctor-medical-records" component={DoctorMedicalRecords} options={{ title: "Hồ sơ bệnh án" }} />
         <Stack.Screen name="doctor-prescriptions" component={Prescriptions} options={{ title: "Đơn thuốc" }} />
-        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
-        <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
+        <Stack.Screen name="notifications"      component={Notifications}      options={{ title: "Thông báo" }} />
+        <Stack.Screen name="notification-detail" component={NotificationDetail} options={{ title: "Chi tiết thông báo" }} />
+        <Stack.Screen name="change-password"     component={ChangePassword}     options={{ title: "Đổi mật khẩu" }} />
     </Stack.Navigator>
 );
 
@@ -295,7 +302,8 @@ const StaffHomeStack = () => (
         <Stack.Screen name="staff-appointments" component={StaffAppointments} options={{ title: "Lịch hẹn" }} />
         <Stack.Screen name="staff-appointment-detail" component={StaffAppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
         <Stack.Screen name="staff-collect-payment" component={StaffPayments} options={{ title: "Thu tiền" }} />
-        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
+        <Stack.Screen name="notifications"      component={Notifications}      options={{ title: "Thông báo" }} />
+        <Stack.Screen name="notification-detail" component={NotificationDetail} options={{ title: "Chi tiết thông báo" }} />
     </Stack.Navigator>
 );
 
@@ -333,8 +341,9 @@ const StaffProfileStack = () => (
         <Stack.Screen name="staff-patients" component={StaffFindPatient} options={{ title: "Danh sách bệnh nhân" }} />
         <Stack.Screen name="staff-inventory" component={StaffInventory} options={{ title: "Kho thuốc" }} />
         <Stack.Screen name="staff-payments" component={StaffPayments} options={{ title: "Thanh toán" }} />
-        <Stack.Screen name="notifications" component={Notifications} options={{ title: "Thông báo" }} />
-        <Stack.Screen name="change-password" component={ChangePassword} options={{ title: "Đổi mật khẩu" }} />
+        <Stack.Screen name="notifications"      component={Notifications}      options={{ title: "Thông báo" }} />
+        <Stack.Screen name="notification-detail" component={NotificationDetail} options={{ title: "Chi tiết thông báo" }} />
+        <Stack.Screen name="change-password"     component={ChangePassword}     options={{ title: "Đổi mật khẩu" }} />
     </Stack.Navigator>
 );
 

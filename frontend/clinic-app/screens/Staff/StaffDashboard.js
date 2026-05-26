@@ -1,9 +1,9 @@
 /**
  * screens/Staff/StaffDashboard.js
- * Dashboard chính cho nhân viên y tế
+ * Dashboard chính cho nhân viên y tế – gọi backend, fallback mock nếu lỗi
  */
 import {
-    View, ScrollView, StyleSheet, TouchableOpacity,
+    View, ScrollView, TouchableOpacity,
     ActivityIndicator, RefreshControl, StatusBar,
 } from "react-native";
 import { Text } from "react-native-paper";
@@ -12,73 +12,119 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, STATUS_CONFIG } from "../../styles/Styles";
 
+// ── Mock data khi backend chưa sẵn sàng ──────────────────────────────────────
+const MOCK_DASHBOARD = {
+    appointments: { today: 12, pending: 4, confirmed: 6, in_progress: 2 },
+    payments: {
+        revenue_today: 4_850_000,
+        revenue_month: 87_600_000,
+        pending_cash: 3,
+    },
+    inventory:    { alerts: 5, low_stock: 8 },
+    prescriptions: { pending: 6, dispensed_today: 14 },
+    todays_appointments: [
+        {
+            id: 1,
+            appointment_date: new Date(Date.now() + 0.5*3600*1000).toISOString(),
+            patient_info: { full_name: "Nguyễn Thị Mai" },
+            doctor_info:  { full_name: "Nguyễn Văn An", specialty_name: "Tim mạch" },
+            status: "confirmed",
+        },
+        {
+            id: 2,
+            appointment_date: new Date(Date.now() + 1.5*3600*1000).toISOString(),
+            patient_info: { full_name: "Trần Văn Bảo" },
+            doctor_info:  { full_name: "Lê Minh Cường", specialty_name: "Nội tiêu hóa" },
+            status: "pending",
+        },
+        {
+            id: 3,
+            appointment_date: new Date(Date.now() + 2*3600*1000).toISOString(),
+            patient_info: { full_name: "Phạm Thị Dung" },
+            doctor_info:  { full_name: "Phạm Thị Dung", specialty_name: "Thần kinh" },
+            status: "in_progress",
+        },
+        {
+            id: 4,
+            appointment_date: new Date(Date.now() + 3*3600*1000).toISOString(),
+            patient_info: { full_name: "Hoàng Thị Em" },
+            doctor_info:  { full_name: "Vũ Thị Phương", specialty_name: "Nhi khoa" },
+            status: "confirmed",
+        },
+        {
+            id: 5,
+            appointment_date: new Date(Date.now() + 4*3600*1000).toISOString(),
+            patient_info: { full_name: "Lê Thị Cúc" },
+            doctor_info:  { full_name: "Hoàng Văn Em", specialty_name: "Da liễu" },
+            status: "pending",
+        },
+    ],
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, color, badge, onPress }) => (
     <TouchableOpacity
-        style={[styles.statCard, { borderLeftColor: color }]}
+        style={[Styles.statCard, { borderLeftColor: color }]}
         onPress={onPress}
         activeOpacity={0.8}
     >
-        <View style={[styles.statIcon, { backgroundColor: color + "20" }]}>
+        <View style={[Styles.statIcon, { backgroundColor: color + "20" }]}>
             <MaterialCommunityIcons name={icon} size={22} color={color} />
         </View>
         <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.statValue}>{value}</Text>
-            <Text style={styles.statLabel}>{label}</Text>
+            <Text style={Styles.statValue}>{value}</Text>
+            <Text style={Styles.statLabel}>{label}</Text>
         </View>
         {badge && (
-            <View style={[styles.badge, { backgroundColor: color }]}>
-                <Text style={styles.badgeText}>{badge}</Text>
+            <View style={{
+                width: 22, height: 22, borderRadius: 11,
+                backgroundColor: color, alignItems: "center", justifyContent: "center",
+            }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#fff" }}>{badge}</Text>
             </View>
         )}
     </TouchableOpacity>
 );
 
 const AppointmentItem = ({ item, onPress }) => {
-    const date = new Date(item.appointment_date);
+    const date    = new Date(item.appointment_date);
     const timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-    const STATUS_COLORS = {
-        pending: COLORS.orange, confirmed: COLORS.green,
-        in_progress: COLORS.purple, completed: COLORS.primary,
-        cancelled: COLORS.red, no_show: COLORS.textLight,
-    };
-    const STATUS_LABELS = {
-        pending: "Chờ xác nhận", confirmed: "Đã xác nhận",
-        in_progress: "Đang khám", completed: "Hoàn thành",
-        cancelled: "Đã hủy", no_show: "Không đến",
-    };
+    const sCfg    = STATUS_CONFIG[item.status] || {};
     return (
-        <TouchableOpacity style={styles.apptItem} onPress={onPress} activeOpacity={0.7}>
-            <View style={[styles.timeBox, { backgroundColor: COLORS.primaryPale }]}>
-                <Text style={styles.timeText}>{timeStr}</Text>
+        <TouchableOpacity style={Styles.apptItem} onPress={onPress} activeOpacity={0.7}>
+            <View style={[Styles.timeBox, { backgroundColor: COLORS.primaryPale }]}>
+                <Text style={Styles.timeText}>{timeStr}</Text>
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={styles.apptName} numberOfLines={1}>
+                <Text style={Styles.apptPatient} numberOfLines={1}>
                     {item.patient_info?.full_name || `BN #${item.patient}`}
                 </Text>
-                <Text style={styles.apptDoctor} numberOfLines={1}>
-                    BS. {item.doctor_info?.full_name || `#${item.doctor}`}
+                <Text style={Styles.apptSub} numberOfLines={1}>
+                    BS. {item.doctor_info?.full_name || "–"} · {item.doctor_info?.specialty_name || ""}
                 </Text>
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + "20" }]}>
-                <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>
-                    {STATUS_LABELS[item.status]}
+            <View style={[Styles.statusBadge, { backgroundColor: (sCfg.color || COLORS.primary) + "20" }]}>
+                <Text style={[Styles.statusText, { color: sCfg.color || COLORS.primary }]}>
+                    {sCfg.label}
                 </Text>
             </View>
         </TouchableOpacity>
     );
 };
 
+// ── Main screen ───────────────────────────────────────────────────────────────
 const StaffDashboard = () => {
-    const nav = useNavigation();
+    const nav  = useNavigation();
     const user = useContext(MyUserContext);
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
+
+    const [data,       setData]       = useState(null);
+    const [loading,    setLoading]    = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const today = new Date().toLocaleDateString("vi-VN", {
-        weekday: "long", day: "2-digit", month: "2-digit", year: "numeric"
+        weekday: "long", day: "2-digit", month: "2-digit", year: "numeric",
     });
 
     const load = async () => {
@@ -86,7 +132,8 @@ const StaffDashboard = () => {
             const res = await authApis(user.token).get(endpoints["staff-dashboard"]);
             setData(res.data);
         } catch (e) {
-            console.error("StaffDashboard load error:", e?.response?.data || e.message);
+            console.warn("StaffDashboard: dùng mock data –", e?.response?.status || e.message);
+            setData(MOCK_DASHBOARD);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -96,60 +143,68 @@ const StaffDashboard = () => {
     useEffect(() => { load(); }, []);
 
     if (loading) return (
-        <View style={[Styles.center, { flex: 1, backgroundColor: COLORS.bg }]}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
+        <View style={Styles.loadingWrap}>
+            <ActivityIndicator size="large" color={COLORS.teal} />
         </View>
     );
 
-    const appts = data?.appointments || {};
-    const payments = data?.payments || {};
-    const inventory = data?.inventory || {};
-    const prescriptions = data?.prescriptions || {};
-    const todayAppts = data?.todays_appointments || [];
+    const appts        = data?.appointments   || {};
+    const payments     = data?.payments       || {};
+    const inventory    = data?.inventory      || {};
+    const prescriptions= data?.prescriptions  || {};
+    const todayAppts   = data?.todays_appointments || [];
 
     return (
         <ScrollView
-            style={styles.container}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={COLORS.primary} />}
+            style={Styles.container}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={() => { setRefreshing(true); load(); }}
+                    tintColor={COLORS.teal}
+                />
+            }
         >
             <StatusBar backgroundColor={COLORS.teal} barStyle="light-content" />
 
             {/* Header */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.greeting}>Nhân viên y tế 🏥</Text>
-                    <Text style={styles.dateText}>{today}</Text>
+            <View style={[Styles.header, { backgroundColor: COLORS.teal }]}>
+                <View style={{ flex: 1 }}>
+                    <Text style={Styles.headerTitle}>
+                        Nhân viên y tế 🏥
+                    </Text>
+                    <Text style={Styles.headerSubtitle}>{today}</Text>
+                    <Text style={Styles.headerSubtitle}>
+                        Xin chào, {user?.first_name || "bạn"}!
+                    </Text>
                 </View>
-                <TouchableOpacity
-                    style={styles.notifBtn}
-                    onPress={() => nav.navigate("notifications")}
-                >
+                <TouchableOpacity style={Styles.notifBtn} onPress={() => nav.navigate("notifications")}>
                     <MaterialCommunityIcons name="bell-outline" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
 
             {/* Revenue Cards */}
-            <View style={styles.revenueRow}>
-                <View style={[styles.revenueCard, { backgroundColor: COLORS.primary }]}>
+            <View style={Styles.revenueRow}>
+                <View style={[Styles.revenueCard, { backgroundColor: COLORS.primary }]}>
                     <MaterialCommunityIcons name="cash" size={20} color="rgba(255,255,255,0.8)" />
-                    <Text style={styles.revenueLabel}>Doanh thu hôm nay</Text>
-                    <Text style={styles.revenueValue}>
+                    <Text style={Styles.revenueLabel}>Doanh thu hôm nay</Text>
+                    <Text style={Styles.revenueValue}>
                         {Number(payments.revenue_today || 0).toLocaleString("vi-VN")}đ
                     </Text>
                 </View>
-                <View style={[styles.revenueCard, { backgroundColor: COLORS.teal }]}>
+                <View style={[Styles.revenueCard, { backgroundColor: COLORS.teal }]}>
                     <MaterialCommunityIcons name="chart-bar" size={20} color="rgba(255,255,255,0.8)" />
-                    <Text style={styles.revenueLabel}>Doanh thu tháng này</Text>
-                    <Text style={styles.revenueValue}>
+                    <Text style={Styles.revenueLabel}>Doanh thu tháng này</Text>
+                    <Text style={Styles.revenueValue}>
                         {Number(payments.revenue_month || 0).toLocaleString("vi-VN")}đ
                     </Text>
                 </View>
             </View>
 
             {/* Stats */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Công việc cần xử lý</Text>
-                <View style={styles.statsGrid}>
+            <View style={Styles.section}>
+                <Text style={Styles.sectionTitle}>Công việc cần xử lý</Text>
+                <View style={{ gap: 10 }}>
                     <StatCard
                         icon="calendar-clock"
                         label="Lịch hẹn hôm nay"
@@ -199,27 +254,27 @@ const StaffDashboard = () => {
             </View>
 
             {/* Quick Actions */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Chức năng nhanh</Text>
-                <View style={styles.actionsGrid}>
+            <View style={Styles.section}>
+                <Text style={Styles.sectionTitle}>Chức năng nhanh</Text>
+                <View style={Styles.actionsGrid}>
                     {[
-                        { icon: "calendar-check", label: "Quản lý\nlịch hẹn", screen: "staff-appointments", color: COLORS.primary },
-                        { icon: "pill", label: "Cấp phát\nthuốc", screen: "staff-prescriptions", color: COLORS.green },
-                        { icon: "cash-register", label: "Thu tiền\nthanh toán", screen: "staff-payments", color: COLORS.orange },
-                        { icon: "medical-bag", label: "Tìm bệnh\nnhân", screen: "staff-find-patient", color: COLORS.teal },
-                        { icon: "package-variant", label: "Quản lý\nkho thuốc", screen: "staff-inventory", color: COLORS.purple },
-                        { icon: "account-details", label: "Thông tin\ncá nhân", screen: "staff-profile", color: COLORS.textMuted },
-                    ].map((item) => (
+                        { icon: "calendar-check",   label: "Quản lý\nlịch hẹn",    screen: "staff-appointments",   color: COLORS.primary },
+                        { icon: "pill",              label: "Cấp phát\nthuốc",       screen: "staff-prescriptions",  color: COLORS.green },
+                        { icon: "cash-register",     label: "Thu tiền\nthanh toán",  screen: "staff-payments",       color: COLORS.orange },
+                        { icon: "medical-bag",       label: "Tìm bệnh\nnhân",        screen: "staff-find-patient",   color: COLORS.teal },
+                        { icon: "package-variant",   label: "Quản lý\nkho thuốc",   screen: "staff-inventory",      color: COLORS.purple },
+                        { icon: "account-details",   label: "Hồ sơ\ncá nhân",       screen: "staff-profile",        color: COLORS.textMuted },
+                    ].map(item => (
                         <TouchableOpacity
                             key={item.screen}
-                            style={styles.actionBtn}
+                            style={Styles.actionBtn}
                             onPress={() => nav.navigate(item.screen)}
                             activeOpacity={0.8}
                         >
-                            <View style={[styles.actionIcon, { backgroundColor: item.color + "20" }]}>
+                            <View style={[Styles.actionIcon, { backgroundColor: item.color + "20" }]}>
                                 <MaterialCommunityIcons name={item.icon} size={24} color={item.color} />
                             </View>
-                            <Text style={styles.actionLabel}>{item.label}</Text>
+                            <Text style={Styles.actionLabel}>{item.label}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -227,14 +282,14 @@ const StaffDashboard = () => {
 
             {/* Today's Appointments */}
             {todayAppts.length > 0 && (
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Lịch hẹn hôm nay</Text>
+                <View style={Styles.section}>
+                    <View style={Styles.sectionRow}>
+                        <Text style={Styles.sectionTitle}>Lịch hẹn hôm nay</Text>
                         <TouchableOpacity onPress={() => nav.navigate("staff-appointments")}>
-                            <Text style={styles.seeAll}>Xem tất cả</Text>
+                            <Text style={Styles.seeAll}>Xem tất cả</Text>
                         </TouchableOpacity>
                     </View>
-                    {todayAppts.map((item) => (
+                    {todayAppts.map(item => (
                         <AppointmentItem
                             key={item.id}
                             item={item}
@@ -248,60 +303,5 @@ const StaffDashboard = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
-    header: {
-        backgroundColor: COLORS.teal,
-        paddingHorizontal: 20, paddingTop: 52, paddingBottom: 24,
-        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    },
-    greeting: { fontSize: 20, fontWeight: "800", color: "#fff" },
-    dateText: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
-    notifBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: "rgba(255,255,255,0.15)",
-        alignItems: "center", justifyContent: "center",
-    },
-    revenueRow: { flexDirection: "row", margin: 16, marginBottom: 0, gap: 10 },
-    revenueCard: { flex: 1, borderRadius: 14, padding: 14 },
-    revenueLabel: { fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 6 },
-    revenueValue: { fontSize: 15, fontWeight: "800", color: "#fff", marginTop: 2 },
-    section: { margin: 16, marginBottom: 0 },
-    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-    sectionTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 },
-    seeAll: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
-    statsGrid: { gap: 10 },
-    statCard: {
-        backgroundColor: "#fff", borderRadius: 12, padding: 14,
-        flexDirection: "row", alignItems: "center", borderLeftWidth: 4,
-        elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    statIcon: { width: 42, height: 42, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-    statValue: { fontSize: 22, fontWeight: "800", color: COLORS.text },
-    statLabel: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
-    badge: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-    badgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
-    actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-    actionBtn: {
-        width: "31%", backgroundColor: "#fff", borderRadius: 12, padding: 14,
-        alignItems: "center", elevation: 2,
-        shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    actionIcon: { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-    actionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.text, textAlign: "center" },
-    apptItem: {
-        backgroundColor: "#fff", borderRadius: 12, padding: 12,
-        flexDirection: "row", alignItems: "center", marginBottom: 8, elevation: 1, gap: 10,
-    },
-    timeBox: { padding: 8, borderRadius: 8, alignItems: "center", minWidth: 56 },
-    timeText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-    apptName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-    apptDoctor: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    statusText: { fontSize: 10, fontWeight: "700" },
-});
 
 export default StaffDashboard;

@@ -99,19 +99,19 @@ const PaymentWebView = () => {
 
     return (
         <View style={{ flex: 1 }}>
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
-                    <Text style={styles.closeText}>✕  Đóng</Text>
+            <View style={S.header}>
+                <TouchableOpacity style={S.closeBtn} onPress={handleClose}>
+                    <Text style={S.closeText}>✕  Đóng</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>
+                <Text style={S.headerTitle}>
                     {method === "momo" ? "🟣 Thanh toán MoMo" : "🔵 Thanh toán VNPay"}
                 </Text>
             </View>
 
             {loadingPage && (
-                <View style={styles.loadingOverlay}>
+                <View style={S.loadingOverlay}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={styles.loadingText}>Đang kết nối cổng thanh toán…</Text>
+                    <Text style={S.loadingText}>Đang kết nối cổng thanh toán…</Text>
                 </View>
             )}
 
@@ -130,31 +130,4 @@ const PaymentWebView = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: COLORS.primaryDark,
-        paddingTop: Platform.OS === "ios" ? 52 : 36,
-        paddingBottom: 14,
-        paddingHorizontal: 16,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-    },
-    closeBtn: { paddingVertical: 4, paddingHorizontal: 8 },
-    closeText: { color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: "600" },
-    headerTitle: { color: "#fff", fontSize: 15, fontWeight: "800", flex: 1 },
-    loadingOverlay: {
-        position: "absolute",
-        top: Platform.OS === "ios" ? 110 : 90,
-        left: 0, right: 0, bottom: 0,
-        zIndex: 10,
-        backgroundColor: COLORS.bg,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 14,
-    },
-    loadingText: { color: COLORS.textMuted, fontSize: 13 },
-});
-
 export default PaymentWebView;

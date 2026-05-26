@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, appointmentDetailStyles as S } from "../../styles/Styles";
 
 const STATUS_COLORS = {
     pending: "#ff9800", confirmed: "#4caf50", cancelled: "#f44336",
@@ -103,8 +103,8 @@ const AppointmentDetail = () => {
     return (
         <ScrollView style={Styles.container}>
             {/* Banner trạng thái */}
-            <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[appt.status] || "#9e9e9e" }]}>
-                <Text style={styles.statusText}>{STATUS_LABELS[appt.status] || appt.status}</Text>
+            <View style={[S.statusBanner, { backgroundColor: STATUS_COLORS[appt.status] || "#9e9e9e" }]}>
+                <Text style={S.statusText}>{STATUS_LABELS[appt.status] || appt.status}</Text>
             </View>
 
             <View style={Styles.padding}>
@@ -199,17 +199,17 @@ const AppointmentDetail = () => {
 
                     {/* Nút thanh toán ngay */}
                     {canPay && (
-                        <TouchableOpacity style={[styles.payBtn]} onPress={goToPayment} activeOpacity={0.85}>
+                        <TouchableOpacity style={[S.payBtn]} onPress={goToPayment} activeOpacity={0.85}>
                             <MaterialCommunityIcons name="credit-card-outline" size={20} color="#fff" />
-                            <Text style={styles.payBtnText}>
+                            <Text style={S.payBtnText}>
                                 {payment?.status === "failed" ? "Thanh toán lại" : "Thanh toán ngay"}
                             </Text>
                         </TouchableOpacity>
                     )}
 
                     {alreadyPaid && (
-                        <View style={styles.paidTag}>
-                            <Text style={styles.paidTagText}>✓ Đã thanh toán hoàn tất</Text>
+                        <View style={S.paidTag}>
+                            <Text style={S.paidTagText}>✓ Đã thanh toán hoàn tất</Text>
                         </View>
                     )}
                 </View>
@@ -245,49 +245,4 @@ const AppointmentDetail = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    statusBanner: {
-        padding: 16,
-        alignItems: "center",
-    },
-    statusText: {
-        color: "#fff",
-        fontWeight: "bold",
-        fontSize: 16,
-    },
-    payBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: COLORS.primary,
-        borderRadius: 12,
-        paddingVertical: 13,
-        marginTop: 14,
-        gap: 8,
-        elevation: 3,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-    },
-    payBtnText: {
-        color: "#fff",
-        fontWeight: "800",
-        fontSize: 15,
-    },
-    paidTag: {
-        backgroundColor: "#e8f5e9",
-        borderRadius: 8,
-        paddingVertical: 8,
-        alignItems: "center",
-        marginTop: 12,
-    },
-    paidTagText: {
-        color: COLORS.green,
-        fontWeight: "700",
-        fontSize: 13,
-    },
-});
-
 export default AppointmentDetail;

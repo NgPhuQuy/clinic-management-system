@@ -1,5 +1,5 @@
 import {
-    View, ScrollView, StyleSheet, TouchableOpacity,
+    View, ScrollView, TouchableOpacity,
     ActivityIndicator, Alert
 } from "react-native";
 import { Text } from "react-native-paper";
@@ -8,7 +8,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, paymentScreenStyles as PS } from "../../styles/Styles";
 
 const METHODS = [
     {
@@ -105,49 +105,49 @@ const PaymentScreen = () => {
             {/* Thông tin lịch hẹn */}
             <View style={[Styles.card, { margin: 16, marginBottom: 8 }]}>
                 <Text style={Styles.sectionHeader}>Thông tin thanh toán</Text>
-                <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Bác sĩ</Text>
-                    <Text style={styles.infoValue}>BS. {doctorName}</Text>
+                <View style={PS.infoRow}>
+                    <Text style={PS.infoLabel}>Bác sĩ</Text>
+                    <Text style={PS.infoValue}>BS. {doctorName}</Text>
                 </View>
-                <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Ngày khám</Text>
-                    <Text style={styles.infoValue}>
+                <View style={PS.infoRow}>
+                    <Text style={PS.infoLabel}>Ngày khám</Text>
+                    <Text style={PS.infoValue}>
                         {new Date(appointmentDate).toLocaleString("vi-VN")}
                     </Text>
                 </View>
-                <View style={styles.divider} />
-                <View style={[styles.infoRow, { marginTop: 4 }]}>
-                    <Text style={[styles.infoLabel, { fontWeight: "700", color: COLORS.text }]}>
+                <View style={PS.divider} />
+                <View style={[PS.infoRow, { marginTop: 4 }]}>
+                    <Text style={[PS.infoLabel, { fontWeight: "700", color: COLORS.text }]}>
                         Tổng tiền
                     </Text>
-                    <Text style={styles.amountText}>
+                    <Text style={PS.amountText}>
                         {Number(amount).toLocaleString("vi-VN")}đ
                     </Text>
                 </View>
             </View>
 
-            <Text style={styles.sectionLabel}>CHỌN PHƯƠNG THỨC THANH TOÁN</Text>
+            <Text style={PS.sectionLabel}>CHỌN PHƯƠNG THỨC THANH TOÁN</Text>
 
             {METHODS.map((m) => {
                 const selected = selectedMethod === m.key;
                 return (
                     <TouchableOpacity
                         key={m.key}
-                        style={[styles.methodCard, selected && styles.methodCardSelected]}
+                        style={[PS.methodCard, selected && PS.methodCardSelected]}
                         onPress={() => setSelectedMethod(m.key)}
                         activeOpacity={0.75}
                     >
-                        <View style={[styles.methodIcon, { backgroundColor: m.iconBg }]}>
+                        <View style={[PS.methodIcon, { backgroundColor: m.iconBg }]}>
                             <MaterialCommunityIcons name={m.icon} size={22} color={m.iconColor} />
                         </View>
                         <View style={{ flex: 1, marginLeft: 14 }}>
-                            <Text style={[styles.methodLabel, selected && { color: COLORS.primary }]}>
+                            <Text style={[PS.methodLabel, selected && { color: COLORS.primary }]}>
                                 {m.label}
                             </Text>
-                            <Text style={styles.methodSub}>{m.sub}</Text>
+                            <Text style={PS.methodSub}>{m.sub}</Text>
                         </View>
-                        <View style={[styles.radio, selected && styles.radioSelected]}>
-                            {selected && <View style={styles.radioDot} />}
+                        <View style={[PS.radio, selected && PS.radioSelected]}>
+                            {selected && <View style={PS.radioDot} />}
                         </View>
                     </TouchableOpacity>
                 );
@@ -183,70 +183,4 @@ const PaymentScreen = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    sectionLabel: {
-        fontSize: 11,
-        fontWeight: "700",
-        color: COLORS.textLight,
-        letterSpacing: 0.8,
-        marginLeft: 20,
-        marginTop: 16,
-        marginBottom: 8,
-    },
-    infoRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: 5,
-    },
-    infoLabel: { fontSize: 12, color: COLORS.textMuted },
-    infoValue: {
-        fontSize: 13,
-        color: COLORS.text,
-        fontWeight: "500",
-        flex: 1,
-        textAlign: "right",
-    },
-    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 10 },
-    amountText: { fontSize: 20, fontWeight: "800", color: COLORS.primary },
-    methodCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#fff",
-        marginHorizontal: 16,
-        marginBottom: 10,
-        borderRadius: 14,
-        padding: 14,
-        borderWidth: 1.5,
-        borderColor: COLORS.border,
-        elevation: 1,
-    },
-    methodCardSelected: {
-        borderColor: COLORS.primary,
-        backgroundColor: COLORS.primaryPale,
-        elevation: 3,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-    },
-    methodIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    methodLabel: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-    methodSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
-    radio: {
-        width: 20, height: 20, borderRadius: 10,
-        borderWidth: 2, borderColor: COLORS.border,
-        alignItems: "center", justifyContent: "center",
-    },
-    radioSelected: { borderColor: COLORS.primary },
-    radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
-});
-
 export default PaymentScreen;

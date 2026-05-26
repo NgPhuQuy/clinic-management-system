@@ -5,7 +5,7 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, doctorDetailStyles as S } from "../../styles/Styles";
 
 const DoctorAvatarLarge = ({ uri }) => {
     const [error, setError] = useState(false);
@@ -13,13 +13,13 @@ const DoctorAvatarLarge = ({ uri }) => {
         return (
             <Image
                 source={{ uri }}
-                style={styles.avatarCircle}
+                style={S.avatarCircle}
                 onError={() => setError(true)}
             />
         );
     }
     return (
-        <View style={[styles.avatarCircle, { alignItems: "center", justifyContent: "center" }]}>
+        <View style={[S.avatarCircle, { alignItems: "center", justifyContent: "center" }]}>
             <MaterialCommunityIcons name="doctor" size={52} color="#fff" />
         </View>
     );
@@ -68,24 +68,24 @@ const DoctorDetail = () => {
     return (
         <ScrollView style={Styles.container}>
             {/* Doctor Header */}
-            <View style={styles.header}>
+            <View style={S.header}>
                 <DoctorAvatarLarge uri={doctor.avatar || doctor.avatar_url} />
-                <Text style={styles.name}>BS. {doctor.full_name}</Text>
-                <Text style={styles.specialty}>{doctor.specialty_name || "Đa khoa"}</Text>
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNum}>{doctor.experience_years}</Text>
-                        <Text style={styles.statLabel}>Năm KN</Text>
+                <Text style={S.name}>BS. {doctor.full_name}</Text>
+                <Text style={S.specialty}>{doctor.specialty_name || "Đa khoa"}</Text>
+                <View style={S.statsRow}>
+                    <View style={S.statItem}>
+                        <Text style={S.statNum}>{doctor.experience_years}</Text>
+                        <Text style={S.statLabel}>Năm KN</Text>
                     </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNum}>{Number(doctor.consultation_fee || 0).toLocaleString("vi-VN")}đ</Text>
-                        <Text style={styles.statLabel}>Phí khám</Text>
+                    <View style={S.statDivider} />
+                    <View style={S.statItem}>
+                        <Text style={S.statNum}>{Number(doctor.consultation_fee || 0).toLocaleString("vi-VN")}đ</Text>
+                        <Text style={S.statLabel}>Phí khám</Text>
                     </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <Text style={styles.statNum}>{doctor.is_available ? "✅" : "❌"}</Text>
-                        <Text style={styles.statLabel}>Nhận bệnh</Text>
+                    <View style={S.statDivider} />
+                    <View style={S.statItem}>
+                        <Text style={S.statNum}>{doctor.is_available ? "✅" : "❌"}</Text>
+                        <Text style={S.statLabel}>Nhận bệnh</Text>
                     </View>
                 </View>
             </View>
@@ -117,7 +117,7 @@ const DoctorDetail = () => {
                     schedules.map((s) => (
                         <TouchableOpacity
                             key={s.id}
-                            style={[Styles.card, styles.scheduleItem]}
+                            style={[Styles.card, S.scheduleItem]}
                             onPress={() => nav.navigate("book-appointment", { doctorId, scheduleId: s.id, doctorName: doctor.full_name, schedule: s })}
                         >
                             <View>
@@ -144,62 +144,4 @@ const DoctorDetail = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: "#1565c0",
-        padding: 24,
-        alignItems: "center",
-        paddingTop: 32,
-    },
-    avatarCircle: {
-        width: 90,
-        height: 90,
-        borderRadius: 45,
-        backgroundColor: "#fff",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 12,
-    },
-    name: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "#fff",
-    },
-    specialty: {
-        color: "#bbdefb",
-        marginTop: 4,
-    },
-    statsRow: {
-        flexDirection: "row",
-        marginTop: 20,
-        backgroundColor: "rgba(255,255,255,0.15)",
-        borderRadius: 12,
-        padding: 12,
-    },
-    statItem: {
-        flex: 1,
-        alignItems: "center",
-    },
-    statNum: {
-        fontSize: 14,
-        fontWeight: "bold",
-        color: "#fff",
-    },
-    statLabel: {
-        fontSize: 11,
-        color: "#bbdefb",
-        marginTop: 2,
-    },
-    statDivider: {
-        width: 1,
-        backgroundColor: "rgba(255,255,255,0.3)",
-    },
-    scheduleItem: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-});
-
 export default DoctorDetail;

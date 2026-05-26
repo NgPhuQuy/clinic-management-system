@@ -11,7 +11,29 @@ import { useState, useEffect, useContext } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, doctorSchedulesStyles as S } from "../../styles/Styles";
+
+
+const MOCK_SCHEDULES = (() => {
+    const today = new Date();
+    const slots = [];
+    for (let d = 0; d < 14; d++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + d);
+        if (date.getDay() === 0) continue; // skip Sunday
+        const isAM = d % 2 === 0;
+        slots.push({
+            id: d + 1,
+            date: date.toISOString().slice(0,10),
+            start_time: isAM ? "07:30:00" : "13:00:00",
+            end_time:   isAM ? "11:30:00" : "17:00:00",
+            max_appointments: 10,
+            current_appointments: Math.floor(Math.random() * 8),
+            is_available: d > 0,
+        });
+    }
+    return slots;
+})();
 
 const DAYS_VN = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
@@ -20,21 +42,21 @@ const ScheduleCard = ({ item, onDelete, onToggle }) => {
     const dayOfWeek = DAYS_VN[date.getDay()];
 
     return (
-        <View style={styles.card}>
-            <View style={styles.dateBox}>
-                <Text style={styles.dayOfWeek}>{dayOfWeek}</Text>
-                <Text style={styles.dateNum}>{date.getDate()}</Text>
-                <Text style={styles.dateMonth}>{date.getMonth() + 1}/{date.getFullYear()}</Text>
+        <View style={S.card}>
+            <View style={S.dateBox}>
+                <Text style={S.dayOfWeek}>{dayOfWeek}</Text>
+                <Text style={S.dateNum}>{date.getDate()}</Text>
+                <Text style={S.dateMonth}>{date.getMonth() + 1}/{date.getFullYear()}</Text>
             </View>
             <View style={{ flex: 1, paddingLeft: 12 }}>
-                <Text style={styles.timeRange}>
+                <Text style={S.timeRange}>
                     {item.start_time?.slice(0, 5)} — {item.end_time?.slice(0, 5)}
                 </Text>
-                <Text style={styles.apptInfo}>
+                <Text style={S.apptInfo}>
                     Tối đa: {item.max_appointments} ca • Đã đặt: {item.booked_count || 0} ca
                 </Text>
                 <View style={[
-                    styles.availBadge,
+                    S.availBadge,
                     { backgroundColor: item.is_available ? COLORS.greenPale : COLORS.redPale }
                 ]}>
                     <Text style={{ fontSize: 11, fontWeight: "700", color: item.is_available ? COLORS.green : COLORS.red }}>
@@ -42,9 +64,9 @@ const ScheduleCard = ({ item, onDelete, onToggle }) => {
                     </Text>
                 </View>
             </View>
-            <View style={styles.cardActions}>
+            <View style={S.cardActions}>
                 <TouchableOpacity
-                    style={styles.iconBtn}
+                    style={S.iconBtn}
                     onPress={() => onToggle(item)}
                 >
                     <MaterialCommunityIcons
@@ -55,7 +77,7 @@ const ScheduleCard = ({ item, onDelete, onToggle }) => {
                 </TouchableOpacity>
                 {(item.booked_count || 0) === 0 && (
                     <TouchableOpacity
-                        style={styles.iconBtn}
+                        style={S.iconBtn}
                         onPress={() => onDelete(item.id)}
                     >
                         <MaterialCommunityIcons name="delete-outline" size={22} color={COLORS.red} />
@@ -108,11 +130,11 @@ const CreateScheduleModal = ({ visible, onClose, onSuccess }) => {
 
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-            <View style={styles.modalHeader}>
+            <View style={S.modalHeader}>
                 <TouchableOpacity onPress={onClose}>
                     <MaterialCommunityIcons name="close" size={24} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.modalTitle}>Tạo lịch làm việc</Text>
+                <Text style={S.modalTitle}>Tạo lịch làm việc</Text>
                 <View style={{ width: 24 }} />
             </View>
             <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ padding: 16 }}>
@@ -123,15 +145,15 @@ const CreateScheduleModal = ({ visible, onClose, onSuccess }) => {
                     value={form.date}
                     onChangeText={(t) => setForm({ ...form, date: t })}
                     mode="outlined" placeholder="2025-01-15"
-                    style={styles.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
-                <View style={styles.row}>
+                <View style={S.row}>
                     <TextInput
                         label="Giờ bắt đầu *"
                         value={form.start_time}
                         onChangeText={(t) => setForm({ ...form, start_time: t })}
                         mode="outlined" placeholder="08:00"
-                        style={[styles.input, { flex: 1 }]}
+                        style={[S.input, { flex: 1 }]}
                         outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                     />
                     <TextInput
@@ -139,7 +161,7 @@ const CreateScheduleModal = ({ visible, onClose, onSuccess }) => {
                         value={form.end_time}
                         onChangeText={(t) => setForm({ ...form, end_time: t })}
                         mode="outlined" placeholder="12:00"
-                        style={[styles.input, { flex: 1 }]}
+                        style={[S.input, { flex: 1 }]}
                         outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                     />
                 </View>
@@ -148,7 +170,7 @@ const CreateScheduleModal = ({ visible, onClose, onSuccess }) => {
                     value={form.max_appointments}
                     onChangeText={(t) => setForm({ ...form, max_appointments: t })}
                     mode="outlined" keyboardType="numeric"
-                    style={styles.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
                 <Button
                     mode="contained" onPress={save} loading={saving} disabled={saving}
@@ -172,7 +194,8 @@ const DoctorSchedules = () => {
             const res = await authApis(user.token).get(endpoints["doctor-my-schedules"]);
             setSchedules(res.data);
         } catch (e) {
-            console.error(e?.response?.data || e.message);
+            console.warn("DoctorSchedules: dùng mock –", e?.response?.status || e.message);
+            setSchedules(MOCK_SCHEDULES);
         } finally {
             setLoading(false);
         }
@@ -222,16 +245,16 @@ const DoctorSchedules = () => {
     const sections = Object.entries(groupedSchedules).sort(([a], [b]) => a.localeCompare(b));
 
     return (
-        <View style={styles.container}>
+        <View style={S.container}>
             {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Lịch làm việc</Text>
+            <View style={S.header}>
+                <Text style={S.headerTitle}>Lịch làm việc</Text>
                 <TouchableOpacity
-                    style={styles.addBtn}
+                    style={S.addBtn}
                     onPress={() => setShowModal(true)}
                 >
                     <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-                    <Text style={styles.addBtnText}>Thêm lịch</Text>
+                    <Text style={S.addBtnText}>Thêm lịch</Text>
                 </TouchableOpacity>
             </View>
 
@@ -245,7 +268,7 @@ const DoctorSchedules = () => {
                     keyExtractor={([month]) => month}
                     renderItem={({ item: [month, items] }) => (
                         <View>
-                            <Text style={styles.monthHeader}>
+                            <Text style={S.monthHeader}>
                                 Tháng {month.split("-")[1]}/{month.split("-")[0]}
                             </Text>
                             {items.map((s) => (
@@ -281,55 +304,4 @@ const DoctorSchedules = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
-    header: {
-        backgroundColor: COLORS.primaryDark,
-        paddingTop: 52, paddingHorizontal: 20, paddingBottom: 16,
-        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    },
-    headerTitle: { fontSize: 20, fontWeight: "800", color: "#fff" },
-    addBtn: {
-        flexDirection: "row", alignItems: "center", gap: 6,
-        backgroundColor: "rgba(255,255,255,0.2)",
-        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    },
-    addBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-    monthHeader: {
-        fontSize: 14, fontWeight: "700", color: COLORS.textMuted,
-        paddingVertical: 10, paddingHorizontal: 4,
-    },
-    card: {
-        backgroundColor: "#fff", borderRadius: 12, padding: 12,
-        flexDirection: "row", alignItems: "center", marginBottom: 10,
-        elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.07, shadowRadius: 4,
-    },
-    dateBox: {
-        width: 56, alignItems: "center", paddingRight: 12,
-        borderRightWidth: 1, borderRightColor: COLORS.border,
-    },
-    dayOfWeek: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
-    dateNum: { fontSize: 24, fontWeight: "900", color: COLORS.text, lineHeight: 28 },
-    dateMonth: { fontSize: 10, color: COLORS.textMuted },
-    timeRange: { fontSize: 16, fontWeight: "700", color: COLORS.text },
-    apptInfo: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    availBadge: {
-        alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3,
-        borderRadius: 6, marginTop: 6,
-    },
-    cardActions: { alignItems: "center", gap: 4 },
-    iconBtn: { padding: 4 },
-    // Modal
-    modalHeader: {
-        backgroundColor: COLORS.primaryDark,
-        paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
-        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    },
-    modalTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
-    input: { backgroundColor: "#fff", marginBottom: 12 },
-    row: { flexDirection: "row", gap: 10 },
-});
-
 export default DoctorSchedules;

@@ -8,7 +8,7 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, doctorListStyles as S } from "../../styles/Styles";
 
 // Avatar bác sĩ: ưu tiên ảnh API, fallback về icon
 const DoctorAvatar = ({ uri, size = 56 }) => {
@@ -23,7 +23,7 @@ const DoctorAvatar = ({ uri, size = 56 }) => {
         );
     }
     return (
-        <View style={[styles.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
+        <View style={[S.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
             <MaterialCommunityIcons name="doctor" size={size * 0.52} color={COLORS.primary} />
         </View>
     );
@@ -112,7 +112,7 @@ const DoctorList = () => {
     return (
         <View style={Styles.container}>
             {/* Search bar */}
-            <View style={styles.searchBar}>
+            <View style={S.searchBar}>
                 <TextInput
                     placeholder="Tìm bác sĩ..."
                     value={search}
@@ -126,17 +126,17 @@ const DoctorList = () => {
                 />
             </View>
 
-            <View style={styles.chipsContainer}>
+            <View style={S.chipsContainer}>
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.chipsContent}
+                    contentContainerStyle={S.chipsContent}
                 >
                     <Chip
                         selected={selectedSpecialty === null}
                         onPress={() => setSelectedSpecialty(null)}
-                        style={[styles.chip, selectedSpecialty === null && styles.chipSelected]}
-                        textStyle={[styles.chipText, selectedSpecialty === null && styles.chipTextSelected]}
+                        style={[S.chip, selectedSpecialty === null && S.chipSelected]}
+                        textStyle={[S.chipText, selectedSpecialty === null && S.chipTextSelected]}
                         icon={selectedSpecialty === null ? "check" : undefined}
                     >
                         Tất cả
@@ -148,8 +148,8 @@ const DoctorList = () => {
                                 key={s.id}
                                 selected={isSelected}
                                 onPress={() => handleSelectSpecialty(s.id)}
-                                style={[styles.chip, isSelected && styles.chipSelected]}
-                                textStyle={[styles.chipText, isSelected && styles.chipTextSelected]}
+                                style={[S.chip, isSelected && S.chipSelected]}
+                                textStyle={[S.chipText, isSelected && S.chipTextSelected]}
                                 icon={isSelected ? "check" : undefined}
                             >
                                 {s.name}
@@ -186,51 +186,4 @@ const DoctorList = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    searchBar: {
-        padding: 12,
-        paddingHorizontal: 16,
-        backgroundColor: "#fff",
-        elevation: 2,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-    },
-    chipsContainer: {
-        height: 52,
-        backgroundColor: "#f5f6fa",
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
-    },
-    chipsContent: {
-        alignItems: "center",
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        gap: 8,
-    },
-    chip: {
-        backgroundColor: COLORS.primaryPale,
-        borderRadius: 20,
-        height: 34,
-    },
-    chipSelected: {
-        backgroundColor: COLORS.primary,
-    },
-    chipText: {
-        fontSize: 12,
-        color: COLORS.primary,
-        fontWeight: "600",
-    },
-    chipTextSelected: {
-        color: "#fff",
-    },
-    avatarFallback: {
-        backgroundColor: COLORS.primaryPale,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-});
-
 export default DoctorList;

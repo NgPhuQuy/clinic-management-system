@@ -122,7 +122,8 @@ class RegisterView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        Patient.objects.create(user=user, full_name=user.username)
+        # Patient.objects.create(user=user, full_name=user.username)
+        Patient.objects.create(user=user)
 
         return Response(
             {

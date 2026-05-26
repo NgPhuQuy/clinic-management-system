@@ -12,7 +12,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS } from "../../styles/Styles";
+import Styles, { COLORS, doctorMedicalRecordsStyles as S } from "../../styles/Styles";
 
 const TEST_TYPE_LABELS = {
     blood: "Xét nghiệm máu", urine: "Xét nghiệm nước tiểu", stool: "Xét nghiệm phân",
@@ -22,28 +22,28 @@ const TEST_TYPE_LABELS = {
 };
 
 const RecordCard = ({ item, onPress }) => (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
-        <View style={styles.cardTop}>
+    <TouchableOpacity style={S.card} onPress={onPress} activeOpacity={0.8}>
+        <View style={S.cardTop}>
             <MaterialCommunityIcons name="file-document-outline" size={22} color={COLORS.primary} />
             <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.patientName} numberOfLines={1}>
+                <Text style={S.patientName} numberOfLines={1}>
                     {item.patient_info?.full_name || `Bệnh nhân #${item.patient}`}
                 </Text>
-                <Text style={styles.dateText}>
+                <Text style={S.dateText}>
                     {new Date(item.created_at).toLocaleDateString("vi-VN")}
                 </Text>
             </View>
             {item.prescription && (
-                <View style={styles.prescBadge}>
-                    <Text style={styles.prescBadgeText}>Có đơn thuốc</Text>
+                <View style={S.prescBadge}>
+                    <Text style={S.prescBadgeText}>Có đơn thuốc</Text>
                 </View>
             )}
         </View>
-        <View style={styles.divider} />
-        <Text style={styles.diagnosisLabel}>Chẩn đoán:</Text>
-        <Text style={styles.diagnosisText} numberOfLines={2}>{item.diagnosis}</Text>
+        <View style={S.divider} />
+        <Text style={S.diagnosisLabel}>Chẩn đoán:</Text>
+        <Text style={S.diagnosisText} numberOfLines={2}>{item.diagnosis}</Text>
         {item.test_results?.length > 0 && (
-            <Text style={styles.testCount}>
+            <Text style={S.testCount}>
                 {item.test_results.length} kết quả xét nghiệm
             </Text>
         )}
@@ -84,26 +84,26 @@ const AddTestResultModal = ({ visible, onClose, recordId, onSuccess }) => {
 
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-            <View style={styles.modalHeader}>
+            <View style={S.modalHeader}>
                 <TouchableOpacity onPress={onClose}>
                     <MaterialCommunityIcons name="close" size={24} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.modalTitle}>Thêm kết quả xét nghiệm</Text>
+                <Text style={S.modalTitle}>Thêm kết quả xét nghiệm</Text>
                 <View style={{ width: 24 }} />
             </View>
             <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ padding: 16 }}>
                 <HelperText type="error" visible={!!err}>{err}</HelperText>
 
-                <Text style={styles.fieldLabel}>Loại xét nghiệm</Text>
+                <Text style={S.fieldLabel}>Loại xét nghiệm</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                    <View style={styles.typeRow}>
+                    <View style={S.typeRow}>
                         {testTypes.map(([key, label]) => (
                             <TouchableOpacity
                                 key={key}
-                                style={[styles.typeChip, form.test_type === key && styles.typeChipActive]}
+                                style={[S.typeChip, form.test_type === key && S.typeChipActive]}
                                 onPress={() => setForm({ ...form, test_type: key })}
                             >
-                                <Text style={[styles.typeChipText, form.test_type === key && { color: "#fff" }]}>
+                                <Text style={[S.typeChipText, form.test_type === key && { color: "#fff" }]}>
                                     {label}
                                 </Text>
                             </TouchableOpacity>
@@ -114,33 +114,33 @@ const AddTestResultModal = ({ visible, onClose, recordId, onSuccess }) => {
                 <TextInput
                     label="Tên xét nghiệm *" value={form.test_name}
                     onChangeText={(t) => setForm({ ...form, test_name: t })}
-                    mode="outlined" style={styles.input}
+                    mode="outlined" style={S.input}
                     outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
                 <TextInput
                     label="Kết quả *" value={form.result}
                     onChangeText={(t) => setForm({ ...form, result: t })}
-                    mode="outlined" multiline numberOfLines={3} style={styles.input}
+                    mode="outlined" multiline numberOfLines={3} style={S.input}
                     outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
-                <View style={styles.row}>
+                <View style={S.row}>
                     <TextInput
                         label="Đơn vị" value={form.unit}
                         onChangeText={(t) => setForm({ ...form, unit: t })}
-                        mode="outlined" style={[styles.input, { flex: 1 }]}
+                        mode="outlined" style={[S.input, { flex: 1 }]}
                         outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                     />
                     <TextInput
                         label="Khoảng tham chiếu" value={form.reference_range}
                         onChangeText={(t) => setForm({ ...form, reference_range: t })}
-                        mode="outlined" style={[styles.input, { flex: 1 }]}
+                        mode="outlined" style={[S.input, { flex: 1 }]}
                         outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                     />
                 </View>
                 <TextInput
                     label="Ngày xét nghiệm (YYYY-MM-DD) *" value={form.test_date}
                     onChangeText={(t) => setForm({ ...form, test_date: t })}
-                    mode="outlined" placeholder="2025-01-15" style={styles.input}
+                    mode="outlined" placeholder="2025-01-15" style={S.input}
                     outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
                 <Button
@@ -179,15 +179,15 @@ export const DoctorMedicalRecordDetail = () => {
         <>
             <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }}>
                 {/* Patient */}
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Bệnh nhân</Text>
-                    <Text style={styles.bigName}>{record.patient_info?.full_name}</Text>
-                    <Text style={styles.subMuted}>{new Date(record.created_at).toLocaleDateString("vi-VN")}</Text>
+                <View style={S.card}>
+                    <Text style={S.sectionTitle}>Bệnh nhân</Text>
+                    <Text style={S.bigName}>{record.patient_info?.full_name}</Text>
+                    <Text style={S.subMuted}>{new Date(record.created_at).toLocaleDateString("vi-VN")}</Text>
                 </View>
 
                 {/* Medical Info */}
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Thông tin bệnh án</Text>
+                <View style={S.card}>
+                    <Text style={S.sectionTitle}>Thông tin bệnh án</Text>
                     {[
                         { label: "Triệu chứng", value: record.symptoms },
                         { label: "Chẩn đoán", value: record.diagnosis },
@@ -195,20 +195,20 @@ export const DoctorMedicalRecordDetail = () => {
                         { label: "Ngày tái khám", value: record.follow_up_date },
                     ].map(({ label, value }) => (
                         value ? (
-                            <View key={label} style={styles.infoBlock}>
-                                <Text style={styles.infoLabel}>{label}</Text>
-                                <Text style={styles.infoValue}>{value}</Text>
+                            <View key={label} style={S.infoBlock}>
+                                <Text style={S.infoLabel}>{label}</Text>
+                                <Text style={S.infoValue}>{value}</Text>
                             </View>
                         ) : null
                     ))}
                 </View>
 
                 {/* Test Results */}
-                <View style={styles.card}>
-                    <View style={styles.sectionHeaderRow}>
-                        <Text style={styles.sectionTitle}>Kết quả xét nghiệm ({record.test_results?.length || 0})</Text>
+                <View style={S.card}>
+                    <View style={S.sectionHeaderRow}>
+                        <Text style={S.sectionTitle}>Kết quả xét nghiệm ({record.test_results?.length || 0})</Text>
                         <TouchableOpacity
-                            style={styles.addTestBtn}
+                            style={S.addTestBtn}
                             onPress={() => setShowTestModal(true)}
                         >
                             <MaterialCommunityIcons name="plus" size={16} color={COLORS.primary} />
@@ -217,20 +217,20 @@ export const DoctorMedicalRecordDetail = () => {
                     </View>
                     {record.test_results?.length > 0 ? (
                         record.test_results.map((t) => (
-                            <View key={t.id} style={styles.testItem}>
-                                <View style={styles.testHeader}>
-                                    <Text style={styles.testType}>{TEST_TYPE_LABELS[t.test_type] || t.test_type}</Text>
-                                    <Text style={styles.testDate}>{t.test_date}</Text>
+                            <View key={t.id} style={S.testItem}>
+                                <View style={S.testHeader}>
+                                    <Text style={S.testType}>{TEST_TYPE_LABELS[t.test_type] || t.test_type}</Text>
+                                    <Text style={S.testDate}>{t.test_date}</Text>
                                 </View>
-                                <Text style={styles.testName}>{t.test_name}</Text>
-                                <Text style={styles.testResult}>KQ: {t.result} {t.unit}</Text>
+                                <Text style={S.testName}>{t.test_name}</Text>
+                                <Text style={S.testResult}>KQ: {t.result} {t.unit}</Text>
                                 {t.reference_range && (
-                                    <Text style={styles.testRef}>Tham chiếu: {t.reference_range}</Text>
+                                    <Text style={S.testRef}>Tham chiếu: {t.reference_range}</Text>
                                 )}
                             </View>
                         ))
                     ) : (
-                        <Text style={styles.emptyText}>Chưa có kết quả xét nghiệm</Text>
+                        <Text style={S.emptyText}>Chưa có kết quả xét nghiệm</Text>
                     )}
                 </View>
 
@@ -309,53 +309,4 @@ const DoctorMedicalRecords = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    card: {
-        backgroundColor: "#fff", borderRadius: 14, padding: 14,
-        marginBottom: 2, elevation: 2,
-        shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    cardTop: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-    patientName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
-    dateText: { fontSize: 12, color: COLORS.textMuted },
-    prescBadge: { backgroundColor: COLORS.greenPale, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-    prescBadgeText: { fontSize: 11, color: COLORS.green, fontWeight: "700" },
-    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 8 },
-    diagnosisLabel: { fontSize: 12, color: COLORS.textMuted, marginBottom: 2 },
-    diagnosisText: { fontSize: 14, color: COLORS.text, fontWeight: "500" },
-    testCount: { fontSize: 12, color: COLORS.primary, marginTop: 6 },
-    // Detail styles
-    sectionTitle: { fontSize: 14, fontWeight: "700", color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 },
-    bigName: { fontSize: 20, fontWeight: "800", color: COLORS.text },
-    subMuted: { fontSize: 13, color: COLORS.textMuted, marginTop: 4 },
-    infoBlock: { marginBottom: 10 },
-    infoLabel: { fontSize: 12, color: COLORS.textMuted },
-    infoValue: { fontSize: 14, color: COLORS.text, fontWeight: "500", marginTop: 2 },
-    sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-    addTestBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.primary },
-    testItem: { backgroundColor: COLORS.bg, borderRadius: 10, padding: 10, marginBottom: 8 },
-    testHeader: { flexDirection: "row", justifyContent: "space-between" },
-    testType: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
-    testDate: { fontSize: 11, color: COLORS.textMuted },
-    testName: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginTop: 2 },
-    testResult: { fontSize: 13, color: COLORS.text, marginTop: 2 },
-    testRef: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    emptyText: { color: COLORS.textMuted, fontSize: 13, textAlign: "center", paddingVertical: 10 },
-    // Modal
-    modalHeader: {
-        backgroundColor: COLORS.primaryDark, paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
-        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    },
-    modalTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
-    input: { backgroundColor: "#fff", marginBottom: 10 },
-    row: { flexDirection: "row", gap: 10 },
-    fieldLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 8 },
-    typeRow: { flexDirection: "row", gap: 8 },
-    typeChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: "#fff" },
-    typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-    typeChipText: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
-});
-
-export default DoctorMedicalRecords;
+export default DoctorMedicalRecordDetail;

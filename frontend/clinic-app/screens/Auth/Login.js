@@ -6,7 +6,7 @@ import Apis, { authApis, endpoints } from "../../configs/Apis";
 import { useNavigation } from "@react-navigation/native";
 import { MyDispatchContext } from "../../contexts/MyContext";
 import { useContext } from "react";
-import Styles from "../../styles/Styles";
+import Styles, { loginStyles as S } from "../../styles/Styles";
 
 const Login = () => {
     const [user, setUser]       = useState({});
@@ -46,13 +46,13 @@ const Login = () => {
 
     return (
         <ScrollView style={Styles.container}>
-            <View style={styles.header}>
-                <Image source={require("../../assets/icon.png")} style={styles.logo} />
-                <Text style={styles.appTitle}>Phòng Khám Đa Khoa</Text>
-                <Text style={styles.appSub}>Hệ thống quản lý y tế trực tuyến</Text>
+            <View style={S.header}>
+                <Image source={require("../../assets/icon.png")} style={S.logo} />
+                <Text style={S.appTitle}>Phòng Khám Đa Khoa</Text>
+                <Text style={S.appSub}>Hệ thống quản lý y tế trực tuyến</Text>
             </View>
 
-            <View style={[Styles.padding, styles.form]}>
+            <View style={[Styles.padding, S.form]}>
                 <Text style={Styles.title}>Đăng nhập</Text>
 
                 <HelperText type="error" visible={!!err} style={Styles.margin}>
@@ -103,7 +103,7 @@ const Login = () => {
                     onPress={login}
                     loading={loading}
                     disabled={loading}
-                    style={styles.btn}
+                    style={S.btn}
                     buttonColor="#1565c0"
                 >
                     Đăng nhập
@@ -121,41 +121,5 @@ const Login = () => {
         </ScrollView>
     );
 };
-
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: "#1565c0",
-        padding: 40,
-        alignItems: "center",
-    },
-    logo: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        marginBottom: 12,
-    },
-    appTitle: {
-        fontSize: 22,
-        fontWeight: "bold",
-        color: "#fff",
-    },
-    appSub: {
-        fontSize: 13,
-        color: "#bbdefb",
-        marginTop: 4,
-    },
-    form: {
-        backgroundColor: "#fff",
-        margin: 16,
-        borderRadius: 16,
-        elevation: 3,
-        padding: 20,
-    },
-    btn: {
-        borderRadius: 8,
-        paddingVertical: 4,
-        marginTop: 4,
-    },
-});
 
 export default Login;
