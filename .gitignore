@@ -137,6 +137,11 @@ celerybeat.pid
 # Environments
 .env
 .envrc
+
+# Firebase credentials
+firebase-credentials.json
+*-credentials.json
+
 .venv
 env/
 venv/
