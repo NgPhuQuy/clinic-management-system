@@ -31,3 +31,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
 class PaymentInitSerializer(serializers.Serializer):
     invoice_id     = serializers.IntegerField()
     payment_method = serializers.ChoiceField(choices=Payment.Method.choices)
+    # Tuỳ chọn — nếu không truyền, backend tự lấy invoice.remaining
+    amount         = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    # Ghi chú hiển thị trên màn thanh toán / admin (vd: "Phí khám", "Tiền thuốc")
+    note           = serializers.CharField(max_length=255, required=False, allow_blank=True)

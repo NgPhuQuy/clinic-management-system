@@ -54,6 +54,12 @@ const PaymentScreen = () => {
             return;
         }
 
+        // invoiceId bắt buộc — appointmentId chỉ là tham chiếu hiển thị
+        if (!invoiceId) {
+            Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
+            return;
+        }
+
         if (!invoiceId) {
             Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
             return;
