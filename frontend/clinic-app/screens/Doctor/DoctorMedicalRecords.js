@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
+import { DatePickerField } from "../../components/DatePickerField";
 
 const TEST_TYPE_LABELS = {
     blood: "XN Máu", urine: "XN Nước tiểu", stool: "XN Phân",
@@ -134,11 +135,10 @@ const FillResultModal = ({ visible, test, onClose, onSuccess }) => {
                             outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                         />
                     </View>
-                    <TextInput
-                        label="Ngày xét nghiệm" value={form.test_date}
-                        onChangeText={(t) => setForm({ ...form, test_date: t })}
-                        mode="outlined" style={styles.input}
-                        outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    <DatePickerField
+                        label="Ngày xét nghiệm"
+                        value={form.test_date}
+                        onChange={(v) => setForm({ ...form, test_date: v })}
                     />
                     <Button mode="contained" onPress={save} loading={saving}
                         style={{ borderRadius: 10 }} buttonColor={COLORS.green}>
@@ -288,12 +288,10 @@ const AddTestResultModal = ({ visible, onClose, recordId, onSuccess }) => {
                     </>
                 )}
 
-                <TextInput
-                    label="Ngày xét nghiệm" value={form.test_date}
-                    onChangeText={(t) => setForm({ ...form, test_date: t })}
-                    mode="outlined" style={styles.input}
-                    outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
-                    left={<TextInput.Icon icon="calendar" />}
+                <DatePickerField
+                    label="Ngày xét nghiệm"
+                    value={form.test_date}
+                    onChange={(v) => setForm({ ...form, test_date: v })}
                 />
 
                 <Button
@@ -311,7 +309,8 @@ const AddTestResultModal = ({ visible, onClose, recordId, onSuccess }) => {
 export const DoctorMedicalRecordDetail = () => {
     const route = useRoute();
     const user = useContext(MyUserContext);
-    const { id } = route.params;
+    const { id, appointmentStatus } = route.params;
+    const canEdit = !appointmentStatus || (appointmentStatus !== "completed" && appointmentStatus !== "cancelled");
     const [record, setRecord] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showTestModal, setShowTestModal] = useState(false);
@@ -360,10 +359,12 @@ export const DoctorMedicalRecordDetail = () => {
                         <Text style={styles.sectionTitle}>
                             Cận lâm sàng ({record.test_results?.length || 0})
                         </Text>
-                        <TouchableOpacity style={styles.addTestBtn} onPress={() => setShowTestModal(true)}>
-                            <MaterialCommunityIcons name="plus" size={16} color={COLORS.primary} />
-                            <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: "700" }}>Thêm</Text>
-                        </TouchableOpacity>
+                        {canEdit && (
+                            <TouchableOpacity style={styles.addTestBtn} onPress={() => setShowTestModal(true)}>
+                                <MaterialCommunityIcons name="plus" size={16} color={COLORS.primary} />
+                                <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: "700" }}>Thêm</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                     {record.test_results?.length > 0 ? (
                         record.test_results.map((t) => (
@@ -399,12 +400,12 @@ export const DoctorMedicalRecordDetail = () => {
                                             <Text style={styles.testRef}>Tham chiếu: {t.reference_range}</Text>
                                         ) : null}
                                     </>
-                                ) : (
+                                ) : canEdit ? (
                                     <TouchableOpacity style={styles.fillBtn} onPress={() => setFillTarget(t)}>
                                         <MaterialCommunityIcons name="pencil-outline" size={14} color={COLORS.primary} />
                                         <Text style={styles.fillBtnText}>Nhập kết quả</Text>
                                     </TouchableOpacity>
-                                )}
+                                ) : null}
                             </View>
                         ))
                     ) : (

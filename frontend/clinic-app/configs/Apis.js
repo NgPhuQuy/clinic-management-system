@@ -50,6 +50,10 @@ export const endpoints = {
     'payment-init': '/payments/init/',
     'payment-confirm': (id) => `/payments/${id}/confirm/`,
     'payment-detail': (id) => `/payments/${id}/`,
+    'momo-return':     '/payments/momo/return/',
+    'vnpay-return':    '/payments/vnpay/return/',
+    'vnpay-ipn':       '/payments/vnpay/ipn/',
+    'payment-simulate': (id) => `/payments/${id}/simulate/`,
 
     'medicine-categories': '/medicine-categories/',
     'medicines': '/medicines/',

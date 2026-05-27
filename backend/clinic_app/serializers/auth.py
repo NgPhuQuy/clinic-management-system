@@ -25,10 +25,58 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    doctor_info = serializers.SerializerMethodField()
+    staff_info  = serializers.SerializerMethodField()
+    avatar_url  = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ("id", "email", "username", "role", "avatar", "is_active", "push_token")
-        read_only_fields = ("id", "created_at", "is_active")
+        fields = (
+            "id", "email", "username", "first_name", "last_name",
+            "role", "avatar", "avatar_url", "is_active", "push_token",
+            "doctor_info", "staff_info",
+        )
+        read_only_fields = ("id", "is_active")
+
+    def get_avatar_url(self, obj):
+        if not obj.avatar:
+            return None
+        try:
+            return obj.avatar.url
+        except Exception:
+            return str(obj.avatar) or None
+
+    def get_doctor_info(self, obj):
+        if obj.role != "doctor":
+            return None
+        try:
+            d = obj.doctor_profile
+            return {
+                "id":               d.id,
+                "specialty":        d.specialty.name if d.specialty else None,
+                "license_number":   d.license_number,
+                "experience_years": d.experience_years,
+                "consultation_fee": str(d.consultation_fee),
+                "is_available":     d.is_available,
+            }
+        except Exception:
+            return None
+
+    def get_staff_info(self, obj):
+        if obj.role not in ("staff", "admin"):
+            return None
+        try:
+            s = obj.staff_profile
+            return {
+                "id":               s.id,
+                "position":         s.position,
+                "position_display": s.get_position_display(),
+                "department":       s.department,
+                "phone":            s.phone,
+                "employee_id":      s.employee_id,
+            }
+        except Exception:
+            return None
 
 
 class ChangePasswordSerializer(serializers.Serializer):

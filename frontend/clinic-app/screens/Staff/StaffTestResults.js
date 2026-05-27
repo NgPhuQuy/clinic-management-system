@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
+import { DatePickerField } from "../../components/DatePickerField";
 
 const TEST_TYPE_LABELS = {
     blood: "XN Máu", urine: "XN Nước tiểu", stool: "XN Phân",
@@ -98,12 +99,10 @@ const FillResultModal = ({ visible, test, onClose, onSuccess }) => {
                             outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                         />
                     </View>
-                    <TextInput
-                        label="Ngày xét nghiệm" value={form.test_date}
-                        onChangeText={(t) => setForm({ ...form, test_date: t })}
-                        mode="outlined" style={styles.input}
-                        outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
-                        left={<TextInput.Icon icon="calendar" />}
+                    <DatePickerField
+                        label="Ngày xét nghiệm"
+                        value={form.test_date}
+                        onChange={(v) => setForm({ ...form, test_date: v })}
                     />
                     <Button mode="contained" onPress={save} loading={saving}
                         style={{ borderRadius: 10, marginTop: 4 }} buttonColor={COLORS.green}>

@@ -16,6 +16,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, staffInventoryStyles as S } from "../../styles/Styles";
+import { DatePickerField } from "../../components/DatePickerField";
 
 
 const MOCK_INVENTORY = [
@@ -247,12 +248,10 @@ const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
                         outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                     />
                 </View>
-                <TextInput
-                    label="Hạn sử dụng (YYYY-MM-DD) *" value={form.expiry_date}
-                    onChangeText={(t) => setForm({ ...form, expiry_date: t })}
-                    mode="outlined" placeholder="2026-12-31"
-                    style={S.input}
-                    outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                <DatePickerField
+                    label="Hạn sử dụng *"
+                    value={form.expiry_date}
+                    onChange={(v) => setForm({ ...form, expiry_date: v })}
                 />
                 <View style={S.row}>
                     <TextInput

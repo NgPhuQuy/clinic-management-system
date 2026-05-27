@@ -1,6 +1,6 @@
-import { StyleSheet, Platform, Dimensions } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 
-const { width: SCREEN_W } = Dimensions.get("window");
+const SCREEN_W = 375;
 
 // ─────────────────────────────── COLOR PALETTE ───────────────────────────────
 export const COLORS = {

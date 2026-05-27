@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 import requests
 
-from ..models import Doctor, Patient
+from ..models import Doctor, Patient, Notification
 from ..permissions import IsAuthenticatedWithValidToken
 from ..serializers import ChangePasswordSerializer, RegisterSerializer, UserSerializer
 
@@ -85,6 +85,13 @@ class RegisterView(generics.CreateAPIView):
         user.first_name = user.username
         user.save(update_fields=["first_name"])
         Patient.objects.create(user=user)
+
+        Notification.objects.create(
+            user=user,
+            title="Chào mừng bạn đến với ClinicCare!",
+            message="Tài khoản của bạn đã được đăng ký thành công. Bắt đầu đặt lịch khám ngay!",
+            type=Notification.Type.SYSTEM,
+        )
 
         return Response(
             {

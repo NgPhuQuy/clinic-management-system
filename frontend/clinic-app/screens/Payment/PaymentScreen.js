@@ -58,12 +58,6 @@ const PaymentScreen = () => {
             return;
         }
 
-        // invoiceId bắt buộc — appointmentId chỉ là tham chiếu hiển thị
-        if (!invoiceId) {
-            Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
-            return;
-        }
-
         if (!invoiceId) {
             Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
             return;
@@ -117,18 +111,31 @@ const PaymentScreen = () => {
     return (
         <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
 
+            {/* Custom header thay cho navigation header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => nav.goBack()} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Thanh toán</Text>
+                <View style={{ width: 38 }} />
+            </View>
+
             <View style={[Styles.card, { margin: 16, marginBottom: 8 }]}>
                 <Text style={Styles.sectionHeader}>Thông tin thanh toán</Text>
-                <View style={PS.infoRow}>
-                    <Text style={PS.infoLabel}>Bác sĩ</Text>
-                    <Text style={PS.infoValue}>BS. {doctorName}</Text>
-                </View>
-                <View style={PS.infoRow}>
-                    <Text style={PS.infoLabel}>Ngày khám</Text>
-                    <Text style={PS.infoValue}>
-                        {new Date(appointmentDate).toLocaleString("vi-VN")}
-                    </Text>
-                </View>
+                {doctorName ? (
+                    <View style={PS.infoRow}>
+                        <Text style={PS.infoLabel}>Bác sĩ</Text>
+                        <Text style={PS.infoValue}>BS. {doctorName}</Text>
+                    </View>
+                ) : null}
+                {appointmentDate ? (
+                    <View style={PS.infoRow}>
+                        <Text style={PS.infoLabel}>Ngày khám</Text>
+                        <Text style={PS.infoValue}>
+                            {new Date(appointmentDate).toLocaleString("vi-VN")}
+                        </Text>
+                    </View>
+                ) : null}
                 <View style={PS.divider} />
                 <View style={[PS.infoRow, { marginTop: 4 }]}>
                     <Text style={[PS.infoLabel, { fontWeight: "700", color: COLORS.text }]}>
@@ -206,6 +213,16 @@ const PaymentScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    header: {
+        backgroundColor: COLORS.primary,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 12,
+        paddingVertical: 14,
+    },
+    backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+    headerTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
     onlineNote: {
         flexDirection: "row",
         alignItems: "center",

@@ -245,8 +245,8 @@ AGORA_TOKEN_EXPIRY    = int(os.getenv("AGORA_TOKEN_EXPIRY"))
 # ─────────────────────────────────────────────
 # BUSINESS CONSTANTS
 # ─────────────────────────────────────────────
-CONSULTATION_WINDOW_BEFORE_MINUTES = 15
-CONSULTATION_WINDOW_AFTER_MINUTES = 30
+CONSULTATION_WINDOW_BEFORE_MINUTES = 30
+CONSULTATION_WINDOW_AFTER_MINUTES = 120
 INVENTORY_NEAR_EXPIRY_DAYS = 30
 
 # ─────────────────────────────────────────────

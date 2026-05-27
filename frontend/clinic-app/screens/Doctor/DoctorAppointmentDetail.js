@@ -14,6 +14,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, doctorAppointmentDetailStyles as S } from "../../styles/Styles";
+import { DatePickerField } from "../../components/DatePickerField";
 
 const STATUS_CONFIG = {
     pending: { label: "Chờ xác nhận", color: COLORS.orange },
@@ -93,12 +94,11 @@ const MedicalRecordModal = ({ visible, onClose, appointmentId, patientId, onSucc
                     mode="outlined" multiline numberOfLines={3}
                     style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
                 />
-                <TextInput
-                    label="Ngày tái khám (YYYY-MM-DD)"
+                <DatePickerField
+                    label="Ngày tái khám"
                     value={form.follow_up_date}
-                    onChangeText={(t) => setForm({ ...form, follow_up_date: t })}
-                    mode="outlined" placeholder="2025-01-01"
-                    style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    onChange={(v) => setForm({ ...form, follow_up_date: v })}
+                    clearLabel="Xóa ngày tái khám"
                 />
                 <Button
                     mode="contained" onPress={save} loading={saving} disabled={saving}
@@ -126,6 +126,7 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
     });
     const [allMedicines, setAllMedicines] = useState([]);
     const [showMedPicker, setShowMedPicker] = useState(false);
+    const [medSearch, setMedSearch] = useState("");
 
     useEffect(() => {
         if (visible) loadMedicines();
@@ -242,7 +243,7 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
                         {/* Chọn thuốc */}
                         <TouchableOpacity
                             style={S.pickerBtn}
-                            onPress={() => setShowMedPicker(true)}
+                            onPress={() => { setShowMedPicker(v => !v); setMedSearch(""); }}
                         >
                             <Text style={{ color: medForm.medicine ? COLORS.text : COLORS.textLight }}>
                                 {selectedMed ? `${selectedMed.code} - ${selectedMed.name}` : "Chọn thuốc..."}
@@ -252,20 +253,35 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
 
                         {showMedPicker && (
                             <View style={S.medDropdown}>
-                                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                                    {allMedicines.map((m) => (
-                                        <TouchableOpacity
-                                            key={m.id}
-                                            style={S.medOption}
-                                            onPress={() => {
-                                                setMedForm({ ...medForm, medicine: m.id });
-                                                setShowMedPicker(false);
-                                            }}
-                                        >
-                                            <Text style={S.medOptionText}>{m.code} - {m.name}</Text>
-                                            <Text style={S.medOptionSub}>{m.unit} • {Number(m.price).toLocaleString("vi-VN")}đ</Text>
-                                        </TouchableOpacity>
-                                    ))}
+                                <RNTextInput
+                                    value={medSearch}
+                                    onChangeText={setMedSearch}
+                                    placeholder="Tìm theo tên hoặc mã thuốc..."
+                                    placeholderTextColor={COLORS.textLight}
+                                    style={mdStyles.searchInput}
+                                    autoFocus
+                                />
+                                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                                    {allMedicines
+                                        .filter(m => {
+                                            const q = medSearch.toLowerCase();
+                                            return !q || m.name.toLowerCase().includes(q) || (m.code || "").toLowerCase().includes(q);
+                                        })
+                                        .map((m) => (
+                                            <TouchableOpacity
+                                                key={m.id}
+                                                style={S.medOption}
+                                                onPress={() => {
+                                                    setMedForm({ ...medForm, medicine: m.id });
+                                                    setShowMedPicker(false);
+                                                    setMedSearch("");
+                                                }}
+                                            >
+                                                <Text style={S.medOptionText}>{m.code} - {m.name}</Text>
+                                                <Text style={S.medOptionSub}>{m.unit} • {Number(m.price).toLocaleString("vi-VN")}đ</Text>
+                                            </TouchableOpacity>
+                                        ))
+                                    }
                                 </ScrollView>
                             </View>
                         )}
@@ -321,6 +337,117 @@ const PrescriptionModal = ({ visible, onClose, medicalRecordId, patientId, onSuc
     );
 };
 
+// Modal xem chi tiết đơn thuốc
+const PrescriptionDetailModal = ({ visible, prescription, onClose }) => {
+    if (!prescription) return null;
+    const isDispensed = prescription.status === "dispensed";
+    return (
+        <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+            <View style={S.modalHeader}>
+                <TouchableOpacity onPress={onClose}>
+                    <MaterialCommunityIcons name="close" size={24} color="#fff" />
+                </TouchableOpacity>
+                <Text style={S.modalTitle}>Đơn thuốc #{prescription.id}</Text>
+                <View style={{ width: 40 }} />
+            </View>
+            <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
+                {/* Status row */}
+                <View style={pdStyles.statusRow}>
+                    <MaterialCommunityIcons name="pill" size={20} color={COLORS.orange} />
+                    <View style={[pdStyles.badge, { backgroundColor: isDispensed ? COLORS.green + "22" : COLORS.orange + "22" }]}>
+                        <Text style={[pdStyles.badgeText, { color: isDispensed ? COLORS.green : COLORS.orange }]}>
+                            {isDispensed ? "Đã cấp phát" : "Chờ cấp phát"}
+                        </Text>
+                    </View>
+                    <Text style={pdStyles.dateText}>
+                        {new Date(prescription.created_at).toLocaleDateString("vi-VN")}
+                    </Text>
+                </View>
+
+                {prescription.notes ? (
+                    <View style={pdStyles.notesBox}>
+                        <Text style={pdStyles.notesLabel}>Ghi chú đơn thuốc</Text>
+                        <Text style={pdStyles.notesText}>{prescription.notes}</Text>
+                    </View>
+                ) : null}
+
+                {/* Medicine list */}
+                <Text style={pdStyles.sectionTitle}>
+                    DANH SÁCH THUỐC ({prescription.details?.length || 0} loại)
+                </Text>
+                {(prescription.details || []).map((d, idx) => (
+                    <View key={d.id ?? idx} style={pdStyles.medCard}>
+                        <View style={pdStyles.medCardTop}>
+                            <Text style={pdStyles.medName} numberOfLines={1}>{d.medicine_name}</Text>
+                            <Text style={pdStyles.medAmount}>
+                                {Number(d.subtotal || 0).toLocaleString("vi-VN")}đ
+                            </Text>
+                        </View>
+                        <View style={pdStyles.medMeta}>
+                            <Text style={pdStyles.metaItem}>
+                                <Text style={pdStyles.metaLabel}>Số lượng: </Text>
+                                {d.quantity} {d.medicine_unit}
+                            </Text>
+                            <Text style={pdStyles.metaItem}>
+                                <Text style={pdStyles.metaLabel}>Liều dùng: </Text>
+                                {d.dosage}
+                            </Text>
+                            {!!d.frequency && (
+                                <Text style={pdStyles.metaItem}>
+                                    <Text style={pdStyles.metaLabel}>Tần suất: </Text>
+                                    {d.frequency}
+                                </Text>
+                            )}
+                            {!!d.duration_days && (
+                                <Text style={pdStyles.metaItem}>
+                                    <Text style={pdStyles.metaLabel}>Thời gian: </Text>
+                                    {d.duration_days} ngày
+                                </Text>
+                            )}
+                            {!!d.instructions && (
+                                <Text style={pdStyles.metaItem}>
+                                    <Text style={pdStyles.metaLabel}>Hướng dẫn: </Text>
+                                    {d.instructions}
+                                </Text>
+                            )}
+                        </View>
+                    </View>
+                ))}
+
+                {/* Total */}
+                <View style={pdStyles.totalRow}>
+                    <Text style={pdStyles.totalLabel}>Tổng cộng</Text>
+                    <Text style={pdStyles.totalValue}>
+                        {Number(prescription.total_amount || 0).toLocaleString("vi-VN")}đ
+                    </Text>
+                </View>
+                <View style={{ height: 16 }} />
+            </ScrollView>
+        </Modal>
+    );
+};
+
+const pdStyles = StyleSheet.create({
+    statusRow:   { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#fff", borderRadius: 12, padding: 14, elevation: 2 },
+    badge:       { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+    badgeText:   { fontSize: 12, fontWeight: "700" },
+    dateText:    { fontSize: 12, color: COLORS.textMuted, marginLeft: "auto" },
+    notesBox:    { backgroundColor: "#fff", borderRadius: 12, padding: 14, elevation: 2 },
+    notesLabel:  { fontSize: 11, fontWeight: "700", color: COLORS.textMuted, textTransform: "uppercase", marginBottom: 4 },
+    notesText:   { fontSize: 14, color: COLORS.text },
+    sectionTitle:{ fontSize: 11, fontWeight: "700", color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
+    medCard:     { backgroundColor: "#fff", borderRadius: 12, padding: 14, elevation: 2 },
+    medCardTop:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+    medName:     { fontSize: 15, fontWeight: "700", color: COLORS.text, flex: 1, marginRight: 8 },
+    medAmount:   { fontSize: 14, fontWeight: "700", color: COLORS.primary },
+    medMeta:     { gap: 4 },
+    metaItem:    { fontSize: 13, color: COLORS.text },
+    metaLabel:   { color: COLORS.textMuted },
+    totalRow:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: COLORS.primary, borderRadius: 12, padding: 16 },
+    totalLabel:  { fontSize: 15, fontWeight: "700", color: "#fff" },
+    totalValue:  { fontSize: 18, fontWeight: "800", color: "#fff" },
+});
+
 const DoctorAppointmentDetail = () => {
     const nav = useNavigation();
     const route = useRoute();
@@ -329,9 +456,11 @@ const DoctorAppointmentDetail = () => {
 
     const [appt, setAppt] = useState(null);
     const [record, setRecord] = useState(null);
+    const [prescription, setPrescription] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showRecordModal, setShowRecordModal] = useState(false);
     const [showPrescModal, setShowPrescModal] = useState(false);
+    const [showPrescDetail, setShowPrescDetail] = useState(false);
 
     const load = async () => {
         try {
@@ -343,7 +472,18 @@ const DoctorAppointmentDetail = () => {
                     params: { appointment: id }
                 });
                 const records = rRes.data.results || rRes.data;
-                if (records.length > 0) setRecord(records[0]);
+                if (records.length > 0) {
+                    setRecord(records[0]);
+                    // Fetch prescription for this medical record
+                    try {
+                        const pRes = await authApis(user.token).get(endpoints["prescriptions"], {
+                            params: { medical_record: records[0].id }
+                        });
+                        const prescs = pRes.data.results || pRes.data;
+                        if (prescs.length > 0) setPrescription(prescs[0]);
+                        else setPrescription(null);
+                    } catch (_) { setPrescription(null); }
+                }
             } catch (e) { /* no record yet */ }
         } catch (e) {
             console.error(e?.response?.data || e.message);
@@ -359,7 +499,16 @@ const DoctorAppointmentDetail = () => {
             await authApis(user.token).patch(endpoints["appointment-status"](id), { status: newStatus });
             setAppt({ ...appt, status: newStatus });
         } catch (e) {
-            Alert.alert("Lỗi", e?.response?.data?.status?.[0] || "Không thể cập nhật!");
+            const data = e?.response?.data;
+            console.error("updateStatus error:", data ?? e);
+            let msg = "Không thể cập nhật!";
+            if (data) {
+                if (typeof data === "string") msg = data;
+                else if (data.detail) msg = data.detail;
+                else if (data.status?.[0]) msg = data.status[0];
+                else msg = Object.values(data).flat().join("\n");
+            }
+            Alert.alert("Lỗi", msg);
         }
     };
 
@@ -403,12 +552,35 @@ const DoctorAppointmentDetail = () => {
                     <InfoRow icon="note-outline" label="Ghi chú" value={appt.notes} />
                 </View>
 
+                {/* Online Consultation Room */}
+                {appt.consultation_id && !["cancelled", "no_show"].includes(appt.status) && (
+                    <TouchableOpacity
+                        style={[S.card, { borderLeftWidth: 4, borderLeftColor: COLORS.purple }]}
+                        onPress={() => nav.navigate("consultation-room", { consultationId: appt.consultation_id })}
+                        activeOpacity={0.85}
+                    >
+                        <View style={S.cardHeader}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                                <MaterialCommunityIcons name="video-outline" size={20} color={COLORS.purple} />
+                                <Text style={[S.cardTitle, { color: COLORS.purple }]}>Phòng khám trực tuyến</Text>
+                            </View>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                                <Text style={{ color: COLORS.purple, fontWeight: "600", fontSize: 13 }}>Vào phòng</Text>
+                                <MaterialCommunityIcons name="chevron-right" size={16} color={COLORS.purple} />
+                            </View>
+                        </View>
+                        <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>
+                            Chat · Video call · Phòng chờ trực tuyến
+                        </Text>
+                    </TouchableOpacity>
+                )}
+
                 {/* Medical Record */}
                 {record ? (
                     <View style={S.card}>
                         <View style={S.cardHeader}>
                             <Text style={S.cardTitle}>Hồ sơ bệnh án</Text>
-                            <TouchableOpacity onPress={() => nav.navigate("doctor-medical-record-detail", { id: record.id })}>
+                            <TouchableOpacity onPress={() => nav.navigate("doctor-medical-record-detail", { id: record.id, appointmentStatus: appt?.status })}>
                                 <Text style={{ color: COLORS.primary, fontWeight: "600", fontSize: 13 }}>Xem chi tiết</Text>
                             </TouchableOpacity>
                         </View>
@@ -427,6 +599,74 @@ const DoctorAppointmentDetail = () => {
                         </View>
                     )
                 )}
+
+                {/* Test Results (Cận lâm sàng) */}
+                {record && (
+                    <View style={S.card}>
+                        <View style={S.cardHeader}>
+                            <Text style={S.cardTitle}>
+                                Cận lâm sàng ({record.test_results?.length || 0})
+                            </Text>
+                            <TouchableOpacity onPress={() => nav.navigate("doctor-medical-record-detail", { id: record.id, appointmentStatus: appt.status })}>
+                                <Text style={{ color: COLORS.primary, fontWeight: "600", fontSize: 13 }}>
+                                    {appt.status === "in_progress" ? "Thêm / Quản lý" : "Xem chi tiết"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                        {record.test_results?.length > 0 ? (
+                            record.test_results.map(t => (
+                                <View key={t.id} style={testStyles.row}>
+                                    <View style={[testStyles.dot, { backgroundColor: t.status === "completed" ? COLORS.green : COLORS.orange }]} />
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={testStyles.name} numberOfLines={1}>{t.test_name}</Text>
+                                        {t.result ? (
+                                            <Text style={testStyles.result}>KQ: {t.result} {t.unit || ""}</Text>
+                                        ) : (
+                                            <Text style={testStyles.pending}>Chờ kết quả</Text>
+                                        )}
+                                    </View>
+                                    <View style={[testStyles.badge, { backgroundColor: t.status === "completed" ? COLORS.green + "20" : COLORS.orange + "20" }]}>
+                                        <Text style={[testStyles.badgeText, { color: t.status === "completed" ? COLORS.green : COLORS.orange }]}>
+                                            {t.status === "completed" ? "Có KQ" : "Chờ KQ"}
+                                        </Text>
+                                    </View>
+                                </View>
+                            ))
+                        ) : (
+                            <Text style={{ color: COLORS.textMuted, fontSize: 13 }}>Chưa có xét nghiệm nào</Text>
+                        )}
+                    </View>
+                )}
+
+                {/* Prescription Card */}
+                {prescription ? (
+                    <TouchableOpacity style={S.card} onPress={() => setShowPrescDetail(true)} activeOpacity={0.8}>
+                        <View style={S.cardHeader}>
+                            <Text style={S.cardTitle}>Đơn thuốc</Text>
+                            <View style={{
+                                borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3,
+                                backgroundColor: prescription.status === "dispensed" ? COLORS.green + "22" : COLORS.orange + "22",
+                            }}>
+                                <Text style={{
+                                    fontSize: 11, fontWeight: "700",
+                                    color: prescription.status === "dispensed" ? COLORS.green : COLORS.orange,
+                                }}>
+                                    {prescription.status === "dispensed" ? "Đã cấp phát" : "Chờ cấp phát"}
+                                </Text>
+                            </View>
+                        </View>
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+                            <Text style={{ color: COLORS.textMuted, fontSize: 13 }}>
+                                {prescription.details?.length || 0} loại thuốc
+                                {prescription.total_amount ? ` • ${Number(prescription.total_amount).toLocaleString("vi-VN")}đ` : ""}
+                            </Text>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                                <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: "600" }}>Xem chi tiết</Text>
+                                <MaterialCommunityIcons name="chevron-right" size={16} color={COLORS.primary} />
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                ) : null}
 
                 {/* Action Buttons */}
                 <View style={S.actions}>
@@ -473,7 +713,7 @@ const DoctorAppointmentDetail = () => {
                                     Ghi hồ sơ bệnh án
                                 </Button>
                             )}
-                            {record && (
+                            {record && !prescription && (
                                 <Button
                                     mode="contained"
                                     icon="pill"
@@ -522,7 +762,37 @@ const DoctorAppointmentDetail = () => {
                 patientId={appt.patient}
                 onSuccess={() => { load(); }}
             />
+            <PrescriptionDetailModal
+                visible={showPrescDetail}
+                prescription={prescription}
+                onClose={() => setShowPrescDetail(false)}
+            />
         </>
     );
 };
+const testStyles = StyleSheet.create({
+    row: {
+        flexDirection: "row", alignItems: "center", gap: 10,
+        paddingVertical: 7, borderTopWidth: 1, borderTopColor: COLORS.border,
+    },
+    dot: { width: 8, height: 8, borderRadius: 4 },
+    name: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+    result: { fontSize: 12, color: COLORS.primary, marginTop: 1 },
+    pending: { fontSize: 12, color: COLORS.orange, fontStyle: "italic", marginTop: 1 },
+    badge: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+    badgeText: { fontSize: 10, fontWeight: "700" },
+});
+
+const mdStyles = StyleSheet.create({
+    searchInput: {
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        fontSize: 13,
+        color: COLORS.text,
+        backgroundColor: "#f8f9fa",
+    },
+});
+
 export default DoctorAppointmentDetail;

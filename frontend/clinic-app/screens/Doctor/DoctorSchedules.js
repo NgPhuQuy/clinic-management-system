@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, doctorSchedulesStyles as S } from "../../styles/Styles";
+import { DatePickerField, TimePickerField } from "../../components/DatePickerField";
 
 
 const MOCK_SCHEDULES = (() => {
@@ -33,16 +34,31 @@ const MOCK_SCHEDULES = (() => {
 
 const DAYS_VN = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
-const ScheduleCard = ({ item, onDelete, onToggle }) => {
+const pastToggleStyle = StyleSheet.create({
+    bar: {
+        flexDirection: "row", alignItems: "center", gap: 6,
+        paddingHorizontal: 16, paddingVertical: 10,
+        backgroundColor: "#f5f7fa",
+        borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    },
+    txt: { flex: 1, fontSize: 13, color: COLORS.textMuted, fontWeight: "600" },
+});
+
+const ScheduleCard = ({ item, onDelete, onToggle, isPast }) => {
     const date = new Date(item.date + "T00:00:00");
     const dayOfWeek = DAYS_VN[date.getDay()];
 
     return (
-        <View style={S.card}>
+        <View style={[S.card, isPast && { opacity: 0.5 }]}>
             <View style={S.dateBox}>
                 <Text style={S.dayOfWeek}>{dayOfWeek}</Text>
                 <Text style={S.dateNum}>{date.getDate()}</Text>
                 <Text style={S.dateMonth}>{date.getMonth() + 1}/{date.getFullYear()}</Text>
+                {isPast && (
+                    <Text style={{ fontSize: 9, fontWeight: "700", color: COLORS.textMuted, marginTop: 2 }}>
+                        ĐÃ QUA
+                    </Text>
+                )}
             </View>
             <View style={{ flex: 1, paddingLeft: 12 }}>
                 <Text style={S.timeRange}>
@@ -93,15 +109,10 @@ const CreateScheduleModal = ({ visible, onClose, onSuccess }) => {
     const [err, setErr] = useState(null);
 
     const validate = () => {
-        if (!form.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            setErr("Ngày phải theo định dạng YYYY-MM-DD"); return false;
-        }
-        if (!form.start_time.match(/^\d{2}:\d{2}$/)) {
-            setErr("Giờ bắt đầu phải theo định dạng HH:MM"); return false;
-        }
-        if (!form.end_time.match(/^\d{2}:\d{2}$/)) {
-            setErr("Giờ kết thúc phải theo định dạng HH:MM"); return false;
-        }
+        if (!form.date)       { setErr("Vui lòng chọn ngày làm việc!"); return false; }
+        if (!form.start_time) { setErr("Vui lòng chọn giờ bắt đầu!"); return false; }
+        if (!form.end_time)   { setErr("Vui lòng chọn giờ kết thúc!"); return false; }
+        if (form.start_time >= form.end_time) { setErr("Giờ kết thúc phải sau giờ bắt đầu!"); return false; }
         return true;
     };
 
@@ -111,6 +122,7 @@ const CreateScheduleModal = ({ visible, onClose, onSuccess }) => {
             setSaving(true); setErr(null);
             await authApis(user.token).post(endpoints["schedules"], {
                 ...form,
+                doctor: user.doctor_info?.id,
                 max_appointments: parseInt(form.max_appointments) || 10,
             });
             onSuccess();
@@ -136,30 +148,26 @@ const CreateScheduleModal = ({ visible, onClose, onSuccess }) => {
             <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ padding: 16 }}>
                 <HelperText type="error" visible={!!err}>{err}</HelperText>
 
-                <TextInput
-                    label="Ngày (YYYY-MM-DD) *"
+                <DatePickerField
+                    label="Ngày làm việc *"
                     value={form.date}
-                    onChangeText={(t) => setForm({ ...form, date: t })}
-                    mode="outlined" placeholder="2025-01-15"
-                    style={S.input} outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
+                    onChange={(v) => setForm({ ...form, date: v })}
                 />
                 <View style={S.row}>
-                    <TextInput
-                        label="Giờ bắt đầu *"
-                        value={form.start_time}
-                        onChangeText={(t) => setForm({ ...form, start_time: t })}
-                        mode="outlined" placeholder="08:00"
-                        style={[S.input, { flex: 1 }]}
-                        outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
-                    />
-                    <TextInput
-                        label="Giờ kết thúc *"
-                        value={form.end_time}
-                        onChangeText={(t) => setForm({ ...form, end_time: t })}
-                        mode="outlined" placeholder="12:00"
-                        style={[S.input, { flex: 1 }]}
-                        outlineColor={COLORS.border} activeOutlineColor={COLORS.primary}
-                    />
+                    <View style={{ flex: 1 }}>
+                        <TimePickerField
+                            label="Giờ bắt đầu *"
+                            value={form.start_time}
+                            onChange={(v) => setForm({ ...form, start_time: v })}
+                        />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <TimePickerField
+                            label="Giờ kết thúc *"
+                            value={form.end_time}
+                            onChange={(v) => setForm({ ...form, end_time: v })}
+                        />
+                    </View>
                 </View>
                 <TextInput
                     label="Số lượng ca tối đa"
@@ -179,11 +187,14 @@ const CreateScheduleModal = ({ visible, onClose, onSuccess }) => {
     );
 };
 
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
 const DoctorSchedules = () => {
     const user = useContext(MyUserContext);
-    const [schedules, setSchedules] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
+    const [schedules,    setSchedules]    = useState([]);
+    const [loading,      setLoading]      = useState(true);
+    const [showModal,    setShowModal]    = useState(false);
+    const [showPast,     setShowPast]     = useState(false);
 
     const load = async () => {
         try {
@@ -230,8 +241,12 @@ const DoctorSchedules = () => {
         ]);
     };
 
+    const today = todayStr();
+    const pastCount  = schedules.filter(s => s.date < today).length;
+    const visible    = showPast ? schedules : schedules.filter(s => s.date >= today);
+
     // Group lịch theo tháng
-    const groupedSchedules = schedules.reduce((acc, s) => {
+    const groupedSchedules = visible.reduce((acc, s) => {
         const month = s.date?.slice(0, 7) || "";
         if (!acc[month]) acc[month] = [];
         acc[month].push(s);
@@ -254,6 +269,31 @@ const DoctorSchedules = () => {
                 </TouchableOpacity>
             </View>
 
+            {/* Past schedule toggle */}
+            {!loading && pastCount > 0 && (
+                <TouchableOpacity
+                    style={pastToggleStyle.bar}
+                    onPress={() => setShowPast(p => !p)}
+                    activeOpacity={0.75}
+                >
+                    <MaterialCommunityIcons
+                        name={showPast ? "eye-off-outline" : "history"}
+                        size={16}
+                        color={COLORS.textMuted}
+                    />
+                    <Text style={pastToggleStyle.txt}>
+                        {showPast
+                            ? `Ẩn ${pastCount} lịch đã qua`
+                            : `Hiện ${pastCount} lịch đã qua`}
+                    </Text>
+                    <MaterialCommunityIcons
+                        name={showPast ? "chevron-up" : "chevron-down"}
+                        size={16}
+                        color={COLORS.textMuted}
+                    />
+                </TouchableOpacity>
+            )}
+
             {loading ? (
                 <View style={[Styles.center, { flex: 1 }]}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
@@ -273,6 +313,7 @@ const DoctorSchedules = () => {
                                     item={s}
                                     onDelete={deleteSchedule}
                                     onToggle={toggleAvailability}
+                                    isPast={s.date < today}
                                 />
                             ))}
                         </View>

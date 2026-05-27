@@ -33,7 +33,7 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
     ).prefetch_related("test_results").all()
     serializer_class = MedicalRecordSerializer
     filter_backends  = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ["patient", "doctor"]
+    filterset_fields = ["patient", "doctor", "appointment"]
     ordering         = ["-created_at"]
 
     def get_permissions(self):

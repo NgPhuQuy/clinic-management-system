@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, ScrollView, StyleSheet, Image, TouchableOpacity, useWindowDimensions } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import { useState, useContext, useEffect, useRef } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
+import { DatePickerField, TimePickerField } from "../../components/DatePickerField";
 
 const HOLD_MINUTES = 10;
 
@@ -29,7 +30,6 @@ const DoctorAvatar = ({ uri, size = 52 }) => {
     );
 };
 
-const { width: SCREEN_W } = Dimensions.get("window");
 const DAY_NAMES = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const MONTH_NAMES = [
     "Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
@@ -42,6 +42,7 @@ const TIME_SLOTS = [
 
 // ─── Mini calendar component ─────────────────────────────────────────────────
 const CalendarPicker = ({ selectedDate, onSelect, onClose }) => {
+    const { width: SCREEN_W } = useWindowDimensions();
     const today = new Date();
     today.setHours(0,0,0,0);
 
@@ -193,9 +194,9 @@ const BookAppointment = () => {
             setErr(null);
             const payload = {
                 doctor:           doctorId,
-                appointment_date: appointmentDatetime,
-                reason,
-                notes,
+                appointment_date: form.appointment_date,
+                reason:           form.reason,
+                notes:            form.notes,
             };
             if (scheduleId) payload.schedule = scheduleId;
 
@@ -212,6 +213,7 @@ const BookAppointment = () => {
                 });
             }
         } catch (ex) {
+            console.error("book error:", ex?.response?.data ?? ex);
             const detail = ex?.response?.data;
             let msg = "Đặt lịch thất bại. Vui lòng thử lại!";
             if (detail) {
@@ -278,23 +280,24 @@ const BookAppointment = () => {
                 <HelperText type="error" visible={!!err}>{err}</HelperText>
 
                 {!schedule && (
-                    <TextInput
-                        label="Ngày giờ hẹn (YYYY-MM-DDTHH:MM)"
-                        value={form.appointment_date}
-                        onChangeText={(t) => setForm({ ...form, appointment_date: t })}
-                        style={Styles.margin}
-                        mode="outlined"
-                        left={<TextInput.Icon icon="calendar" />}
-                        outlineColor={COLORS.primary}
-                        activeOutlineColor={COLORS.primary}
-                        placeholder="2025-06-15T09:00"
-                    />
+                    <View style={{ gap: 2 }}>
+                        <DatePickerField
+                            label="Ngày khám *"
+                            value={form.appointment_date.split("T")[0] || ""}
+                            onChange={(d) => setForm({ ...form, appointment_date: `${d}T${form.appointment_date.split("T")[1] || "08:00"}` })}
+                        />
+                        <TimePickerField
+                            label="Giờ khám *"
+                            value={form.appointment_date.split("T")[1]?.slice(0,5) || ""}
+                            onChange={(t) => setForm({ ...form, appointment_date: `${form.appointment_date.split("T")[0] || ""}T${t}` })}
+                        />
+                    </View>
                 )}
 
                 <TextInput
                     label="Lý do khám *"
-                    value={reason}
-                    onChangeText={setReason}
+                    value={form.reason}
+                    onChangeText={(t) => setForm({ ...form, reason: t })}
                     style={Styles.margin}
                     mode="outlined"
                     multiline
@@ -307,8 +310,8 @@ const BookAppointment = () => {
 
                 <TextInput
                     label="Ghi chú thêm"
-                    value={notes}
-                    onChangeText={setNotes}
+                    value={form.notes}
+                    onChangeText={(t) => setForm({ ...form, notes: t })}
                     style={Styles.margin}
                     mode="outlined"
                     multiline

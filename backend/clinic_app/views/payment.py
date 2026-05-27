@@ -119,7 +119,7 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
     hash_secret = _get_setting("VNPAY_HASH_SECRET")
     vnpay_url   = _get_setting("VNPAY_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html")
     base_url    = _get_setting("BACKEND_BASE_URL", "http://localhost:8000")
-    return_url  = f"{base_url}/api/payments/vnpay/return/"
+    return_url  = f"{base_url}/payments/vnpay/return/"
 
     txn_ref  = f"CLINIC{payment.id}{int(time.time())}"
     amount   = int(payment.amount) * 100
@@ -132,15 +132,15 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
         "vnp_TmnCode": tmn_code, "vnp_Amount": amount,
         "vnp_CreateDate": now_str, "vnp_CurrCode": "VND",
         "vnp_IpAddr": ip_addr, "vnp_Locale": "vn",
-        "vnp_OrderInfo": f"Thanh toan lich kham #{appt_id}",
+        "vnp_OrderInfo": f"Thanh toan lich kham {appt_id}",
         "vnp_OrderType": "other", "vnp_ReturnUrl": return_url, "vnp_TxnRef": txn_ref,
     }
 
     sorted_params = sorted(vnp_params.items())
-    hash_data     = "&".join(f"{k}={v}" for k, v in sorted_params)
-    signature     = hmac.new(hash_secret.encode("utf-8"), hash_data.encode("utf-8"), hashlib.sha512).hexdigest()
-    query_string  = "&".join(f"{k}={urllib.parse.quote_plus(str(v))}" for k, v in sorted_params)
-    payment_url   = f"{vnpay_url}?{query_string}&vnp_SecureHash={signature}"
+    # vnp_SecureHashType is NOT included in hash — only appended to URL after vnp_SecureHash
+    query_string = "&".join(f"{k}={urllib.parse.quote_plus(str(v))}" for k, v in sorted_params)
+    signature    = hmac.new(hash_secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha512).hexdigest()
+    payment_url  = f"{vnpay_url}?{query_string}&vnp_SecureHashType=SHA512&vnp_SecureHash={signature}"
 
     payment.transaction_id = txn_ref
     payment.save(update_fields=["transaction_id"])
@@ -152,6 +152,7 @@ def _verify_vnpay_return(params: dict) -> bool:
     received_hash = params.get("vnp_SecureHash", "")
     verify_params = {k: v for k, v in params.items() if k not in ("vnp_SecureHash", "vnp_SecureHashType")}
     sorted_params = sorted(verify_params.items())
+    # Django URL-decodes query params; hash on raw values (same as VNPay's computation)
     hash_data     = "&".join(f"{k}={v}" for k, v in sorted_params)
     expected      = hmac.new(hash_secret.encode("utf-8"), hash_data.encode("utf-8"), hashlib.sha512).hexdigest()
     return hmac.compare_digest(expected, received_hash)
@@ -178,9 +179,9 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         return qs.none()
 
     def get_permissions(self):
-        if self.action in ("momo_ipn", "momo_return", "vnpay_return"):
+        if self.action in ("momo_ipn", "momo_return", "vnpay_return", "vnpay_ipn"):
             return [AllowAny()]
-        if self.action == "init":
+        if self.action in ("init", "simulate"):
             return [HasPatientScope()]
         if self.action == "confirm":
             return [HasStaffOrAdminScope()]
@@ -212,13 +213,25 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        payment = Payment.objects.create(
-            invoice        = invoice,
-            amount         = amount,
-            payment_method = method,
-            status         = Payment.Status.PENDING,
-            note           = note,
-        )
+        # Tái sử dụng pending payment nếu đã có — tránh tạo trùng
+        existing = Payment.objects.filter(
+            invoice=invoice,
+            status=Payment.Status.PENDING,
+        ).first()
+
+        if existing:
+            payment = existing
+            if payment.payment_method != method:
+                payment.payment_method = method
+                payment.save(update_fields=["payment_method"])
+        else:
+            payment = Payment.objects.create(
+                invoice        = invoice,
+                amount         = amount,
+                payment_method = method,
+                status         = Payment.Status.PENDING,
+                note           = note,
+            )
 
         if method == Payment.Method.CASH:
             return Response({
@@ -240,6 +253,20 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({"payment_id": payment.id, "amount": str(amount), "payment_method": method, "payment_url": result["payment_url"], "txn_ref": result.get("txn_ref")})
 
         return Response({"detail": "Phương thức thanh toán không hỗ trợ."}, status=400)
+
+    @action(detail=True, methods=["post"], url_path="simulate")
+    def simulate(self, request, pk=None):
+        """POST /payments/{id}/simulate/ — Dev only: giả lập thanh toán thành công."""
+        if not getattr(settings, "DEBUG", False):
+            return Response({"detail": "Chỉ khả dụng trong môi trường DEBUG."}, status=status.HTTP_403_FORBIDDEN)
+        payment = self.get_object()
+        if payment.status == Payment.Status.SUCCESS:
+            return Response({"detail": "Đã thanh toán rồi.", "payment_id": payment.id})
+        payment.status         = Payment.Status.SUCCESS
+        payment.paid_at        = timezone.now()
+        payment.transaction_id = f"SIM-{payment.pk}-{int(time.time())}"
+        payment.save(update_fields=["status", "paid_at", "transaction_id"])
+        return Response({"success": True, "payment_id": payment.id})
 
     @action(detail=True, methods=["post"])
     def confirm(self, request, pk=None):
@@ -312,11 +339,49 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         success       = response_code == "00"
         try:
             payment = Payment.objects.get(transaction_id=txn_ref)
-            payment.status = Payment.Status.SUCCESS if success else Payment.Status.FAILED
-            if success:
-                payment.paid_at = timezone.now()
-                payment.transaction_id = trans_no or txn_ref
-            payment.save()
+            if payment.status != Payment.Status.SUCCESS:
+                payment.status = Payment.Status.SUCCESS if success else Payment.Status.FAILED
+                if success:
+                    payment.paid_at        = timezone.now()
+                    payment.transaction_id = trans_no or txn_ref
+                payment.save()
         except Payment.DoesNotExist:
             pass
-        return Response({"success": success, "message": "Thanh toán thành công" if success else f"Thanh toán thất bại (mã: {response_code})", "txn_ref": txn_ref, "trans_no": trans_no})
+        return Response({
+            "success": success,
+            "message": "Thanh toán thành công" if success else f"Thanh toán thất bại (mã: {response_code})",
+            "txn_ref": txn_ref,
+            "trans_no": trans_no,
+        })
+
+    @action(detail=False, methods=["get", "post"], url_path="vnpay/ipn")
+    def vnpay_ipn(self, request):
+        """VNPay IPN — server-to-server callback (GET or POST)."""
+        params = {**request.query_params.dict(), **request.data}
+        if not _verify_vnpay_return(params):
+            return Response({"RspCode": "97", "Message": "Invalid signature"})
+
+        txn_ref       = params.get("vnp_TxnRef", "")
+        response_code = params.get("vnp_ResponseCode")
+        trans_no      = params.get("vnp_TransactionNo", "")
+        vnp_amount    = int(params.get("vnp_Amount", 0)) // 100
+
+        try:
+            payment = Payment.objects.get(transaction_id=txn_ref)
+        except Payment.DoesNotExist:
+            return Response({"RspCode": "01", "Message": "Order not found"})
+
+        if payment.status == Payment.Status.SUCCESS:
+            return Response({"RspCode": "02", "Message": "Order already confirmed"})
+
+        if int(payment.amount) != vnp_amount:
+            return Response({"RspCode": "04", "Message": "Amount invalid"})
+
+        if response_code == "00":
+            payment.status         = Payment.Status.SUCCESS
+            payment.paid_at        = timezone.now()
+            payment.transaction_id = trans_no or txn_ref
+        else:
+            payment.status = Payment.Status.FAILED
+        payment.save()
+        return Response({"RspCode": "00", "Message": "Confirm Success"})

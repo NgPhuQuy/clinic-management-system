@@ -969,14 +969,13 @@ class Command(BaseCommand):
         #             is_read=False,
         #         ))
 
-        # 5. Thông báo hệ thống
-        all_users = list(User.objects.all()[:15])
+        # 5. Thông báo hệ thống — chỉ gửi cho seeded users (patients + doctors được seed)
+        seeded_users = [p.user for p in patients[:10]] + [d.user for d in doctors[:5]]
         sys_msgs = [
             ("Cập nhật hệ thống", "Hệ thống sẽ bảo trì lúc 02:00 ngày mai, dự kiến 30 phút."),
             ("Chính sách mới",    "Bệnh viện áp dụng chính sách thanh toán không dùng tiền mặt từ 01/08/2025."),
-            ("Tài khoản xác thực","Tài khoản của bạn đã được xác thực thành công."),
         ]
-        for user in all_users:
+        for user in seeded_users:
             msg_title, msg_body = random.choice(sys_msgs)
             notifs.append(Notification(
                 user=user,
