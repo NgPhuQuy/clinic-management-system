@@ -1,13 +1,13 @@
 import {
-    View, StyleSheet, ActivityIndicator,
-    TouchableOpacity, Alert, Platform
+    View, ActivityIndicator,
+    TouchableOpacity, Alert,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useRef, useState, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import { COLORS } from "../../styles/Styles";
+import { COLORS, paymentWebViewStyles as S } from "../../styles/Styles";
 
 const parseQuery = (search = "") => {
     const q = search.startsWith("?") ? search.slice(1) : search;
@@ -101,9 +101,9 @@ const PaymentWebView = () => {
 
     return (
         <View style={{ flex: 1 }}>
-            <View style={[styles.header, { paddingTop: top + 14 }]}>
-                <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
-                    <Text style={styles.closeText}>✕  Đóng</Text>
+            <View style={[S.header, { paddingTop: top + 14 }]}>
+                <TouchableOpacity style={S.closeBtn} onPress={handleClose}>
+                    <Text style={S.closeText}>✕  Đóng</Text>
                 </TouchableOpacity>
                 <Text style={S.headerTitle}>
                     {method === "momo" ? "🟣 Thanh toán MoMo" : "🔵 Thanh toán VNPay"}
@@ -132,31 +132,5 @@ const PaymentWebView = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: COLORS.primaryDark,
-        paddingTop: 14,
-        paddingBottom: 14,
-        paddingHorizontal: 16,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-    },
-    closeBtn: { paddingVertical: 4, paddingHorizontal: 8 },
-    closeText: { color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: "600" },
-    headerTitle: { color: "#fff", fontSize: 15, fontWeight: "800", flex: 1 },
-    loadingOverlay: {
-        position: "absolute",
-        top: Platform.OS === "ios" ? 110 : 90,
-        left: 0, right: 0, bottom: 0,
-        zIndex: 10,
-        backgroundColor: COLORS.bg,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 14,
-    },
-    loadingText: { color: COLORS.textMuted, fontSize: 13 },
-});
 
 export default PaymentWebView;

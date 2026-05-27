@@ -1,7 +1,7 @@
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import { Text } from "react-native-paper";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { COLORS } from "../../styles/Styles";
+import { COLORS, paymentResultStyles as S } from "../../styles/Styles";
 
 const METHOD_LABELS = { momo: "MoMo", vnpay: "VNPay", cash: "Tiền mặt" };
 

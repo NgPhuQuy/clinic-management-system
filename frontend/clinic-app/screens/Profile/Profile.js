@@ -80,16 +80,16 @@ export const Profile = () => {
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
             {/* Header */}
-            <View style={[styles.header, { paddingTop: top + 16 }]}>
+            <View style={[PS.header, { paddingTop: top + 16 }]}>
                 <UserAvatar
                     uri={avatarUri}
                     size={84}
                     iconName="account"
                     borderRadius={24}
                 />
-                <Text style={styles.name}>{user?.first_name} {user?.last_name}</Text>
-                <View style={styles.roleBadge}>
-                    <Text style={styles.roleText}>{ROLE_LABELS[user?.role] || user?.role}</Text>
+                <Text style={PS.name}>{user?.first_name} {user?.last_name}</Text>
+                <View style={PS.roleBadge}>
+                    <Text style={PS.roleText}>{ROLE_LABELS[user?.role] || user?.role}</Text>
                 </View>
                 <Text style={PS.email}>{user?.email}</Text>
             </View>
@@ -416,85 +416,3 @@ const payStyles = StyleSheet.create({
     note: { fontSize: 11, color: COLORS.textLight, marginTop: 2 },
 });
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: COLORS.primaryDark,
-        paddingTop: 16,
-        paddingHorizontal: 20,
-        paddingBottom: 36,
-        alignItems: "center",
-        gap: 6,
-    },
-    name: { color: "#fff", fontSize: 20, fontWeight: "800", marginTop: 6 },
-    roleBadge: {
-        backgroundColor: "rgba(255,255,255,0.2)",
-        borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4,
-    },
-    roleText: { color: "#fff", fontSize: 11, fontWeight: "600" },
-    email: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
-
-    statsRow: {
-        flexDirection: "row",
-        backgroundColor: "#fff",
-        borderRadius: 16,
-        marginHorizontal: 16,
-        marginTop: -22,
-        elevation: 6,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        overflow: "hidden",
-        zIndex: 10,
-    },
-    statItem: { flex: 1, paddingVertical: 16, alignItems: "center" },
-    statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: COLORS.border },
-    statNum: { fontSize: 22, fontWeight: "800", color: COLORS.primary },
-    statLabel: { fontSize: 10, color: COLORS.textMuted, marginTop: 2 },
-
-    section: { marginHorizontal: 16, marginTop: 20 },
-    sectionTitle: {
-        fontSize: 11, fontWeight: "700", color: COLORS.textLight,
-        letterSpacing: 0.8, marginBottom: 8, paddingLeft: 4,
-    },
-    card: {
-        backgroundColor: "#fff",
-        borderRadius: 16,
-        overflow: "hidden",
-        elevation: 2,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.07,
-        shadowRadius: 6,
-    },
-    infoRow: {
-        flexDirection: "row", alignItems: "center",
-        paddingHorizontal: 16, paddingVertical: 12,
-        borderBottomWidth: 1, borderBottomColor: COLORS.border,
-    },
-    infoLabel: { fontSize: 11, color: COLORS.textMuted, width: 90 },
-    infoValue: { fontSize: 13, color: COLORS.text, fontWeight: "500", flex: 1 },
-    menuRow: {
-        flexDirection: "row", alignItems: "center",
-        paddingHorizontal: 16, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: COLORS.border,
-        gap: 12,
-    },
-    menuIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-    menuLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-    menuSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
-    badgeWrap: {
-        backgroundColor: COLORS.redLight, borderRadius: 8,
-        paddingHorizontal: 6, paddingVertical: 2, marginRight: 6,
-    },
-    badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-    logoutBtn: {
-        margin: 16,
-        backgroundColor: "#fff0f0",
-        borderWidth: 1.5, borderColor: "#ffcdd2",
-        borderRadius: 16, paddingVertical: 14,
-        flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    },
-    logoutText: { color: COLORS.redLight, fontSize: 14, fontWeight: "700" },
-});

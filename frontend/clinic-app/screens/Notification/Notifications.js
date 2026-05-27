@@ -115,8 +115,8 @@ const Notifications = () => {
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
             {/* Header */}
-            <View style={[styles.header, { paddingTop: top + 16 }]}>
-                <View style={styles.headerLeft}>
+            <View style={[S.header, { paddingTop: top + 16 }]}>
+                <View style={S.headerLeft}>
                     <MaterialCommunityIcons name="bell" size={22} color="#fff" style={{ marginRight: 8 }} />
                     <Text style={S.headerTitle}>Thông báo</Text>
                 </View>
@@ -180,84 +180,5 @@ const Notifications = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: COLORS.primaryDark,
-        paddingTop: 16,
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    headerLeft: { flexDirection: "row", alignItems: "center" },
-    headerTitle: { color: "#fff", fontSize: 20, fontWeight: "800" },
-    readAllBtn: {
-        backgroundColor: "rgba(255,255,255,0.15)",
-        borderRadius: 20,
-        paddingHorizontal: 14,
-        paddingVertical: 7,
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    readAllText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-    tabs: {
-        flexDirection: "row",
-        backgroundColor: "#fff",
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
-    },
-    tabItem: {
-        flex: 1,
-        paddingVertical: 14,
-        alignItems: "center",
-        borderBottomWidth: 2.5,
-        borderBottomColor: "transparent",
-    },
-    tabActive: { borderBottomColor: COLORS.primary },
-    tabText: { fontSize: 13, fontWeight: "600", color: COLORS.textMuted },
-    tabTextActive: { color: COLORS.primary },
-    unreadBadge: {
-        backgroundColor: COLORS.redLight,
-        borderRadius: 8,
-        minWidth: 18,
-        paddingHorizontal: 5,
-        paddingVertical: 1,
-        alignItems: "center",
-    },
-    unreadBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-    item: {
-        backgroundColor: "#fff",
-        flexDirection: "row",
-        alignItems: "flex-start",
-        padding: 14,
-        paddingHorizontal: 16,
-        gap: 12,
-    },
-    itemUnread: { backgroundColor: "#f0f7ff" },
-    sep: { height: 1, backgroundColor: COLORS.border },
-    iconWrap: {
-        width: 46, height: 46,
-        borderRadius: 14,
-        alignItems: "center", justifyContent: "center",
-        flexShrink: 0,
-    },
-    dot: {
-        position: "absolute", top: -2, right: -2,
-        width: 10, height: 10, borderRadius: 5,
-        backgroundColor: COLORS.redLight,
-        borderWidth: 2, borderColor: "#fff",
-    },
-    nTitle: { fontSize: 13, fontWeight: "700", color: COLORS.text },
-    nMsg: { fontSize: 11, color: COLORS.textMuted, marginTop: 3, lineHeight: 16 },
-    nTime: { fontSize: 10, color: COLORS.textLight, marginTop: 5 },
-    emptyIcon: {
-        width: 88, height: 88,
-        borderRadius: 24,
-        backgroundColor: COLORS.primaryPale,
-        alignItems: "center", justifyContent: "center",
-    },
-});
 
 export default Notifications;
