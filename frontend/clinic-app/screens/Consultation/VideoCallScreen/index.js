@@ -3,8 +3,8 @@ import { Text } from "react-native-paper";
 import { useRef, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
-import { authApis, endpoints } from "../../configs/Apis";
-import { MyUserContext } from "../../contexts/MyContext";
+import { authApis, endpoints } from "../../../configs/Apis";
+import { MyUserContext } from "../../../contexts/MyContext";
 
 const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
 <html>
