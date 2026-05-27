@@ -4,7 +4,7 @@
  */
 import {
     View, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, StatusBar,
+    ActivityIndicator, RefreshControl, StatusBar, StyleSheet,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
@@ -15,54 +15,6 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, STATUS_CONFIG } from "../../styles/Styles";
 
-// ── Mock data khi backend chưa sẵn sàng ──────────────────────────────────────
-const MOCK_DASHBOARD = {
-    appointments: { today: 12, pending: 4, confirmed: 6, in_progress: 2 },
-    payments: {
-        revenue_today: 4_850_000,
-        revenue_month: 87_600_000,
-        pending_cash: 3,
-    },
-    inventory:    { alerts: 5, low_stock: 8 },
-    prescriptions: { pending: 6, dispensed_today: 14 },
-    todays_appointments: [
-        {
-            id: 1,
-            appointment_date: new Date(Date.now() + 0.5*3600*1000).toISOString(),
-            patient_info: { full_name: "Nguyễn Thị Mai" },
-            doctor_info:  { full_name: "Nguyễn Văn An", specialty_name: "Tim mạch" },
-            status: "confirmed",
-        },
-        {
-            id: 2,
-            appointment_date: new Date(Date.now() + 1.5*3600*1000).toISOString(),
-            patient_info: { full_name: "Trần Văn Bảo" },
-            doctor_info:  { full_name: "Lê Minh Cường", specialty_name: "Nội tiêu hóa" },
-            status: "pending",
-        },
-        {
-            id: 3,
-            appointment_date: new Date(Date.now() + 2*3600*1000).toISOString(),
-            patient_info: { full_name: "Phạm Thị Dung" },
-            doctor_info:  { full_name: "Phạm Thị Dung", specialty_name: "Thần kinh" },
-            status: "in_progress",
-        },
-        {
-            id: 4,
-            appointment_date: new Date(Date.now() + 3*3600*1000).toISOString(),
-            patient_info: { full_name: "Hoàng Thị Em" },
-            doctor_info:  { full_name: "Vũ Thị Phương", specialty_name: "Nhi khoa" },
-            status: "confirmed",
-        },
-        {
-            id: 5,
-            appointment_date: new Date(Date.now() + 4*3600*1000).toISOString(),
-            patient_info: { full_name: "Lê Thị Cúc" },
-            doctor_info:  { full_name: "Hoàng Văn Em", specialty_name: "Da liễu" },
-            status: "pending",
-        },
-    ],
-};
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, color, badge, onPress }) => (
@@ -301,58 +253,13 @@ const StaffDashboard = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
     header: {
         backgroundColor: COLORS.teal,
         paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24,
         flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     },
     greeting: { fontSize: 20, fontWeight: "800", color: "#fff" },
-    dateText: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
-    notifBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: "rgba(255,255,255,0.15)",
-        alignItems: "center", justifyContent: "center",
-    },
-    revenueRow: { flexDirection: "row", margin: 16, marginBottom: 0, gap: 10 },
-    revenueCard: { flex: 1, borderRadius: 14, padding: 14 },
-    revenueLabel: { fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 6 },
-    revenueValue: { fontSize: 15, fontWeight: "800", color: "#fff", marginTop: 2 },
-    section: { margin: 16, marginBottom: 0 },
-    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-    sectionTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 },
-    seeAll: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
-    statsGrid: { gap: 10 },
-    statCard: {
-        backgroundColor: "#fff", borderRadius: 12, padding: 14,
-        flexDirection: "row", alignItems: "center", borderLeftWidth: 4,
-        elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    statIcon: { width: 42, height: 42, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-    statValue: { fontSize: 22, fontWeight: "800", color: COLORS.text },
-    statLabel: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
-    badge: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-    badgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
-    actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-    actionBtn: {
-        width: "31%", backgroundColor: "#fff", borderRadius: 12, padding: 14,
-        alignItems: "center", elevation: 2,
-        shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    actionIcon: { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-    actionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.text, textAlign: "center" },
-    apptItem: {
-        backgroundColor: "#fff", borderRadius: 12, padding: 12,
-        flexDirection: "row", alignItems: "center", marginBottom: 8, elevation: 1, gap: 10,
-    },
-    timeBox: { padding: 8, borderRadius: 8, alignItems: "center", minWidth: 56 },
-    timeText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-    apptName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-    apptDoctor: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    statusText: { fontSize: 10, fontWeight: "700" },
+    dateText:  { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
 });
 
 export default StaffDashboard;

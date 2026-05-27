@@ -5,9 +5,10 @@
  */
 import {
     View, ScrollView, TouchableOpacity, FlatList,
-    ActivityIndicator, StatusBar, Image, Alert,
+    ActivityIndicator, StatusBar, Image, Alert, StyleSheet, Modal,
+    TextInput as RNTextInput,
 } from "react-native";
-import { Text } from "react-native-paper";
+import { Text, Button, HelperText } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState, useEffect, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,8 +17,169 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
 import Styles, { COLORS, profileStyles as PS } from "../../styles/Styles";
+import { DatePickerField } from "../../components/DatePickerField";
 
 const ROLE_LABELS = { patient: "Bệnh nhân", doctor: "Bác sĩ", staff: "Nhân viên", admin: "Quản trị viên" };
+
+const GENDER_OPTIONS = [
+    { value: "male",   label: "Nam" },
+    { value: "female", label: "Nữ" },
+    { value: "other",  label: "Khác" },
+];
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+const EditProfileModal = ({ visible, patient, onClose, onSuccess }) => {
+    const user = useContext(MyUserContext);
+    const [form, setForm] = useState({
+        phone: "", date_of_birth: "", gender: "", blood_type: "",
+        emergency_contact: "", insurance_number: "",
+    });
+    const [saving, setSaving] = useState(false);
+    const [err, setErr] = useState(null);
+
+    useEffect(() => {
+        if (visible && patient) {
+            setForm({
+                phone:             patient.phone || "",
+                date_of_birth:     patient.date_of_birth || "",
+                gender:            patient.gender || "",
+                blood_type:        patient.blood_type || "",
+                emergency_contact: patient.emergency_contact || "",
+                insurance_number:  patient.insurance_number || "",
+            });
+            setErr(null);
+        }
+    }, [visible, patient]);
+
+    const save = async () => {
+        try {
+            setSaving(true); setErr(null);
+            const payload = { ...form };
+            if (!payload.date_of_birth) delete payload.date_of_birth;
+            await authApis(user.token).patch(endpoints["patients"] + "me/", payload);
+            onSuccess();
+            onClose();
+        } catch (e) {
+            const data = e?.response?.data;
+            const msg = data?.detail || Object.values(data || {}).flat().join("\n") || "Lỗi cập nhật!";
+            setErr(msg);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+            <View style={editStyles.header}>
+                <TouchableOpacity onPress={onClose}>
+                    <MaterialCommunityIcons name="close" size={24} color="#fff" />
+                </TouchableOpacity>
+                <Text style={editStyles.headerTitle}>Chỉnh sửa hồ sơ</Text>
+                <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ padding: 16 }}>
+                <HelperText type="error" visible={!!err}>{err}</HelperText>
+
+                <Text style={editStyles.label}>Số điện thoại</Text>
+                <RNTextInput
+                    style={editStyles.input}
+                    value={form.phone}
+                    onChangeText={v => setForm({ ...form, phone: v })}
+                    keyboardType="phone-pad"
+                    placeholder="Nhập số điện thoại"
+                    placeholderTextColor={COLORS.textLight}
+                />
+
+                <Text style={editStyles.label}>Ngày sinh</Text>
+                <DatePickerField
+                    label="Ngày sinh"
+                    value={form.date_of_birth}
+                    onChange={v => setForm({ ...form, date_of_birth: v })}
+                    clearLabel="Xóa ngày sinh"
+                />
+
+                <Text style={editStyles.label}>Giới tính</Text>
+                <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+                    {GENDER_OPTIONS.map(opt => (
+                        <TouchableOpacity
+                            key={opt.value}
+                            style={[editStyles.chip, form.gender === opt.value && editStyles.chipActive]}
+                            onPress={() => setForm({ ...form, gender: opt.value })}
+                        >
+                            <Text style={[editStyles.chipText, form.gender === opt.value && { color: "#fff" }]}>
+                                {opt.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <Text style={editStyles.label}>Nhóm máu</Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                    {BLOOD_TYPES.map(bt => (
+                        <TouchableOpacity
+                            key={bt}
+                            style={[editStyles.chip, form.blood_type === bt && editStyles.chipActive]}
+                            onPress={() => setForm({ ...form, blood_type: bt })}
+                        >
+                            <Text style={[editStyles.chipText, form.blood_type === bt && { color: "#fff" }]}>{bt}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <Text style={editStyles.label}>Liên hệ khẩn</Text>
+                <RNTextInput
+                    style={editStyles.input}
+                    value={form.emergency_contact}
+                    onChangeText={v => setForm({ ...form, emergency_contact: v })}
+                    placeholder="Tên và số điện thoại người thân"
+                    placeholderTextColor={COLORS.textLight}
+                />
+
+                <Text style={editStyles.label}>Số thẻ BHYT</Text>
+                <RNTextInput
+                    style={editStyles.input}
+                    value={form.insurance_number}
+                    onChangeText={v => setForm({ ...form, insurance_number: v })}
+                    placeholder="Số bảo hiểm y tế"
+                    placeholderTextColor={COLORS.textLight}
+                />
+
+                <Button
+                    mode="contained"
+                    onPress={save}
+                    loading={saving}
+                    disabled={saving}
+                    style={{ borderRadius: 10, marginTop: 8 }}
+                    buttonColor={COLORS.primary}
+                >
+                    Lưu thay đổi
+                </Button>
+                <View style={{ height: 32 }} />
+            </ScrollView>
+        </Modal>
+    );
+};
+
+const editStyles = StyleSheet.create({
+    header: {
+        backgroundColor: COLORS.primaryDark,
+        paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
+        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    },
+    headerTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
+    label: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 },
+    input: {
+        backgroundColor: "#fff", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+        fontSize: 14, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border, marginBottom: 14,
+    },
+    chip: {
+        paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+        borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: "#fff",
+    },
+    chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+    chipText: { fontSize: 13, fontWeight: "600", color: COLORS.textMuted },
+});
 
 // ─── UserAvatar (reusable) ────────────────────────────────────────────────────
 export const UserAvatar = ({ uri, size = 80, iconName = "account", borderRadius }) => {
@@ -44,16 +206,21 @@ export const Profile = () => {
     const dispatch = useContext(MyDispatchContext);
     const nav = useNavigation();
     const { top } = useSafeAreaInsets();
-    const [patient, setPatient] = useState(null);
-    const [stats,   setStats]   = useState({ appointments: 0, prescriptions: 0 });
+    const [patient,     setPatient]     = useState(null);
+    const [stats,       setStats]       = useState({ appointments: 0, prescriptions: 0 });
+    const [editVisible, setEditVisible] = useState(false);
+
+    const loadPatient = async () => {
+        if (!user?.token) return;
+        try {
+            const pRes = await authApis(user.token).get(endpoints["patients"] + "me/");
+            setPatient(pRes.data);
+        } catch (_) {}
+    };
 
     useEffect(() => {
         const load = async () => {
-            if (!user?.token) return;
-            try {
-                const pRes = await authApis(user.token).get(endpoints["patients"] + "me/");
-                setPatient(pRes.data);
-            } catch (_) {}
+            await loadPatient();
             try {
                 const [aRes, prRes] = await Promise.all([
                     authApis(user.token).get(endpoints["appointments"]),
@@ -80,16 +247,16 @@ export const Profile = () => {
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
             {/* Header */}
-            <View style={[styles.header, { paddingTop: top + 16 }]}>
+            <View style={[PS.header, { paddingTop: top + 16 }]}>
                 <UserAvatar
                     uri={avatarUri}
                     size={84}
                     iconName="account"
                     borderRadius={24}
                 />
-                <Text style={styles.name}>{user?.first_name} {user?.last_name}</Text>
-                <View style={styles.roleBadge}>
-                    <Text style={styles.roleText}>{ROLE_LABELS[user?.role] || user?.role}</Text>
+                <Text style={PS.name}>{[user?.last_name, user?.first_name].filter(Boolean).join(" ") || user?.username}</Text>
+                <View style={PS.roleBadge}>
+                    <Text style={PS.roleText}>{ROLE_LABELS[user?.role] || user?.role}</Text>
                 </View>
                 <Text style={PS.email}>{user?.email}</Text>
             </View>
@@ -111,13 +278,23 @@ export const Profile = () => {
 
             {patient && (
                 <View style={PS.section}>
-                    <Text style={PS.sectionTitle}>THÔNG TIN BỆNH NHÂN</Text>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <Text style={PS.sectionTitle}>THÔNG TIN BỆNH NHÂN</Text>
+                        <TouchableOpacity
+                            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.primary }}
+                            onPress={() => setEditVisible(true)}
+                        >
+                            <MaterialCommunityIcons name="pencil-outline" size={14} color={COLORS.primary} />
+                            <Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: "700" }}>Chỉnh sửa</Text>
+                        </TouchableOpacity>
+                    </View>
                     <View style={PS.card}>
-                        <InfoRow icon="phone-outline"              label="Điện thoại" value={patient.phone || "Chưa cập nhật"} />
-                        <InfoRow icon="cake-variant-outline"       label="Ngày sinh"  value={patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString("vi-VN") : "Chưa cập nhật"} />
-                        <InfoRow icon="gender-male-female"         label="Giới tính"  value={patient.gender === "male" ? "Nam" : patient.gender === "female" ? "Nữ" : "Chưa cập nhật"} />
-                        <InfoRow icon="map-marker-outline"         label="Địa chỉ"    value={patient.address || "Chưa cập nhật"} />
-                        <InfoRow icon="card-account-details-outline" label="Số BHYT" value={patient.insurance_number || "Chưa cập nhật"} last />
+                        <InfoRow icon="phone-outline"              label="Điện thoại"     value={patient.phone || "Chưa cập nhật"} />
+                        <InfoRow icon="cake-variant-outline"       label="Ngày sinh"      value={patient.date_of_birth ? new Date(patient.date_of_birth + "T00:00:00").toLocaleDateString("vi-VN") : "Chưa cập nhật"} />
+                        <InfoRow icon="gender-male-female"         label="Giới tính"      value={patient.gender === "male" ? "Nam" : patient.gender === "female" ? "Nữ" : patient.gender === "other" ? "Khác" : "Chưa cập nhật"} />
+                        <InfoRow icon="water-outline"              label="Nhóm máu"       value={patient.blood_type || "Chưa cập nhật"} />
+                        <InfoRow icon="account-heart-outline"      label="Liên hệ khẩn"   value={patient.emergency_contact || "Chưa cập nhật"} />
+                        <InfoRow icon="card-account-details-outline" label="Số BHYT"      value={patient.insurance_number || "Chưa cập nhật"} last />
                     </View>
                 </View>
             )}
@@ -127,7 +304,7 @@ export const Profile = () => {
                 <View style={PS.card}>
                     <MenuRow icon="folder-account-outline" bg="#e3f2fd" label="Hồ sơ bệnh án"        sub="Xem lịch sử khám bệnh"           onPress={() => nav.navigate("medical-records")} />
                     <MenuRow icon="pill"                   bg="#fff3e0" label="Đơn thuốc của tôi"     sub={`${stats.prescriptions} đơn thuốc`} badge={stats.prescriptions} onPress={() => nav.navigate("prescriptions")} />
-                    <MenuRow icon="flask-outline"          bg="#f3e5f5" label="Kết quả cận lâm sàng"  sub="Xét nghiệm, chẩn đoán hình ảnh" onPress={() => nav.navigate("medical-records")} />
+                    <MenuRow icon="flask-outline"          bg="#f3e5f5" label="Kết quả cận lâm sàng"  sub="Xét nghiệm, chẩn đoán hình ảnh" onPress={() => nav.navigate("test-results")} />
                     <MenuRow icon="credit-card-outline"    bg="#e8f5e9" label="Lịch sử thanh toán"    sub="Xem hoá đơn và giao dịch"        onPress={() => nav.navigate("payments")} />
                     <MenuRow icon="lock-outline"           bg="#fce4ec" label="Đổi mật khẩu"          sub="Bảo mật tài khoản"               onPress={() => nav.navigate("change-password")} last />
                 </View>
@@ -146,6 +323,13 @@ export const Profile = () => {
                 <Text style={PS.logoutText}>Đăng xuất</Text>
             </TouchableOpacity>
             <View style={{ height: 24 }} />
+
+            <EditProfileModal
+                visible={editVisible}
+                patient={patient}
+                onClose={() => setEditVisible(false)}
+                onSuccess={loadPatient}
+            />
         </ScrollView>
     );
 };
@@ -180,16 +364,10 @@ export const Prescriptions = () => {
     const [prescriptions, setPrescriptions] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const MOCK_PRESC = [
-        { id:1, doctor_name:"Nguyễn Văn An", status:"dispensed", created_at: new Date(Date.now()-2*86400*1000).toISOString(), notes:"3 loại thuốc" },
-        { id:2, doctor_name:"Lê Minh Cường",  status:"pending",   created_at: new Date(Date.now()-5*86400*1000).toISOString(), notes:"2 loại thuốc" },
-        { id:3, doctor_name:"Phạm Thị Dung",  status:"dispensed", created_at: new Date(Date.now()-10*86400*1000).toISOString(), notes:"4 loại thuốc" },
-    ];
-
     useEffect(() => {
         authApis(user.token).get(endpoints["prescriptions"])
-            .then(r => { const d = r.data.results || r.data; setPrescriptions(d.length > 0 ? d : MOCK_PRESC); })
-            .catch(() => setPrescriptions(MOCK_PRESC))
+            .then(r => { const d = r.data.results || r.data; setPrescriptions(Array.isArray(d) ? d : []); })
+            .catch(() => setPrescriptions([]))
             .finally(() => setLoading(false));
     }, []);
 
@@ -221,10 +399,13 @@ export const Prescriptions = () => {
                                         {item.notes ? ` • ${item.notes}` : ""}
                                     </Text>
                                 </View>
-                                <View style={[Styles.badge, {
-                                    backgroundColor: item.status === "dispensed" ? COLORS.greenLight : COLORS.orangeLight,
-                                }]}>
-                                    <Text style={Styles.badgeText}>{item.status === "dispensed" ? "Đã cấp" : "Chờ cấp"}</Text>
+                                <View style={{
+                                    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
+                                    backgroundColor: item.status === "dispensed" ? COLORS.green + "22" : COLORS.orange + "22",
+                                }}>
+                                    <Text style={{ fontSize: 11, fontWeight: "700", color: item.status === "dispensed" ? COLORS.green : COLORS.orange }}>
+                                        {item.status === "dispensed" ? "Đã cấp" : "Chờ cấp"}
+                                    </Text>
                                 </View>
                             </View>
                         </View>
@@ -237,10 +418,10 @@ export const Prescriptions = () => {
 
 // ─── Payments Screen ─────────────────────────────────────────────────────────
 const PAY_STATUS_COLORS = {
-    pending:  COLORS.orangeLight,
-    success:  COLORS.greenLight,
-    failed:   COLORS.redLight,
-    refunded: COLORS.purpleLight,
+    pending:  COLORS.orange,
+    success:  COLORS.green,
+    failed:   COLORS.red,
+    refunded: COLORS.purple,
 };
 const PAY_STATUS_LABELS = {
     pending:  "Chờ thanh toán",
@@ -261,120 +442,153 @@ const PAY_METHOD_COLORS = {
     banking: COLORS.teal, credit_card: COLORS.purple,
 };
 
+const STATUS_FILTERS = [
+    { key: "all",      label: "Tất cả" },
+    { key: "pending",  label: "Chờ TT" },
+    { key: "success",  label: "Đã TT"  },
+    { key: "refunded", label: "Hoàn tiền" },
+];
+
 export const Payments = () => {
     const nav  = useNavigation();
     const user = useContext(MyUserContext);
+    const [payments,      setPayments]      = useState([]);
+    const [loading,       setLoading]       = useState(true);
+    const [filterStatus,  setFilterStatus]  = useState("all");
 
     useEffect(() => {
         authApis(user.token).get(endpoints["payments"])
-            .then(r => { const d = r.data.results || r.data; setInvoices(d.length > 0 ? d : MOCK_INVOICES); })
-            .catch(() => setInvoices(MOCK_INVOICES))
+            .then(r => { const d = r.data.results || r.data; setPayments(Array.isArray(d) ? d : []); })
+            .catch(() => setPayments([]))
             .finally(() => setLoading(false));
     }, []);
 
-    const STATUS_FILTERS = [
-        { key: "all",     label: "Tất cả" },
-        { key: "pending", label: "Chờ TT" },
-        { key: "success", label: "Đã TT"  },
-    ];
+    const displayed  = filterStatus === "all" ? payments : payments.filter(p => p.status === filterStatus);
+    const totalPaid  = payments.filter(p => p.status === "success").reduce((s, p) => s + Number(p.amount || 0), 0);
+    const pendingCnt = payments.filter(p => p.status === "pending").length;
 
-    const displayed = filterStatus === "all"
-        ? invoices
-        : invoices.filter(i => i.status === filterStatus);
-
-    // Mở invoice → chọn phương thức → xác nhận
-    const openInvoice = (inv) => {
-        if (inv.status !== "pending") return; // chỉ cho TT nếu pending
-        setSelected(inv);
-        setMethod(null);
-    };
-
-    const proceedPayment = () => {
-        if (!selectedMethod) {
-            Alert.alert("Chưa chọn phương thức", "Vui lòng chọn phương thức thanh toán.");
-            return;
-        }
-        if (selectedMethod === "cash") {
-            setShowCash(true);
-        } else {
-            // Online → chuyển sang PaymentScreen (MoMo/VNPay)
-            nav.navigate("payment-screen", {
-                appointmentId:   selectedInvoice.appointment_id,
-                doctorName:      selectedInvoice.doctor_name,
-                appointmentDate: selectedInvoice.created_at,
-                amount:          selectedInvoice.amount,
-                fromBooking:     false,
-            });
-            setSelected(null);
-        }
-    };
-
-    const confirmCash = async (inv) => {
-        try {
-            await authApis(user.token).post(endpoints["payment-confirm"](inv.id), {});
-        } catch (_) {}
-        setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: "success", paid_at: new Date().toISOString() } : i));
-        setShowCash(false);
-        setSelected(null);
-        Alert.alert("✅ Đã ghi nhận", "Vui lòng đến quầy thu ngân để hoàn tất thanh toán!");
-    };
-
-    if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+    if (loading) return (
+        <View style={[Styles.center, { flex: 1 }]}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+    );
 
     const renderPayment = ({ item }) => {
-        const statusColor = PAY_STATUS_COLORS[item.status] || "#9e9e9e";
-        const methodIcon  = PAY_METHOD_ICONS[item.payment_method] || "credit-card-outline";
+        const statusColor = PAY_STATUS_COLORS[item.status] || COLORS.textMuted;
+        const methodIcon  = PAY_METHOD_ICONS[item.payment_method]  || "credit-card-outline";
         const methodColor = PAY_METHOD_COLORS[item.payment_method] || COLORS.primary;
-        const methodLabel = PAY_METHOD_LABELS[item.payment_method] || item.payment_method;
-        const date = item.paid_at || item.created_at;
+        const methodLabel = PAY_METHOD_LABELS[item.payment_method] || item.payment_method || "—";
+        const date        = item.paid_at || item.created_at;
+        const isPending   = item.status === "pending";
 
         return (
-            <View style={payStyles.card}>
-                {/* Left: method icon */}
-                <View style={[payStyles.methodIcon, { backgroundColor: methodColor + "18" }]}>
-                    <MaterialCommunityIcons name={methodIcon} size={22} color={methodColor} />
+            <View style={[payStyles.card, { borderLeftColor: statusColor }]}>
+                <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+                    <View style={[payStyles.methodIcon, { backgroundColor: methodColor + "18" }]}>
+                        <MaterialCommunityIcons name={methodIcon} size={22} color={methodColor} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                        <View style={payStyles.topRow}>
+                            <Text style={payStyles.amount}>
+                                {Number(item.amount || 0).toLocaleString("vi-VN")}đ
+                            </Text>
+                            <View style={[payStyles.badge, { backgroundColor: statusColor + "22" }]}>
+                                <Text style={[payStyles.badgeText, { color: statusColor }]}>
+                                    {PAY_STATUS_LABELS[item.status] || item.status}
+                                </Text>
+                            </View>
+                        </View>
+                        <View style={payStyles.metaRow}>
+                            <MaterialCommunityIcons name={methodIcon} size={12} color={COLORS.textLight} />
+                            <Text style={payStyles.meta}> {methodLabel}</Text>
+                            {date ? (
+                                <>
+                                    <Text style={payStyles.metaDot}> · </Text>
+                                    <Text style={payStyles.meta}>
+                                        {new Date(date).toLocaleDateString("vi-VN")}
+                                    </Text>
+                                </>
+                            ) : null}
+                        </View>
+                        {item.note ? (
+                            <Text style={payStyles.note} numberOfLines={1}>{item.note}</Text>
+                        ) : null}
+                    </View>
                 </View>
 
-                {/* Center: info */}
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                    <View style={payStyles.topRow}>
-                        <Text style={payStyles.amount}>
-                            {Number(item.amount).toLocaleString("vi-VN")}đ
-                        </Text>
-                        <View style={[payStyles.badge, { backgroundColor: statusColor + "22" }]}>
-                            <Text style={[payStyles.badgeText, { color: statusColor }]}>
-                                {PAY_STATUS_LABELS[item.status] || item.status}
-                            </Text>
-                        </View>
-                    </View>
-                    <View style={payStyles.bottomRow}>
-                        <MaterialCommunityIcons name={methodIcon} size={12} color={COLORS.textLight} />
-                        <Text style={payStyles.meta}>  {methodLabel}</Text>
-                        <Text style={payStyles.metaDot}>  ·  </Text>
-                        <Text style={payStyles.meta}>
-                            {new Date(date).toLocaleDateString("vi-VN")}
-                        </Text>
-                    </View>
-                    {item.note ? (
-                        <Text style={payStyles.note} numberOfLines={1}>{item.note}</Text>
-                    ) : null}
-                </View>
+                {isPending && (
+                    <TouchableOpacity
+                        style={payStyles.payBtn}
+                        activeOpacity={0.8}
+                        onPress={() => nav.navigate("payment-screen", {
+                            invoiceId:   item.invoice,
+                            amount:      Number(item.amount || 0),
+                            fromBooking: false,
+                        })}
+                    >
+                        <MaterialCommunityIcons name="credit-card-outline" size={15} color="#fff" />
+                        <Text style={payStyles.payBtnText}>Thanh toán ngay</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         );
     };
 
     return (
-        <View style={Styles.container}>
-            {payments.length === 0 ? (
+        <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
+            {/* Summary banner */}
+            <View style={payStyles.summaryBanner}>
+                <View style={payStyles.summaryItem}>
+                    <Text style={payStyles.summaryNum}>{payments.length}</Text>
+                    <Text style={payStyles.summaryLabel}>Giao dịch</Text>
+                </View>
+                <View style={payStyles.summaryDivider} />
+                <View style={payStyles.summaryItem}>
+                    <Text style={payStyles.summaryNum}>{totalPaid.toLocaleString("vi-VN")}đ</Text>
+                    <Text style={payStyles.summaryLabel}>Đã thanh toán</Text>
+                </View>
+                <View style={payStyles.summaryDivider} />
+                <View style={payStyles.summaryItem}>
+                    <Text style={[payStyles.summaryNum, pendingCnt > 0 && { color: "#ffe082" }]}>
+                        {pendingCnt}
+                    </Text>
+                    <Text style={payStyles.summaryLabel}>Chờ TT</Text>
+                </View>
+            </View>
+
+            {/* Filter chips */}
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ flexGrow: 0 }}
+                contentContainerStyle={payStyles.filterRow}
+            >
+                {STATUS_FILTERS.map(f => (
+                    <TouchableOpacity
+                        key={f.key}
+                        style={[payStyles.filterChip, filterStatus === f.key && payStyles.filterChipActive]}
+                        onPress={() => setFilterStatus(f.key)}
+                    >
+                        <Text style={[payStyles.filterChipText, filterStatus === f.key && payStyles.filterChipTextActive]}>
+                            {f.label}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+
+            {/* List */}
+            {displayed.length === 0 ? (
                 <View style={[Styles.center, { flex: 1 }]}>
                     <MaterialCommunityIcons name="receipt-text-outline" size={64} color={COLORS.textLight} />
-                    <Text style={[Styles.text, { marginTop: 12, fontWeight: "600" }]}>Chưa có giao dịch nào</Text>
+                    <Text style={{ marginTop: 12, fontWeight: "600", color: COLORS.textMuted }}>
+                        Chưa có giao dịch nào
+                    </Text>
                 </View>
             ) : (
                 <FlatList
-                    data={payments}
-                    keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={{ padding: 16 }}
+                    data={displayed}
+                    keyExtractor={item => item.id.toString()}
+                    contentContainerStyle={{ padding: 16, paddingTop: 8 }}
                     renderItem={renderPayment}
                 />
             )}
@@ -383,18 +597,46 @@ export const Payments = () => {
 };
 
 const payStyles = StyleSheet.create({
-    card: {
+    summaryBanner: {
         flexDirection: "row",
         alignItems: "center",
+        backgroundColor: COLORS.primary,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+    },
+    summaryItem:   { flex: 1, alignItems: "center" },
+    summaryNum:    { fontSize: 17, fontWeight: "800", color: "#fff" },
+    summaryLabel:  { fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 2 },
+    summaryDivider:{ width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.25)" },
+    filterRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        gap: 8,
+    },
+    filterChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 7,
+        borderRadius: 20,
+        backgroundColor: "#fff",
+        borderWidth: 1.5,
+        borderColor: "#e0e0e0",
+    },
+    filterChipActive:     { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+    filterChipText:       { fontSize: 13, fontWeight: "600", color: COLORS.textMuted },
+    filterChipTextActive: { color: "#fff" },
+    card: {
         backgroundColor: "#fff",
         borderRadius: 14,
         padding: 14,
         marginBottom: 10,
         elevation: 2,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
+        borderLeftWidth: 4,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
     },
     methodIcon: {
         width: 46, height: 46,
@@ -407,94 +649,23 @@ const payStyles = StyleSheet.create({
         alignItems: "center",
         marginBottom: 4,
     },
-    amount: { fontSize: 16, fontWeight: "800", color: COLORS.text },
-    badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-    badgeText: { fontSize: 11, fontWeight: "700" },
-    bottomRow: { flexDirection: "row", alignItems: "center" },
-    meta: { fontSize: 11, color: COLORS.textMuted },
-    metaDot: { fontSize: 11, color: COLORS.textLight },
-    note: { fontSize: 11, color: COLORS.textLight, marginTop: 2 },
-});
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: COLORS.primaryDark,
-        paddingTop: 16,
-        paddingHorizontal: 20,
-        paddingBottom: 36,
-        alignItems: "center",
-        gap: 6,
-    },
-    name: { color: "#fff", fontSize: 20, fontWeight: "800", marginTop: 6 },
-    roleBadge: {
-        backgroundColor: "rgba(255,255,255,0.2)",
-        borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4,
-    },
-    roleText: { color: "#fff", fontSize: 11, fontWeight: "600" },
-    email: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
-
-    statsRow: {
+    amount:       { fontSize: 16, fontWeight: "800", color: COLORS.text },
+    badge:        { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+    badgeText:    { fontSize: 11, fontWeight: "700" },
+    metaRow:      { flexDirection: "row", alignItems: "center" },
+    meta:         { fontSize: 11, color: COLORS.textMuted },
+    metaDot:      { fontSize: 11, color: COLORS.textLight },
+    note:         { fontSize: 11, color: COLORS.textLight, marginTop: 3 },
+    payBtn: {
         flexDirection: "row",
-        backgroundColor: "#fff",
-        borderRadius: 16,
-        marginHorizontal: 16,
-        marginTop: -22,
-        elevation: 6,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        overflow: "hidden",
-        zIndex: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        marginTop: 12,
+        backgroundColor: COLORS.primary,
+        borderRadius: 10,
+        paddingVertical: 9,
     },
-    statItem: { flex: 1, paddingVertical: 16, alignItems: "center" },
-    statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: COLORS.border },
-    statNum: { fontSize: 22, fontWeight: "800", color: COLORS.primary },
-    statLabel: { fontSize: 10, color: COLORS.textMuted, marginTop: 2 },
-
-    section: { marginHorizontal: 16, marginTop: 20 },
-    sectionTitle: {
-        fontSize: 11, fontWeight: "700", color: COLORS.textLight,
-        letterSpacing: 0.8, marginBottom: 8, paddingLeft: 4,
-    },
-    card: {
-        backgroundColor: "#fff",
-        borderRadius: 16,
-        overflow: "hidden",
-        elevation: 2,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.07,
-        shadowRadius: 6,
-    },
-    infoRow: {
-        flexDirection: "row", alignItems: "center",
-        paddingHorizontal: 16, paddingVertical: 12,
-        borderBottomWidth: 1, borderBottomColor: COLORS.border,
-    },
-    infoLabel: { fontSize: 11, color: COLORS.textMuted, width: 90 },
-    infoValue: { fontSize: 13, color: COLORS.text, fontWeight: "500", flex: 1 },
-    menuRow: {
-        flexDirection: "row", alignItems: "center",
-        paddingHorizontal: 16, paddingVertical: 14,
-        borderBottomWidth: 1, borderBottomColor: COLORS.border,
-        gap: 12,
-    },
-    menuIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-    menuLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-    menuSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
-    badgeWrap: {
-        backgroundColor: COLORS.redLight, borderRadius: 8,
-        paddingHorizontal: 6, paddingVertical: 2, marginRight: 6,
-    },
-    badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-    logoutBtn: {
-        margin: 16,
-        backgroundColor: "#fff0f0",
-        borderWidth: 1.5, borderColor: "#ffcdd2",
-        borderRadius: 16, paddingVertical: 14,
-        flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    },
-    logoutText: { color: COLORS.redLight, fontSize: 14, fontWeight: "700" },
+    payBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
 });
+

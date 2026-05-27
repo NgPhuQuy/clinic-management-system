@@ -12,6 +12,7 @@ const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
   <title>Video Call</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"/>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{width:100%;height:100%;background:#111827;font-family:sans-serif;overflow:hidden}
@@ -22,10 +23,14 @@ const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
     #wait-msg{color:#94a3b8;font-size:14px;position:absolute}
     #local-wrap{position:absolute;bottom:96px;right:12px;width:108px;height:148px;border-radius:14px;overflow:hidden;border:2.5px solid #fff;z-index:10;background:#0f172a}
     #controls{display:flex;justify-content:center;align-items:center;gap:20px;padding:14px 20px 22px;background:#1e293b}
-    .btn{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}
+    .btn{width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+    .btn .material-icons{font-size:26px;color:#fff}
     #btn-end{background:#dc2626}
+    #btn-end .material-icons{font-size:28px}
     #btn-mic,#btn-cam{background:#374151}
     .btn.muted{background:#7f1d1d}
+    .btn-label{color:#94a3b8;font-size:10px;text-align:center;margin-top:5px}
+    .btn-wrap{display:flex;flex-direction:column;align-items:center}
   </style>
 </head>
 <body>
@@ -37,9 +42,18 @@ const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
     <div id="local-wrap" id="local-player"></div>
   </div>
   <div id="controls">
-    <button class="btn" id="btn-mic">🎤</button>
-    <button class="btn" id="btn-end">📵</button>
-    <button class="btn" id="btn-cam">📷</button>
+    <div class="btn-wrap">
+      <button class="btn" id="btn-mic"><span class="material-icons">mic</span></button>
+      <span class="btn-label">Micro</span>
+    </div>
+    <div class="btn-wrap">
+      <button class="btn" id="btn-end"><span class="material-icons">call_end</span></button>
+      <span class="btn-label">Kết thúc</span>
+    </div>
+    <div class="btn-wrap">
+      <button class="btn" id="btn-cam"><span class="material-icons">videocam</span></button>
+      <span class="btn-label">Camera</span>
+    </div>
   </div>
 </div>
 <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
@@ -75,13 +89,13 @@ async function init(){
 $('btn-mic').onclick=async()=>{
   micMuted=!micMuted;
   if(audioTrack) await audioTrack.setMuted(micMuted);
-  $('btn-mic').textContent=micMuted?'🔇':'🎤';
+  $('btn-mic').innerHTML='<span class="material-icons">'+(micMuted?'mic_off':'mic')+'</span>';
   $('btn-mic').classList.toggle('muted',micMuted);
 };
 $('btn-cam').onclick=async()=>{
   camMuted=!camMuted;
   if(videoTrack) await videoTrack.setMuted(camMuted);
-  $('btn-cam').textContent=camMuted?'📵':'📷';
+  $('btn-cam').innerHTML='<span class="material-icons">'+(camMuted?'videocam_off':'videocam')+'</span>';
   $('btn-cam').classList.toggle('muted',camMuted);
 };
 $('btn-end').onclick=async()=>{

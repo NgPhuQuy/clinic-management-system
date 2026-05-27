@@ -1,6 +1,6 @@
 import {
     View, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, StatusBar,
+    ActivityIndicator, RefreshControl, StatusBar, StyleSheet,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
@@ -149,7 +149,7 @@ const DoctorDashboard = () => {
             {/* Header */}
             <View style={[styles.header, { paddingTop: top + 16 }]}>
                 <View>
-                    <Text style={styles.greeting}>Xin chào, Bác sĩ! 👨‍⚕️</Text>
+                    <Text style={styles.greeting}>Xin chào, BS. {user?.first_name || user?.username}!</Text>
                     <Text style={styles.dateText}>{today}</Text>
                 </View>
                 <TouchableOpacity style={Styles.notifBtn} onPress={() => nav.navigate("notifications")}>
@@ -260,7 +260,6 @@ const DoctorDashboard = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
     header: {
         backgroundColor: COLORS.primaryDark,
         paddingHorizontal: 20,
@@ -271,67 +270,7 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
     },
     greeting: { fontSize: 20, fontWeight: "800", color: "#fff" },
-    dateText: { fontSize: 13, color: "#bbdefb", marginTop: 4 },
-    notifBtn: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: "rgba(255,255,255,0.15)",
-        alignItems: "center", justifyContent: "center",
-    },
-    section: { margin: 16, marginBottom: 0 },
-    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-    sectionTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 },
-    seeAll: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
-    statsGrid: { gap: 10 },
-    statCard: {
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        padding: 14,
-        flexDirection: "row",
-        alignItems: "center",
-        borderLeftWidth: 4,
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-        marginBottom: 2,
-    },
-    statIcon: { width: 42, height: 42, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-    statValue: { fontSize: 22, fontWeight: "800", color: COLORS.text },
-    statLabel: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
-    actionsGrid: {
-        flexDirection: "row", flexWrap: "wrap", gap: 10,
-    },
-    actionBtn: {
-        width: "31%",
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        padding: 14,
-        alignItems: "center",
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-    },
-    actionIcon: { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-    actionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.text, textAlign: "center" },
-    apptItem: {
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        padding: 12,
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 8,
-        elevation: 1,
-        gap: 10,
-    },
-    timeBox: { padding: 8, borderRadius: 8, alignItems: "center", minWidth: 56 },
-    timeText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
-    apptPatient: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-    apptReason: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-    statusText: { fontSize: 10, fontWeight: "700" },
+    dateText:  { fontSize: 13, color: "#bbdefb", marginTop: 4 },
 });
 
 export default DoctorDashboard;

@@ -1,6 +1,6 @@
 import {
     View, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert
+    ActivityIndicator, Alert, StyleSheet
 } from "react-native";
 import { Text } from "react-native-paper";
 import { useState, useContext } from "react";
@@ -58,12 +58,6 @@ const PaymentScreen = () => {
             return;
         }
 
-        // invoiceId bắt buộc — appointmentId chỉ là tham chiếu hiển thị
-        if (!invoiceId) {
-            Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
-            return;
-        }
-
         if (!invoiceId) {
             Alert.alert("Lỗi", "Không tìm thấy mã hóa đơn. Vui lòng quay lại và thử lại.");
             return;
@@ -117,18 +111,31 @@ const PaymentScreen = () => {
     return (
         <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
 
+            {/* Custom header thay cho navigation header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => nav.goBack()} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Thanh toán</Text>
+                <View style={{ width: 38 }} />
+            </View>
+
             <View style={[Styles.card, { margin: 16, marginBottom: 8 }]}>
                 <Text style={Styles.sectionHeader}>Thông tin thanh toán</Text>
-                <View style={PS.infoRow}>
-                    <Text style={PS.infoLabel}>Bác sĩ</Text>
-                    <Text style={PS.infoValue}>BS. {doctorName}</Text>
-                </View>
-                <View style={PS.infoRow}>
-                    <Text style={PS.infoLabel}>Ngày khám</Text>
-                    <Text style={PS.infoValue}>
-                        {new Date(appointmentDate).toLocaleString("vi-VN")}
-                    </Text>
-                </View>
+                {doctorName ? (
+                    <View style={PS.infoRow}>
+                        <Text style={PS.infoLabel}>Bác sĩ</Text>
+                        <Text style={PS.infoValue}>BS. {doctorName}</Text>
+                    </View>
+                ) : null}
+                {appointmentDate ? (
+                    <View style={PS.infoRow}>
+                        <Text style={PS.infoLabel}>Ngày khám</Text>
+                        <Text style={PS.infoValue}>
+                            {new Date(appointmentDate).toLocaleString("vi-VN")}
+                        </Text>
+                    </View>
+                ) : null}
                 <View style={PS.divider} />
                 <View style={[PS.infoRow, { marginTop: 4 }]}>
                     <Text style={[PS.infoLabel, { fontWeight: "700", color: COLORS.text }]}>
@@ -206,68 +213,16 @@ const PaymentScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    sectionLabel: {
-        fontSize: 11,
-        fontWeight: "700",
-        color: COLORS.textLight,
-        letterSpacing: 0.8,
-        marginLeft: 20,
-        marginTop: 16,
-        marginBottom: 8,
-    },
-    infoRow: {
+    header: {
+        backgroundColor: COLORS.primary,
         flexDirection: "row",
+        alignItems: "center",
         justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 14,
     },
-    infoLabel: { fontSize: 12, color: COLORS.textMuted },
-    infoValue: {
-        fontSize: 13,
-        color: COLORS.text,
-        fontWeight: "500",
-        flex: 1,
-        textAlign: "right",
-    },
-    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 10 },
-    amountText: { fontSize: 20, fontWeight: "800", color: COLORS.primary },
-    methodCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#fff",
-        marginHorizontal: 16,
-        marginBottom: 10,
-        borderRadius: 14,
-        padding: 14,
-        borderWidth: 1.5,
-        borderColor: COLORS.border,
-        elevation: 1,
-    },
-    methodCardSelected: {
-        borderColor: COLORS.primary,
-        backgroundColor: COLORS.primaryPale,
-        elevation: 3,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-    },
-    methodIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    methodLabel: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-    methodSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
-    radio: {
-        width: 20, height: 20, borderRadius: 10,
-        borderWidth: 2, borderColor: COLORS.border,
-        alignItems: "center", justifyContent: "center",
-    },
-    radioSelected: { borderColor: COLORS.primary },
-    radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
+    backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+    headerTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
     onlineNote: {
         flexDirection: "row",
         alignItems: "center",

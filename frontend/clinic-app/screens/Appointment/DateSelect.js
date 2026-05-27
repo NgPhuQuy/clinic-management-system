@@ -1,6 +1,6 @@
 import {
     View, ScrollView, TouchableOpacity, StyleSheet,
-    ActivityIndicator, Dimensions,
+    ActivityIndicator, useWindowDimensions,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -22,9 +22,9 @@ const isHoliday = (year, month, day) => {
     return FIXED_HOLIDAYS.has(key);
 };
 
-const CELL_SIZE = Math.floor((Dimensions.get("window").width - 32 - 24) / 7);
-
 const DateSelect = () => {
+    const { width } = useWindowDimensions();
+    const CELL_SIZE = Math.floor((width - 32 - 24) / 7);
     const nav = useNavigation();
     const route = useRoute();
     const user = useContext(MyUserContext);
@@ -109,7 +109,7 @@ const DateSelect = () => {
         const cells = [];
 
         for (let i = 0; i < firstDay; i++) {
-            cells.push(<View key={`e${i}`} style={styles.dayCell} />);
+            cells.push(<View key={`e${i}`} style={[styles.dayCell, { width: CELL_SIZE, minHeight: CELL_SIZE }]} />);
         }
 
         for (let d = 1; d <= daysInMonth; d++) {
@@ -125,6 +125,7 @@ const DateSelect = () => {
                     key={dateStr}
                     style={[
                         styles.dayCell,
+                        { width: CELL_SIZE, minHeight: CELL_SIZE },
                         isToday && styles.dayCellToday,
                         isAvail && !isSelected && styles.dayCellAvail,
                         isSelected && styles.dayCellSelected,
@@ -177,7 +178,7 @@ const DateSelect = () => {
                     {/* Weekday headers */}
                     <View style={styles.weekRow}>
                         {WEEKDAYS.map((d, i) => (
-                            <Text key={d} style={[styles.weekDay, i === 0 && styles.weekDaySun]}>
+                            <Text key={d} style={[styles.weekDay, { width: CELL_SIZE }, i === 0 && styles.weekDaySun]}>
                                 {d}
                             </Text>
                         ))}
@@ -267,7 +268,6 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     weekDay: {
-        width: CELL_SIZE,
         textAlign: "center",
         fontSize: 12,
         fontWeight: "700",
@@ -282,8 +282,6 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
     },
     dayCell: {
-        width: CELL_SIZE,
-        minHeight: CELL_SIZE,
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 8,

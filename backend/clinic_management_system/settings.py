@@ -147,8 +147,7 @@ DATABASES = {
         'NAME': os.getenv("DB_NAME"),
         'USER': os.getenv("DB_USER"),
         'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': os.getenv("DB_HOST"),
-        'PORT': os.getenv("DB_PORT"),
+        'HOST': '',
         'OPTIONS': {
             'init_command': "SET time_zone='+07:00'",
             'charset': 'utf8mb4',
@@ -246,8 +245,8 @@ AGORA_TOKEN_EXPIRY    = int(os.getenv("AGORA_TOKEN_EXPIRY"))
 # ─────────────────────────────────────────────
 # BUSINESS CONSTANTS
 # ─────────────────────────────────────────────
-CONSULTATION_WINDOW_BEFORE_MINUTES = 15
-CONSULTATION_WINDOW_AFTER_MINUTES = 30
+CONSULTATION_WINDOW_BEFORE_MINUTES = 30
+CONSULTATION_WINDOW_AFTER_MINUTES = 120
 INVENTORY_NEAR_EXPIRY_DAYS = 30
 
 # ─────────────────────────────────────────────

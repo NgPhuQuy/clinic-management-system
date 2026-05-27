@@ -135,12 +135,15 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
         window_close = appointment_time + timedelta(minutes=settings.CONSULTATION_WINDOW_AFTER_MINUTES)
 
         if not (window_open <= now <= window_close):
+            local_open  = timezone.localtime(window_open)
+            local_close = timezone.localtime(window_close)
             return Response(
                 {
                     "detail": (
                         f"Phòng khám chỉ mở trong khoảng "
-                        f"{window_open.strftime('%H:%M')} – "
-                        f"{window_close.strftime('%H:%M')}."
+                        f"{local_open.strftime('%H:%M')} – "
+                        f"{local_close.strftime('%H:%M')} "
+                        f"ngày {local_open.strftime('%d/%m/%Y')}."
                     )
                 },
                 status=status.HTTP_400_BAD_REQUEST,

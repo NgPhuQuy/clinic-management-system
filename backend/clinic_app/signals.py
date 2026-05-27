@@ -109,12 +109,13 @@ def on_appointment_saved(sender, instance, created, **kwargs):
 
     patient_user = instance.patient.user
 
+    doctor_name = instance.doctor.user.get_full_name()
     STATUS_MESSAGES = {
         "confirmed": (
             Notification.Type.APPOINTMENT_CONFIRMED,
             "Lịch hẹn đã được xác nhận",
             (
-                f"Lịch hẹn với BS. {instance.doctor.full_name} vào "
+                f"Lịch hẹn với BS. {doctor_name} vào "
                 f"{instance.appointment_date.strftime('%H:%M %d/%m/%Y')} đã được xác nhận."
             ),
         ),
@@ -122,20 +123,20 @@ def on_appointment_saved(sender, instance, created, **kwargs):
             Notification.Type.APPOINTMENT_CANCELLED,
             "Lịch hẹn đã bị hủy",
             (
-                f"Lịch hẹn với BS. {instance.doctor.full_name} vào "
+                f"Lịch hẹn với BS. {doctor_name} vào "
                 f"{instance.appointment_date.strftime('%H:%M %d/%m/%Y')} đã bị hủy."
             ),
         ),
         "in_progress": (
             Notification.Type.SYSTEM,
             "Bác sĩ đang sẵn sàng",
-            f"Bác sĩ {instance.doctor.full_name} đang tiếp nhận ca khám của bạn.",
+            f"Bác sĩ {doctor_name} đang tiếp nhận ca khám của bạn.",
         ),
         "completed": (
             Notification.Type.SYSTEM,
             "Lịch hẹn hoàn thành",
             (
-                f"Buổi khám với BS. {instance.doctor.full_name} đã hoàn thành. "
+                f"Buổi khám với BS. {doctor_name} đã hoàn thành. "
                 f"Vui lòng kiểm tra đơn thuốc và kết quả xét nghiệm."
             ),
         ),
@@ -191,7 +192,7 @@ def on_prescription_saved(sender, instance, created, **kwargs):
             f"Đơn thuốc #{instance.pk} của bạn đã được cấp phát. "
             f"Vui lòng đến nhận thuốc tại quầy dược."
         )
-        patient_user = instance.patient.user
+        patient_user = instance.medical_record.patient.user
         Notification.objects.create(
             user=patient_user,
             title=title,
@@ -220,9 +221,19 @@ def on_payment_saved(sender, instance, created, **kwargs):
 
     if instance.status == "success":
         try:
-            patient_user = instance.invoice.appointment.patient.user
+            appointment  = instance.invoice.appointment
+            patient_user = appointment.patient.user
         except Exception:
             return
+
+        # Auto-confirm appointment nếu đang ở trạng thái pending
+        if appointment.status == "pending":
+            appointment.status = "confirmed"
+            appointment.save(update_fields=["status"])
+            logger.info(
+                "Appointment #%s auto-confirmed after Payment #%s success.",
+                appointment.pk, instance.pk,
+            )
 
         amount  = f"{int(instance.amount):,}đ".replace(",", ".")
         title   = "Thanh toán thành công"

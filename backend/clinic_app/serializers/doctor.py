@@ -29,6 +29,9 @@ class DoctorSummarySerializer(serializers.ModelSerializer):
 class DoctorScheduleSerializer(serializers.ModelSerializer):
     doctor_name  = serializers.CharField(source="doctor.user.get_full_name", read_only=True)
     booked_count = serializers.SerializerMethodField()
+    doctor       = serializers.PrimaryKeyRelatedField(
+        queryset=Doctor.objects.all(), required=False
+    )
 
     class Meta:
         model  = DoctorSchedule

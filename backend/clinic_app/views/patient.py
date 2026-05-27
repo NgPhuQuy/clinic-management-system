@@ -1,10 +1,11 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from ..models import Patient
 from ..serializers import PatientSerializer, AppointmentSerializer, MedicalRecordSerializer
-from ..permissions import HasAdminScope, IsOwnerOrAdmin, IsAuthenticatedWithValidToken
+from ..permissions import HasAdminScope, HasPatientScope, IsOwnerOrAdmin, IsAuthenticatedWithValidToken
 
 
 class PatientViewSet(viewsets.ModelViewSet):
@@ -14,14 +15,25 @@ class PatientViewSet(viewsets.ModelViewSet):
     search_fields = ["full_name", "phone", "insurance_number"]
 
     def get_permissions(self):
+        if self.action == "me":
+            return [HasPatientScope()]
         if self.action in ("retrieve", "update", "partial_update"):
-            # BUG FIX: IsAuthenticated → IsAuthenticatedWithValidToken
             return [IsAuthenticatedWithValidToken(), IsOwnerOrAdmin()]
         if self.action in ("appointments", "medical_records"):
-            # BUG FIX: IsAuthenticated → IsAuthenticatedWithValidToken
             return [IsAuthenticatedWithValidToken()]
         # list, create, destroy → admin only
         return [HasAdminScope()]
+
+    @action(detail=False, methods=["get", "patch"], url_path="me")
+    def me(self, request):
+        """GET/PATCH /api/patients/me/ — Xem và cập nhật hồ sơ bệnh nhân của mình."""
+        patient = get_object_or_404(Patient, user=request.user)
+        if request.method == "PATCH":
+            serializer = PatientSerializer(patient, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        return Response(PatientSerializer(patient).data)
 
     @action(detail=True, methods=["get"])
     def appointments(self, request, pk=None):

@@ -51,7 +51,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
     ).prefetch_related("details__medicine").all()
     serializer_class  = PrescriptionSerializer
     filter_backends   = [DjangoFilterBackend]
-    filterset_fields  = ["status"]
+    filterset_fields  = ["status", "medical_record"]
 
     def get_permissions(self):
         if self.action == "create":

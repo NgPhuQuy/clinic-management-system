@@ -1,6 +1,6 @@
-import { StyleSheet, Platform, Dimensions } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 
-const { width: SCREEN_W } = Dimensions.get("window");
+const SCREEN_W = 375;
 
 // ─────────────────────────────── COLOR PALETTE ───────────────────────────────
 export const COLORS = {
@@ -1083,56 +1083,6 @@ export const doctorListStyles = StyleSheet.create({
     },
 });
 
-// ── DoctorMedicalRecords ──
-
-export const doctorMedicalRecordsStyles = StyleSheet.create({
-    card: {
-        backgroundColor: "#fff", borderRadius: 14, padding: 14,
-        marginBottom: 2, elevation: 2,
-        shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    cardTop: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-    patientName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
-    dateText: { fontSize: 12, color: COLORS.textMuted },
-    prescBadge: { backgroundColor: COLORS.greenPale, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-    prescBadgeText: { fontSize: 11, color: COLORS.green, fontWeight: "700" },
-    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 8 },
-    diagnosisLabel: { fontSize: 12, color: COLORS.textMuted, marginBottom: 2 },
-    diagnosisText: { fontSize: 14, color: COLORS.text, fontWeight: "500" },
-    testCount: { fontSize: 12, color: COLORS.primary, marginTop: 6 },
-    // Detail styles
-    sectionTitle: { fontSize: 14, fontWeight: "700", color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 },
-    bigName: { fontSize: 20, fontWeight: "800", color: COLORS.text },
-    subMuted: { fontSize: 13, color: COLORS.textMuted, marginTop: 4 },
-    infoBlock: { marginBottom: 10 },
-    infoLabel: { fontSize: 12, color: COLORS.textMuted },
-    infoValue: { fontSize: 14, color: COLORS.text, fontWeight: "500", marginTop: 2 },
-    sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-    addTestBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.primary },
-    testItem: { backgroundColor: COLORS.bg, borderRadius: 10, padding: 10, marginBottom: 8 },
-    testHeader: { flexDirection: "row", justifyContent: "space-between" },
-    testType: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
-    testDate: { fontSize: 11, color: COLORS.textMuted },
-    testName: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginTop: 2 },
-    testResult: { fontSize: 13, color: COLORS.text, marginTop: 2 },
-    testRef: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    emptyText: { color: COLORS.textMuted, fontSize: 13, textAlign: "center", paddingVertical: 10 },
-    // Modal
-    modalHeader: {
-        backgroundColor: COLORS.primaryDark, paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
-        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    },
-    modalTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
-    input: { backgroundColor: "#fff", marginBottom: 10 },
-    row: { flexDirection: "row", gap: 10 },
-    fieldLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 8 },
-    typeRow: { flexDirection: "row", gap: 8 },
-    typeChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: "#fff" },
-    typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-    typeChipText: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
-});
-
 // ── DoctorSchedules ──
 
 export const doctorSchedulesStyles = StyleSheet.create({
@@ -1394,6 +1344,16 @@ export const homeStyles = StyleSheet.create({
         paddingVertical: 8,
     },
     healthBtnText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+
+    bannerWrap:   { paddingHorizontal: 16, paddingBottom: 8 },
+    bannerEmoji:  { fontSize: 36 },
+
+    docTagAvail:     { backgroundColor: "#e8f5e9", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginTop: 6, marginLeft: 6, alignSelf: "flex-start" },
+    docTagAvailText: { fontSize: 10, fontWeight: "600", color: COLORS.greenLight },
+
+    docEmptyCard: { alignItems: "center", paddingVertical: 24 },
+    iconMb:       { marginBottom: 8 },
+    spacerMd:     { height: 24 },
 });
 
 // ── PaymentResult ──
