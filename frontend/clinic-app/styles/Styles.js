@@ -1578,6 +1578,15 @@ export const staffInventoryStyles = StyleSheet.create({
     dropdownItem:  { padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
     dropdownText:  { fontSize: 14, fontWeight: "600", color: COLORS.text },
     dropdownSub:   { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+    searchRow: {
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 10, paddingVertical: 8,
+        borderBottomWidth: 1, borderBottomColor: COLORS.border,
+        gap: 6,
+    },
+    searchInput: {
+        flex: 1, fontSize: 13, color: COLORS.text, paddingVertical: 0,
+    },
     input:         { backgroundColor: "#fff", marginBottom: 10 },
     row:           { flexDirection: "row", gap: 10 },
 });

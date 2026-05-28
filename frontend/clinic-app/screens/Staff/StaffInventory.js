@@ -65,7 +65,7 @@ const InventoryCard = ({ item }) => {
             <View style={S.cardTop}>
                 <View style={{ flex: 1 }}>
                     <Text style={S.medicineName} numberOfLines={1}>
-                        {item.medicine?.name || `Thuốc #${item.medicine}`}
+                        {item.medicine_name || item.medicine?.name || `Thuốc #${item.medicine}`}
                     </Text>
                     <Text style={S.medicineCode}>
                         Lô: {item.batch_number} • {item.medicine?.unit || ""}
@@ -124,7 +124,7 @@ const AlertCard = ({ item, onResolve }) => {
             <View style={S.cardTop}>
                 <MaterialCommunityIcons name="alert-circle" size={22} color={color} />
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={S.medicineName}>{item.medicine?.name || `Thuốc #${item.medicine}`}</Text>
+                    <Text style={S.medicineName}>{item.medicine_name || item.medicine?.name || `Thuốc #${item.medicine}`}</Text>
                     <View style={[S.alertTypeBadge, { backgroundColor: color + "20" }]}>
                         <Text style={[S.alertTypeText, { color }]}>
                             {ALERT_TYPE_LABELS[item.alert_type] || item.alert_type}
@@ -153,11 +153,16 @@ const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
         medicine: "", batch_number: "", quantity: "",
         expiry_date: "", import_price: "", supplier: "", warning_threshold: "10",
     });
-    const [saving, setSaving] = useState(false);
-    const [err,    setErr]    = useState(null);
+    const [saving,     setSaving]     = useState(false);
+    const [err,        setErr]        = useState(null);
     const [showPicker, setShowPicker] = useState(false);
+    const [search,     setSearch]     = useState("");
 
-    const selectedMed = medicines.find((m) => m.id === form.medicine);
+    const selectedMed   = medicines.find((m) => m.id === form.medicine);
+    const filteredMeds  = medicines.filter((m) => {
+        const q = search.toLowerCase();
+        return !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q);
+    });
 
     const save = async () => {
         if (!form.medicine || !form.batch_number || !form.quantity || !form.expiry_date) {
@@ -177,6 +182,7 @@ const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
             onSuccess();
             onClose();
             setForm({ medicine: "", batch_number: "", quantity: "", expiry_date: "", import_price: "", supplier: "", warning_threshold: "10" });
+            setSearch("");
         } catch (e) {
             setErr(
                 e?.response?.data?.non_field_errors?.[0] ||
@@ -202,21 +208,51 @@ const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
 
                 {/* Chọn thuốc */}
                 <Text style={S.fieldLabel}>Thuốc *</Text>
-                <TouchableOpacity style={S.picker} onPress={() => setShowPicker(true)}>
-                    <Text style={{ color: form.medicine ? COLORS.text : COLORS.textLight }}>
-                        {selectedMed ? `${selectedMed.code} - ${selectedMed.name}` : "Chọn thuốc..."}
+                <TouchableOpacity
+                    style={S.picker}
+                    onPress={() => { setShowPicker((v) => !v); setSearch(""); }}
+                >
+                    <Text style={{ color: form.medicine ? COLORS.text : COLORS.textLight, flex: 1 }}>
+                        {selectedMed ? `${selectedMed.code} – ${selectedMed.name}` : "Chọn thuốc..."}
                     </Text>
-                    <MaterialCommunityIcons name="chevron-down" size={20} color={COLORS.textMuted} />
+                    <MaterialCommunityIcons
+                        name={showPicker ? "chevron-up" : "chevron-down"}
+                        size={20} color={COLORS.textMuted}
+                    />
                 </TouchableOpacity>
 
                 {showPicker && (
                     <View style={S.dropdown}>
-                        <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                            {medicines.map((m) => (
+                        {/* Search box */}
+                        <View style={S.searchRow}>
+                            <MaterialCommunityIcons name="magnify" size={16} color={COLORS.textMuted} />
+                            <TextInput
+                                value={search}
+                                onChangeText={setSearch}
+                                placeholder="Tìm theo tên hoặc mã thuốc..."
+                                placeholderTextColor={COLORS.textLight}
+                                style={S.searchInput}
+                                autoFocus
+                            />
+                            {search.length > 0 && (
+                                <TouchableOpacity onPress={() => setSearch("")}>
+                                    <MaterialCommunityIcons name="close-circle" size={16} color={COLORS.textMuted} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                        <ScrollView style={{ maxHeight: 220 }} nestedScrollEnabled>
+                            {filteredMeds.length === 0 ? (
+                                <Text style={[S.dropdownSub, { padding: 12, textAlign: "center" }]}>
+                                    Không tìm thấy thuốc
+                                </Text>
+                            ) : filteredMeds.map((m) => (
                                 <TouchableOpacity
                                     key={m.id}
-                                    style={S.dropdownItem}
-                                    onPress={() => { setForm({ ...form, medicine: m.id }); setShowPicker(false); }}
+                                    style={[
+                                        S.dropdownItem,
+                                        form.medicine === m.id && { backgroundColor: COLORS.primaryPale },
+                                    ]}
+                                    onPress={() => { setForm({ ...form, medicine: m.id }); setShowPicker(false); setSearch(""); }}
                                 >
                                     <Text style={S.dropdownText}>{m.code} — {m.name}</Text>
                                     <Text style={S.dropdownSub}>{m.unit} | {m.category?.name || ""}</Text>

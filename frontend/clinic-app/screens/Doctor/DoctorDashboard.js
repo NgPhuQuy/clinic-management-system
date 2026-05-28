@@ -149,7 +149,9 @@ const DoctorDashboard = () => {
             {/* Header */}
             <View style={[styles.header, { paddingTop: top + 16 }]}>
                 <View>
-                    <Text style={styles.greeting}>Xin chào, BS. {user?.first_name || user?.username}!</Text>
+                    <Text style={styles.greeting}>
+                        Xin chào, BS. {[user?.last_name, user?.first_name].filter(Boolean).join(" ") || user?.username}!
+                    </Text>
                     <Text style={styles.dateText}>{today}</Text>
                 </View>
                 <TouchableOpacity style={Styles.notifBtn} onPress={() => nav.navigate("notifications")}>

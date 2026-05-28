@@ -73,7 +73,7 @@ const StaffDoctorProfile = () => {
     const [stats, setStats] = useState({ appointments: 0, records: 0 });
 
     const roleCfg    = ROLE_CONFIG[user?.role] || ROLE_CONFIG.staff;
-    const avatarUri  = user?.avatar || user?.avatar_url || null;
+    const avatarUri  = user?.avatar_url || user?.avatar || null;
     const displayName = [user?.last_name, user?.first_name].filter(Boolean).join(" ")
         || user?.username || user?.email;
 
@@ -146,7 +146,9 @@ const StaffDoctorProfile = () => {
                             <Text style={PS.statLabel}>Chức vụ</Text>
                         </View>
                         <View style={[PS.statItem, PS.statBorder]}>
-                            <Text style={PS.statNum}>{roleCfg.label.split(" ")[0]}</Text>
+                            <Text style={[PS.statNum, { fontSize: 13 }]} numberOfLines={1} adjustsFontSizeToFit>
+                                {roleCfg.label}
+                            </Text>
                             <Text style={PS.statLabel}>Vai trò</Text>
                         </View>
                         <View style={PS.statItem}>

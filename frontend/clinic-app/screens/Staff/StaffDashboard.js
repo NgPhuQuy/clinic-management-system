@@ -123,30 +123,14 @@ const StaffDashboard = () => {
             {/* Header */}
             <View style={[styles.header, { paddingTop: top + 16 }]}>
                 <View>
-                    <Text style={styles.greeting}>Nhân viên y tế 🏥</Text>
+                    <Text style={styles.greeting}>
+                        Xin chào, {user?.first_name || user?.username}!
+                    </Text>
                     <Text style={styles.dateText}>{today}</Text>
                 </View>
                 <TouchableOpacity style={Styles.notifBtn} onPress={() => nav.navigate("notifications")}>
                     <MaterialCommunityIcons name="bell-outline" size={24} color="#fff" />
                 </TouchableOpacity>
-            </View>
-
-            {/* Revenue Cards */}
-            <View style={Styles.revenueRow}>
-                <View style={[Styles.revenueCard, { backgroundColor: COLORS.primary }]}>
-                    <MaterialCommunityIcons name="cash" size={20} color="rgba(255,255,255,0.8)" />
-                    <Text style={Styles.revenueLabel}>Doanh thu hôm nay</Text>
-                    <Text style={Styles.revenueValue}>
-                        {Number(payments.revenue_today || 0).toLocaleString("vi-VN")}đ
-                    </Text>
-                </View>
-                <View style={[Styles.revenueCard, { backgroundColor: COLORS.teal }]}>
-                    <MaterialCommunityIcons name="chart-bar" size={20} color="rgba(255,255,255,0.8)" />
-                    <Text style={Styles.revenueLabel}>Doanh thu tháng này</Text>
-                    <Text style={Styles.revenueValue}>
-                        {Number(payments.revenue_month || 0).toLocaleString("vi-VN")}đ
-                    </Text>
-                </View>
             </View>
 
             {/* Stats */}
@@ -177,13 +161,6 @@ const StaffDashboard = () => {
                         onPress={() => nav.navigate("staff-prescriptions")}
                     />
                     <StatCard
-                        icon="cash-multiple"
-                        label="Thanh toán tiền mặt chờ"
-                        value={payments.pending_cash ?? 0}
-                        color={COLORS.orange}
-                        onPress={() => nav.navigate("staff-payments")}
-                    />
-                    <StatCard
                         icon="alert-circle-outline"
                         label="Cảnh báo kho thuốc"
                         value={inventory.alerts ?? 0}
@@ -206,12 +183,12 @@ const StaffDashboard = () => {
                 <Text style={Styles.sectionTitle}>Chức năng nhanh</Text>
                 <View style={Styles.actionsGrid}>
                     {[
-                        { icon: "calendar-check",   label: "Quản lý\nlịch hẹn",    screen: "staff-appointments",   color: COLORS.primary },
-                        { icon: "pill",              label: "Cấp phát\nthuốc",       screen: "staff-prescriptions",  color: COLORS.green },
-                        { icon: "cash-register",     label: "Thu tiền\nthanh toán",  screen: "staff-payments",       color: COLORS.orange },
-                        { icon: "medical-bag",       label: "Tìm bệnh\nnhân",        screen: "staff-find-patient",   color: COLORS.teal },
-                        { icon: "package-variant",   label: "Quản lý\nkho thuốc",   screen: "staff-inventory",      color: COLORS.purple },
-                        { icon: "account-details",   label: "Hồ sơ\ncá nhân",       screen: "staff-profile",        color: COLORS.textMuted },
+                        { icon: "calendar-check",      label: "Quản lý\nlịch hẹn",  screen: "staff-appointments",  color: COLORS.primary },
+                        { icon: "pill",                 label: "Cấp phát\nthuốc",    screen: "staff-prescriptions", color: COLORS.green },
+                        { icon: "account-search",       label: "Tìm bệnh\nnhân",     screen: "staff-find-patient",  color: COLORS.teal },
+                        { icon: "package-variant",      label: "Quản lý\nkho thuốc", screen: "staff-inventory",     color: COLORS.purple },
+                        { icon: "credit-card-outline",  label: "Lịch sử\nthanh toán",screen: "staff-payments",      color: COLORS.orange },
+                        { icon: "account-circle-outline",label: "Hồ sơ\ncá nhân",   screen: "staff-profile",       color: COLORS.textMuted },
                     ].map(item => (
                         <TouchableOpacity
                             key={item.screen}

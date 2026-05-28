@@ -240,7 +240,7 @@ export const Profile = () => {
         dispatch({ type: "logout" });
     };
 
-    const avatarUri = user?.avatar || user?.avatar_url || patient?.avatar || null;
+    const avatarUri = user?.avatar_url || user?.avatar || null;
 
     return (
         <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} showsVerticalScrollIndicator={false}>
