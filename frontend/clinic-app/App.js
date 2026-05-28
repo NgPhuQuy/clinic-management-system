@@ -526,14 +526,19 @@ const App = () => {
                     const { status } = await ExpoNotifications.requestPermissionsAsync();
                     finalStatus = status;
                 }
-                if (finalStatus !== "granted") return;
+                if (finalStatus !== "granted") {
+                    console.warn("[Push] Permission denied:", finalStatus);
+                    return;
+                }
 
                 const tokenData = await ExpoNotifications.getExpoPushTokenAsync({
                     projectId: Constants.expoConfig?.extra?.eas?.projectId,
                 });
                 const pushToken = tokenData?.data;
+                console.log("[Push] Token:", pushToken);
                 if (pushToken) {
                     await authApis(user.token).patch(endpoints["current-user"], { push_token: pushToken });
+                    console.log("[Push] Token saved to backend");
                 }
             } catch (e) {
                 console.warn("Push setup:", e?.message);

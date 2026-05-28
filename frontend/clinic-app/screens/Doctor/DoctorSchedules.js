@@ -7,7 +7,8 @@ import { useState, useEffect, useContext } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, doctorSchedulesStyles as S } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { doctorSchedulesStyles as S } from "./Styles";
 import { DatePickerField, TimePickerField } from "../../components/DatePickerField";
 
 

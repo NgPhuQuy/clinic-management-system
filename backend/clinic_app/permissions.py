@@ -109,15 +109,7 @@ class IsAuthenticatedWithValidToken(BasePermission):
         )
 
 
-# ─────────────────────────────────────────────
-# Object-level permissions
-# ─────────────────────────────────────────────
-
 class IsOwnerOrAdmin(BasePermission):
-    """
-    Object-level: chủ sở hữu hoặc admin.
-    Dùng kết hợp: [IsAuthenticatedWithValidToken, IsOwnerOrAdmin]
-    """
     def has_object_permission(self, request, view, obj):
         if "admin" in _get_token_scopes(request):
             return True
@@ -129,10 +121,6 @@ class IsOwnerOrAdmin(BasePermission):
 
 
 class IsPatientOwnerOrDoctor(BasePermission):
-    """
-    Bệnh nhân xem record của mình; bác sĩ xem record bệnh nhân mình điều trị.
-    Admin xem tất cả.
-    """
     def has_object_permission(self, request, view, obj):
         scopes = _get_token_scopes(request)
         if "admin"   in scopes: return True

@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, medicalRecordsStyles as S } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
 import { medicalRecordsStyles as mrStyles, testResultsStyles as trStyles } from "./Styles";
 
 export const MedicalRecords = () => {

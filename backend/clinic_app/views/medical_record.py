@@ -15,19 +15,6 @@ from ..utils import get_token_scopes
 
 
 class MedicalRecordViewSet(viewsets.ModelViewSet):
-    """
-    POST /api/medical-records/             — Bác sĩ tạo hồ sơ bệnh án       [doctor]
-    GET  /api/medical-records/             — Danh sách                        [any auth]
-    GET  /api/medical-records/{id}/        — Chi tiết                         [any auth]
-    PUT  /api/medical-records/{id}/        — Cập nhật hồ sơ                   [doctor|admin]
-    POST /api/medical-records/{id}/add_test_result/ — Nhập kết quả CLS        [doctor|staff]
-
-    Phân quyền xem:
-      - patient: chỉ thấy hồ sơ của mình
-      - doctor:  chỉ thấy hồ sơ bệnh nhân mình điều trị
-      - staff:   thấy tất cả (cần để nhập kết quả xét nghiệm)
-      - admin:   thấy tất cả
-    """
     queryset = MedicalRecord.objects.select_related(
         "patient", "doctor", "appointment"
     ).prefetch_related("test_results").all()
@@ -42,7 +29,7 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
         if self.action in ("update", "partial_update"):
             return [HasDoctorOrAdminScope()]
         if self.action == "add_test_result":
-            return [HasDoctorOrStaffScope()] 
+            return [HasDoctorOrStaffScope()]
         return [IsAuthenticatedWithValidToken()]
 
     def get_queryset(self):
@@ -51,7 +38,7 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
         scopes = get_token_scopes(self.request)
 
         if "admin"   in scopes: return qs
-        if "staff"   in scopes: return qs        
+        if "staff"   in scopes: return qs
         if "doctor"  in scopes: return qs.filter(doctor__user=user)
         if "patient" in scopes: return qs.filter(patient__user=user)
         return qs.none()
@@ -76,12 +63,6 @@ class TestResultViewSet(
     mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
-    """
-    GET   /test-results/      — Danh sách kết quả xét nghiệm   [any auth]
-    PATCH /test-results/{id}/ — Cập nhật / nhập kết quả         [doctor|staff]
-
-    Hỗ trợ filter: ?status=ordered|completed  ?medical_record={id}
-    """
     queryset = TestResult.objects.select_related(
         "medical_record__patient__user"
     ).all()

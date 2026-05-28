@@ -148,15 +148,6 @@ class AppointmentStatusSerializer(serializers.ModelSerializer):
         fields = ("status",)
 
     def validate_status(self, value):
-        """
-        Kiểm tra chuyển trạng thái dựa trên OAuth2 token scope.
-
-        Quy tắc:
-          patient : pending → cancelled, confirmed → cancelled
-          doctor  : pending → confirmed | cancelled, confirmed → in_progress → completed | no_show
-          staff   : pending → confirmed | no_show, any → cancelled
-          admin   : không giới hạn
-        """
         instance     = self.instance
         request      = self.context.get("request")
         token        = getattr(request, "auth", None) if request else None

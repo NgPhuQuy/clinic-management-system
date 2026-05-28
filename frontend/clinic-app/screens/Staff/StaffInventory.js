@@ -8,7 +8,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, staffInventoryStyles as S } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { staffInventoryStyles as S } from "./Styles";
 import { DatePickerField } from "../../components/DatePickerField";
 
 

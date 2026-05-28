@@ -1,17 +1,3 @@
-"""
-clinic_app/views/consultation.py
-
-Mô hình "Google Meet" — Patient vào phòng chờ, Doctor admit.
-Trạng thái phòng chờ đồng bộ qua DB, frontend polling mỗi 4s.
-
-Endpoints:
-  GET  /consultations/{id}/        — Chi tiết + tin nhắn
-  POST /consultations/{id}/enter/  — Patient vào phòng chờ
-  POST /consultations/{id}/start/  — Doctor admit → cả 2 vào Agora
-  POST /consultations/{id}/end/    — Kết thúc (ai cũng bấm được)
-  POST /consultations/{id}/messages/ — Gửi tin nhắn
-"""
-
 import logging
 import time
 from datetime import timedelta
@@ -34,10 +20,6 @@ from ..utils import get_token_scopes
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────────────────────────
-# Agora helper
-# ─────────────────────────────────────────────
-
 def _generate_agora_token(channel_name: str, uid: int) -> str:
     try:
         from agora_token_builder import RtcTokenBuilder
@@ -46,7 +28,7 @@ def _generate_agora_token(channel_name: str, uid: int) -> str:
             settings.AGORA_APP_CERTIFICATE,
             channel_name,
             uid,
-            1,  # Role_Publisher = 1
+            1,
             int(time.time()) + settings.AGORA_TOKEN_EXPIRY,
         )
     except Exception as e:
@@ -55,7 +37,6 @@ def _generate_agora_token(channel_name: str, uid: int) -> str:
 
 
 def _generate_agora_rtm_token(user_id: str) -> str:
-    """Generate Agora RTM token for real-time messaging."""
     try:
         from agora_token_builder import RtmTokenBuilder
         return RtmTokenBuilder.buildToken(
@@ -69,22 +50,7 @@ def _generate_agora_rtm_token(user_id: str) -> str:
         return ""
 
 
-# ─────────────────────────────────────────────
-# ViewSet
-# ─────────────────────────────────────────────
-
 class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Luồng "Google Meet":
-      1. Appointment confirmed → signal tạo Consultation + set room_id.
-      2. Patient bấm "Vào phòng khám"  → POST /enter/
-             → status = waiting, thông báo cho bác sĩ.
-      3. Doctor thấy bệnh nhân chờ     → POST /start/
-             → status = active, trả Agora token cho bác sĩ.
-             → Frontend patient polling 4s → thấy active → gọi /enter/ → lấy token.
-      4. Ai cũng có thể bấm kết thúc   → POST /end/
-    """
-
     queryset = Consultation.objects.select_related(
         "appointment__patient__user",
         "appointment__doctor__user",
@@ -102,19 +68,8 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
         if "patient" in scopes: return qs.filter(appointment__patient__user=user)
         return qs.none()
 
-    # ── enter (Patient vào phòng chờ) ──────────
-
     @action(detail=True, methods=["post"], permission_classes=[HasPatientScope], url_path="enter")
     def enter(self, request, pk=None):
-        """
-        POST /consultations/{id}/enter/
-        Bệnh nhân bấm "Vào phòng khám".
-
-        Trả về tuỳ trạng thái:
-          - waiting → { status: "waiting" }          đang chờ bác sĩ
-          - active  → { status: "active", agora_* }  bác sĩ đã mở → vào thẳng
-          - ended   → 400
-        """
         consultation = self.get_object()
 
         if consultation.appointment.patient.user != request.user:
@@ -155,7 +110,6 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        # Bác sĩ đã mở phòng rồi → vào thẳng, trả Agora token luôn
         if consultation.status == Consultation.Status.ACTIVE:
             token = _generate_agora_token(consultation.room_id, request.user.pk)
             return Response({
@@ -166,7 +120,6 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
                 "uid":          request.user.pk,
             })
 
-        # Chưa có bác sĩ → vào phòng chờ
         consultation.status = Consultation.Status.WAITING
         consultation.save(update_fields=["status"])
 
@@ -184,15 +137,8 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
             "room_id": consultation.room_id,
         })
 
-    # ── start (Doctor admit patient) ───────────
-
     @action(detail=True, methods=["post"], permission_classes=[HasDoctorOrAdminScope], url_path="start")
     def start(self, request, pk=None):
-        """
-        POST /consultations/{id}/start/
-        Bác sĩ bấm "Bắt đầu khám" → cập nhật DB status = active.
-        Frontend patient đang poll sẽ nhận được status active và tự gọi /enter/.
-        """
         consultation = self.get_object()
 
         if consultation.status == Consultation.Status.ENDED:
@@ -215,11 +161,8 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
             "uid":          request.user.pk,
         })
 
-    # ── end (Ai cũng bấm được) ─────────────────
-
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedWithValidToken], url_path="end")
     def end(self, request, pk=None):
-        """POST /consultations/{id}/end/ — Kết thúc phiên khám."""
         consultation = self.get_object()
 
         if consultation.status == Consultation.Status.ENDED:
@@ -237,14 +180,8 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
             "duration_minutes": consultation.get_duration_minutes(),
         })
 
-    # ── rtm-token (Agora RTM real-time chat) ──
-
     @action(detail=True, methods=["get"], permission_classes=[IsAuthenticatedWithValidToken], url_path="rtm-token")
     def rtm_token(self, request, pk=None):
-        """
-        GET /consultations/{id}/rtm-token/
-        Lấy Agora RTM token để kết nối real-time chat.
-        """
         consultation = self.get_object()
         rtm_token = _generate_agora_rtm_token(str(request.user.pk))
         return Response({
@@ -254,11 +191,8 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
             "uid":          str(request.user.pk),
         })
 
-    # ── messages (Chat) ───────────────────────
-
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticatedWithValidToken], url_path="messages")
     def messages(self, request, pk=None):
-        """POST /consultations/{id}/messages/ — Gửi tin nhắn trong phòng khám."""
         consultation = self.get_object()
 
         if consultation.status == Consultation.Status.ENDED:

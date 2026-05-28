@@ -5,7 +5,8 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, doctorDetailStyles as S } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { doctorDetailStyles as S } from "./Styles";
 
 const DoctorAvatarLarge = ({ uri }) => {
     const [error, setError] = useState(false);

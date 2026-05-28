@@ -10,7 +10,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
 import { authApis, endpoints } from "../../configs/Apis";
-import Styles, { COLORS, profileStyles as PS } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { profileStyles as PS } from "../Profile/Styles";
 
 const ROLE_CONFIG = {
     doctor: { label: "Bác sĩ", icon: "stethoscope", bg: COLORS.primaryDark },

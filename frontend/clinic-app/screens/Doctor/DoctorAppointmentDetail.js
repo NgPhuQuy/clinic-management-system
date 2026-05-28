@@ -8,7 +8,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, doctorAppointmentDetailStyles as S } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { doctorAppointmentDetailStyles as S } from "./Styles";
 import { DatePickerField } from "../../components/DatePickerField";
 import {
     doctorAppointmentDetailPdStyles as pdStyles,

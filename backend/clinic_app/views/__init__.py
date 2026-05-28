@@ -1,4 +1,7 @@
-from .auth import RegisterView, LoginView, MeView, ChangePasswordView
+from .auth import (
+    RegisterView, LoginView, MeView, ChangePasswordView,
+    GoogleOAuthRedirectView, GoogleOAuthCallbackView,
+)
 from .specialty import SpecialtyViewSet, ServiceViewSet
 from .patient import PatientViewSet
 from .doctor import DoctorViewSet, DoctorScheduleViewSet
@@ -9,7 +12,7 @@ from .prescription import PrescriptionViewSet
 from .payment import PaymentViewSet
 from .consultation import ConsultationViewSet
 from .notification import NotificationViewSet
-from .dashboard import DashboardView, DashboardReportsView
+from .dashboard import DashboardView
 from .staff_doctor import (
     DoctorDashboardView,
     StaffDashboardView,
@@ -23,6 +26,7 @@ from .staff_doctor import (
 
 __all__ = [
     "RegisterView", "LoginView", "MeView", "ChangePasswordView",
+    "GoogleOAuthRedirectView", "GoogleOAuthCallbackView",
     "SpecialtyViewSet", "ServiceViewSet",
     "PatientViewSet",
     "DoctorViewSet", "DoctorScheduleViewSet",
@@ -33,7 +37,7 @@ __all__ = [
     "PaymentViewSet",
     "ConsultationViewSet",
     "NotificationViewSet",
-    "DashboardView", "DashboardReportsView",
+    "DashboardView",
     "DoctorDashboardView", "StaffDashboardView",
     "StaffPatientListView", "StaffPatientDetailView",
     "StaffPaymentListView",

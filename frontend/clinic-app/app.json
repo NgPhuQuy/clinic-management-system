@@ -2,6 +2,7 @@
   "expo": {
     "name": "clinic-app",
     "slug": "clinic-app",
+    "scheme": "com.clinic.app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,19 +21,30 @@
       }
     },
     "android": {
+      "package": "com.clinic.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"]
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-asset",
-      "expo-notifications"
-    ]
+      "expo-notifications",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "baf740e5-d722-413e-a11e-0fede47bc4d4"
+      }
+    },
+    "owner": "ngphuquy241s-organization"
   }
 }

@@ -1,18 +1,3 @@
-"""
-seed.py — Tạo dữ liệu mẫu tối thiểu để demo toàn bộ chức năng core.
-
-Chạy:
-    python manage.py seed           # idempotent, không xóa dữ liệu cũ
-    python manage.py seed --reset   # xóa sạch rồi seed lại
-
-Tài khoản mặc định:
-    Admin     admin / Admin@123
-    Bác sĩ    dr_an@hospital.vn / 12345678   (tim mạch)
-              dr_cuong@hospital.vn / 12345678 (tiêu hóa)
-    Nhân viên staff_linh@hospital.vn / 12345678
-    Bệnh nhân mai@gmail.com / 12345678
-              bao@gmail.com / 12345678
-"""
 import uuid
 from datetime import date, timedelta, time
 from decimal import Decimal
@@ -23,8 +8,6 @@ from django.utils import timezone
 
 User = get_user_model()
 
-
-# ── Dữ liệu cố định ──────────────────────────────────────────────────────────
 
 SPECIALTIES = [
     {
@@ -80,7 +63,6 @@ MEDICINE_CATEGORIES = [
     ("Vitamin & Khoáng",   "Vitamin tổng hợp, khoáng chất bổ sung"),
 ]
 
-# (tên, mã, hoạt chất, đơn vị, giá, kê đơn, idx_category)
 MEDICINES_DATA = [
     ("Amoxicillin 500mg",  "MED001", "Amoxicillin",          "viên",  4_000,  True,  0),
     ("Azithromycin 250mg", "MED002", "Azithromycin",         "viên", 15_000,  True,  0),
@@ -94,7 +76,6 @@ MEDICINES_DATA = [
     ("Vitamin B complex",  "MED010", "B1+B6+B12",            "viên",  2_000, False,  4),
 ]
 
-# (họ tên, username, email, idx_specialty, kinh nghiệm, phí, mã BS)
 DOCTORS_DATA = [
     ("Nguyễn Văn An",  "dr_an",    "dr_an@hospital.vn",    0, 15, 350_000, "BS-TM-001"),
     ("Trần Thị Bích",  "dr_bich",  "dr_bich@hospital.vn",  0, 10, 300_000, "BS-TM-002"),
@@ -103,21 +84,17 @@ DOCTORS_DATA = [
     ("Hoàng Văn Em",   "dr_em",    "dr_em@hospital.vn",    3,  8, 250_000, "BS-DL-001"),
 ]
 
-# (họ tên, username, email, chức vụ, sđt)
 STAFF_DATA = [
     ("Nguyễn Thị Linh", "staff_linh", "staff_linh@hospital.vn", "receptionist", "0911000001"),
     ("Trần Văn Bình",   "staff_binh", "staff_binh@hospital.vn", "pharmacist",   "0911000002"),
 ]
 
-# (họ tên, username, email, ngày sinh, giới tính, sdt, nhóm máu, bảo hiểm)
 PATIENTS_DATA = [
     ("Nguyễn Thị Mai", "patient_mai", "mai@gmail.com", "1990-05-12", "female", "0901234501", "A+", "BN2024001"),
     ("Trần Văn Bảo",   "patient_bao", "bao@gmail.com", "1985-08-20", "male",   "0901234502", "O+", "BN2024002"),
     ("Lê Thị Cúc",     "patient_cuc", "cuc@gmail.com", "1978-03-07", "female", "0901234503", "B+", "BN2024003"),
 ]
 
-
-# ── Command ──────────────────────────────────────────────────────────────────
 
 class Command(BaseCommand):
     help = "Seed dữ liệu mẫu tối thiểu để demo các chức năng core"
@@ -152,8 +129,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("\nSeed hoàn tất!\n"))
         self._print_summary()
 
-    # ── Reset ─────────────────────────────────────────────────────────────────
-
     def _reset(self):
         from clinic_app.models.notification   import Notification
         from clinic_app.models.payment        import Payment, Invoice
@@ -182,8 +157,6 @@ class Command(BaseCommand):
         User.objects.exclude(is_superuser=True).delete()
         self.stdout.write("  Đã xóa dữ liệu cũ (giữ superuser)")
 
-    # ── Specialties & Services ────────────────────────────────────────────────
-
     def _seed_specialties(self):
         from clinic_app.models.specialty import Specialty, Service
 
@@ -203,8 +176,6 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  Chuyên khoa: {len(specialties)} | Dịch vụ: {len(services)}")
         return specialties, services
-
-    # ── Medicines ─────────────────────────────────────────────────────────────
 
     def _seed_medicines(self):
         from clinic_app.models.medicine import MedicineCategory, Medicine
@@ -232,8 +203,6 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  Thuốc: {len(medicines)}")
         return cats, medicines
-
-    # ── Doctors ───────────────────────────────────────────────────────────────
 
     def _seed_doctors(self, specialties):
         from clinic_app.models.doctor import Doctor
@@ -273,8 +242,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Bác sĩ: {len(doctors)} — password: 12345678")
         return doctors
 
-    # ── Staff ─────────────────────────────────────────────────────────────────
-
     def _seed_staff(self):
         from clinic_app.models.staff import Staff
 
@@ -305,8 +272,6 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  Nhân viên: {len(staff_list)} — password: 12345678")
         return staff_list
-
-    # ── Patients ──────────────────────────────────────────────────────────────
 
     def _seed_patients(self):
         from clinic_app.models.patient import Patient
@@ -344,8 +309,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Bệnh nhân: {len(patients)} — password: 12345678")
         return patients
 
-    # ── Doctor Schedules ──────────────────────────────────────────────────────
-
     def _seed_schedules(self, doctors):
         from clinic_app.models.doctor import DoctorSchedule
 
@@ -357,9 +320,9 @@ class Command(BaseCommand):
         ]
 
         for doctor in doctors:
-            for delta in range(-3, 8):   # 3 ngày qua → 7 ngày tới
+            for delta in range(-3, 8):  
                 sched_date = today + timedelta(days=delta)
-                if sched_date.weekday() == 6:  # bỏ Chủ nhật
+                if sched_date.weekday() == 6: 
                     continue
                 start_t, end_t = slots[delta % 2]
                 sched, _ = DoctorSchedule.objects.get_or_create(
@@ -377,7 +340,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Lịch làm việc: {len(schedules)}")
         return schedules
 
-    # ── Appointments ──────────────────────────────────────────────────────────
 
     def _seed_appointments(self, patients, doctors, schedules, services):
         from clinic_app.models.appointment import Appointment, AppointmentService
@@ -385,17 +347,15 @@ class Command(BaseCommand):
         today = date.today()
         appointments = []
 
-        # Danh sách cố định để demo đủ các trạng thái
         scenarios = [
-            # (patient_idx, doctor_idx, delta_days, hour, status)
-            (0, 0, -2, 9,  Appointment.Status.COMPLETED),   # đã khám xong → có hồ sơ, đơn thuốc, thanh toán
+            (0, 0, -2, 9,  Appointment.Status.COMPLETED),
             (1, 0, -1, 10, Appointment.Status.COMPLETED),
             (2, 2, -1, 14, Appointment.Status.COMPLETED),
-            (0, 1,  0,  9, Appointment.Status.CONFIRMED),   # hôm nay đã xác nhận → staff thấy
-            (1, 2,  0, 14, Appointment.Status.IN_PROGRESS), # đang khám → dashboard bác sĩ
-            (2, 0,  1,  9, Appointment.Status.PENDING),     # ngày mai chờ xác nhận → staff confirm
+            (0, 1,  0,  9, Appointment.Status.CONFIRMED),
+            (1, 2,  0, 14, Appointment.Status.IN_PROGRESS), 
+            (2, 0,  1,  9, Appointment.Status.PENDING),    
             (0, 1,  2, 10, Appointment.Status.PENDING),
-            (1, 3,  3, 14, Appointment.Status.CANCELLED),   # đã hủy
+            (1, 3,  3, 14, Appointment.Status.CANCELLED), 
         ]
 
         reasons = [
@@ -440,7 +400,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Lịch hẹn: {len(appointments)}")
         return appointments
 
-    # ── Medical Records ───────────────────────────────────────────────────────
 
     def _seed_medical_records(self, appointments):
         from clinic_app.models.medical_record import MedicalRecord, TestResult
@@ -487,8 +446,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Hồ sơ bệnh án: {len(records)}")
         return records
 
-    # ── Prescriptions ─────────────────────────────────────────────────────────
-
     def _seed_prescriptions(self, records, medicines, staff_list):
         from clinic_app.models.prescription import Prescription, PrescriptionDetail
 
@@ -496,7 +453,6 @@ class Command(BaseCommand):
         prescriptions = []
 
         for idx, record in enumerate(records):
-            # record[0] → dispensed (đã cấp), record[1] → pending (chờ cấp)
             is_dispensed = (idx % 2 == 0)
             presc = Prescription.objects.create(
                 medical_record=record,
@@ -522,8 +478,6 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  Đơn thuốc: {len(prescriptions)}")
         return prescriptions
-
-    # ── Invoices & Payments ───────────────────────────────────────────────────
 
     def _seed_invoices_payments(self, appointments):
         from clinic_app.models.appointment import Appointment
@@ -561,8 +515,6 @@ class Command(BaseCommand):
 
         self.stdout.write("  Hóa đơn & thanh toán: OK")
 
-    # ── Inventory ─────────────────────────────────────────────────────────────
-
     def _seed_inventory(self, medicines):
         from clinic_app.models.medicine import Inventory, InventoryAlert
 
@@ -570,17 +522,16 @@ class Command(BaseCommand):
         suppliers = ["Dược Hậu Giang", "Pymepharco", "OPC Pharma"]
 
         inventory_data = [
-            # (medicine_idx, qty, expiry_delta_days, supplier_idx)
-            (0, 200, 365,  0),   # Amoxicillin — đủ hàng
-            (1, 150, 300,  1),   # Azithromycin — đủ hàng
-            (2, 500, 400,  2),   # Paracetamol — đủ hàng
-            (3, 300, 350,  0),   # Ibuprofen — đủ hàng
-            (4, 180, 280,  1),   # Omeprazole — đủ hàng
-            (5, 120, 320,  2),   # Domperidone — đủ hàng
-            (6, 7,   180,  0),   # Amlodipine — SẮP HẾT HÀNG (ngưỡng 10)
-            (7, 90,  25,   1),   # Metoprolol — SẮP HẾT HẠN (25 ngày)
-            (8, 250, 365,  2),   # Vitamin C — đủ hàng
-            (9, 200, 400,  0),   # Vitamin B — đủ hàng
+            (0, 200, 365,  0),   
+            (1, 150, 300,  1),   
+            (2, 500, 400,  2),   
+            (3, 300, 350,  0),  
+            (4, 180, 280,  1),  
+            (5, 120, 320,  2),  
+            (6, 7,   180,  0),   
+            (7, 90,  25,   1),   
+            (8, 250, 365,  2),   
+            (9, 200, 400,  0), 
         ]
 
         for med_idx, qty, expiry_delta, sup_idx in inventory_data:
@@ -614,8 +565,6 @@ class Command(BaseCommand):
                 )
 
         self.stdout.write("  Kho thuốc: OK (có 1 sắp hết hàng, 1 sắp hết hạn để demo cảnh báo)")
-
-    # ── Notifications ─────────────────────────────────────────────────────────
 
     def _seed_notifications(self, patients, appointments):
         from clinic_app.models.notification import Notification
@@ -657,8 +606,6 @@ class Command(BaseCommand):
         Notification.objects.bulk_create(notifs)
         self.stdout.write(f"  Thông báo: {len(notifs)}")
 
-    # ── Consultations ─────────────────────────────────────────────────────────
-
     def _seed_consultations(self, appointments):
         from clinic_app.models.consultation import Consultation, ChatMessage
         from clinic_app.models.appointment  import Appointment
@@ -690,8 +637,6 @@ class Command(BaseCommand):
                 ChatMessage.objects.create(consultation=c, sender=sender, message=msg, is_read=True)
 
         self.stdout.write("  Tư vấn online + chat: OK")
-
-    # ── Summary ───────────────────────────────────────────────────────────────
 
     def _print_summary(self):
         self.stdout.write(self.style.SUCCESS("\nTài khoản demo:"))

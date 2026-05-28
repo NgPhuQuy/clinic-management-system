@@ -408,17 +408,38 @@
     </div>
   </div>
   <div class="section-lbl">👥 Cơ cấu bệnh nhân</div>
-  <div class="chart-grid-2">
+  <div class="chart-grid-3">
     <div class="chart-card">
       <h3>Theo giới tính</h3>
       <div class="chart-wrap"><canvas id="genderChart"></canvas></div>
     </div>
     <div class="chart-card">
-      <h3>Lịch hẹn theo trạng thái</h3>
-      <div class="chart-wrap"><canvas id="apptBarChart"></canvas></div>
+      <h3>Theo nhóm tuổi</h3>
+      <div class="chart-wrap"><canvas id="ageChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Theo chuyên khoa</h3>
+      <div class="chart-wrap"><canvas id="specialtyChart"></canvas></div>
     </div>
   </div>
-  <a class="view-all-link" href="{% url 'clinic_admin:clinic-stats' %}">📈 Xem báo cáo toàn diện →</a>
+  <div class="section-lbl">🏥 Dịch vụ y tế được sử dụng</div>
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <h3>Top 10 dịch vụ</h3>
+      <div class="chart-wrap" style="height:260px"><canvas id="serviceChart"></canvas></div>
+    </div>
+  </div>
+  <div class="section-lbl">🩺 Bệnh lý phổ biến</div>
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <h3>Top 10 chẩn đoán</h3>
+      <div class="chart-wrap"><canvas id="diseaseChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Top 10 chẩn đoán (cột)</h3>
+      <div class="chart-wrap"><canvas id="diseaseBarChart"></canvas></div>
+    </div>
+  </div>
 </div>
 
 <!-- TAB 2: LỊCH HẸN -->
@@ -576,7 +597,15 @@
   "appt_status_labels": {{ appt_status_labels_json|safe }},
   "appt_status_data":   {{ appt_status_data_json|safe }},
   "gender_labels":      {{ gender_labels_json|safe }},
-  "gender_data":        {{ gender_data_json|safe }}
+  "gender_data":        {{ gender_data_json|safe }},
+  "age_labels":         {{ age_labels_json|safe }},
+  "age_data":           {{ age_data_json|safe }},
+  "specialty_labels":   {{ specialty_labels_json|safe }},
+  "specialty_data":     {{ specialty_data_json|safe }},
+  "service_labels":     {{ service_labels_json|safe }},
+  "service_data":       {{ service_data_json|safe }},
+  "disease_labels":     {{ disease_labels_json|safe }},
+  "disease_data":       {{ disease_data_json|safe }}
 }
 </script>
 
@@ -602,7 +631,11 @@
   new Chart('methodChart', { type: 'pie', data: { labels: D.method_labels.map(l => mMap[l] || l), datasets: [{ data: D.method_data, backgroundColor: pal(D.method_labels.length) }] }, options: { ...base, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } } });
   new Chart('apptStatusChart', { type: 'doughnut', data: { labels: D.appt_status_labels, datasets: [{ data: D.appt_status_data, backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ef4444', '#6b7280'] }] }, options: { ...base, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } } });
   new Chart('genderChart', { type: 'pie', data: { labels: D.gender_labels, datasets: [{ data: D.gender_data, backgroundColor: ['#3b82f6', '#f472b6', '#a78bfa'] }] }, options: { ...base, plugins: { legend: { position: 'bottom' } } } });
-  new Chart('apptBarChart', { type: 'bar', data: { labels: D.appt_status_labels, datasets: [{ label: 'Lịch hẹn', data: D.appt_status_data, backgroundColor: ['#fcd34d', '#93c5fd', '#c4b5fd', '#6ee7b7', '#fca5a5', '#d1d5db'], borderRadius: 4 }] }, options: { ...base, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { ticks: { font: { size: 10 } } } } } });
+  new Chart('ageChart', { type: 'bar', data: { labels: D.age_labels, datasets: [{ label: 'Bệnh nhân', data: D.age_data, backgroundColor: pal(4), borderRadius: 4 }] }, options: { ...base, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
+  new Chart('specialtyChart', { type: 'bar', data: { labels: D.specialty_labels, datasets: [{ label: 'Bệnh nhân', data: D.specialty_data, backgroundColor: 'rgba(139,92,246,.75)', borderRadius: 4 }] }, options: { ...base, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } } });
+  new Chart('serviceChart', { type: 'bar', data: { labels: D.service_labels, datasets: [{ label: 'Lượt sử dụng', data: D.service_data, backgroundColor: 'rgba(16,185,129,.75)', borderRadius: 4 }] }, options: { ...base, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } } });
+  new Chart('diseaseChart', { type: 'doughnut', data: { labels: D.disease_labels, datasets: [{ data: D.disease_data, backgroundColor: pal(D.disease_labels.length) }] }, options: { ...base, plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 12 } } } } });
+  new Chart('diseaseBarChart', { type: 'bar', data: { labels: D.disease_labels, datasets: [{ label: 'Số ca', data: D.disease_data, backgroundColor: pal(D.disease_labels.length), borderRadius: 4 }] }, options: { ...base, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { ticks: { maxRotation: 35, font: { size: 10 } } } } } });
   new Chart('apptTabChart', { type: 'doughnut', data: { labels: D.appt_status_labels, datasets: [{ data: D.appt_status_data, backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#ef4444', '#6b7280'] }] }, options: { ...base, plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } } } });
   new Chart('payTabChart', { type: 'bar', data: { labels: D.rev7d_labels, datasets: [{ label: 'VND', data: D.rev7d_data, backgroundColor: 'rgba(245,158,11,.75)', borderRadius: 4 }] }, options: { ...base, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v.toLocaleString('vi') } } } } });
   new Chart('methodTabChart', { type: 'doughnut', data: { labels: D.method_labels.map(l => mMap[l] || l), datasets: [{ data: D.method_data, backgroundColor: pal(D.method_labels.length) }] }, options: { ...base, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } } });

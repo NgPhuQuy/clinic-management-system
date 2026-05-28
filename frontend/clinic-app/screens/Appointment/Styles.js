@@ -497,3 +497,27 @@ export const dateSelectStyles = StyleSheet.create({
         color: COLORS.textMuted,
     },
 });
+
+export const myAppointmentsStyles = StyleSheet.create({
+    filterRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 6,
+        padding: 12,
+        backgroundColor: "#fff",
+        elevation: 1,
+    },
+    chip: {
+        backgroundColor: "#e3f2fd",
+        marginBottom: 4,
+    },
+    chipSelected: {
+        backgroundColor: "#1565c0",
+    },
+    header: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 8,
+    },
+});

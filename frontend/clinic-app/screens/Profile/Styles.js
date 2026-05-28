@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { COLORS } from "../../styles/Styles";
 
 export const editProfileStyles = StyleSheet.create({
@@ -132,6 +132,131 @@ export const medicalRecordsStyles = StyleSheet.create({
     chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
     chipText: { fontSize: 13, fontWeight: "600", color: COLORS.textMuted },
     chipTextActive: { color: "#fff" },
+});
+
+export const profileStyles = StyleSheet.create({
+    header: {
+        backgroundColor: COLORS.primaryDark,
+        paddingTop: Platform.OS === "ios" ? 56 : 52,
+        paddingHorizontal: 20,
+        paddingBottom: 36,
+        alignItems: "center",
+        gap: 6,
+    },
+    name:      { color: "#fff", fontSize: 20, fontWeight: "800", marginTop: 6 },
+    roleBadge: {
+        backgroundColor: "rgba(255,255,255,0.2)",
+        borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4,
+    },
+    roleText:  { color: "#fff", fontSize: 11, fontWeight: "600" },
+    email:     { color: "rgba(255,255,255,0.7)", fontSize: 12 },
+    statsRow: {
+        flexDirection: "row",
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        marginHorizontal: 16,
+        marginTop: -22,
+        elevation: 6,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        overflow: "hidden",
+        zIndex: 10,
+    },
+    statItem:   { flex: 1, paddingVertical: 16, alignItems: "center" },
+    statBorder: { borderLeftWidth: 1, borderRightWidth: 1, borderColor: COLORS.border },
+    statNum:    { fontSize: 22, fontWeight: "800", color: COLORS.primary },
+    statLabel:  { fontSize: 10, color: COLORS.textMuted, marginTop: 2 },
+    section:    { marginHorizontal: 16, marginTop: 20 },
+    sectionTitle: {
+        fontSize: 11, fontWeight: "700", color: COLORS.textLight,
+        letterSpacing: 0.8, marginBottom: 8, paddingLeft: 4,
+    },
+    card: {
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        overflow: "hidden",
+        elevation: 2,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 6,
+    },
+    infoRow: {
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 16, paddingVertical: 12,
+        borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    },
+    infoLabel: { fontSize: 11, color: COLORS.textMuted, width: 90 },
+    infoValue: { fontSize: 13, color: COLORS.text, fontWeight: "500", flex: 1 },
+    menuRow: {
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 16, paddingVertical: 14,
+        borderBottomWidth: 1, borderBottomColor: COLORS.border,
+        gap: 12,
+    },
+    menuIcon:  { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+    menuLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+    menuSub:   { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
+    badgeWrap: {
+        backgroundColor: "#f44336", borderRadius: 8,
+        paddingHorizontal: 6, paddingVertical: 2, marginRight: 6,
+    },
+    badgeText:  { color: "#fff", fontSize: 10, fontWeight: "700" },
+    logoutBtn: {
+        margin: 16,
+        backgroundColor: "#fff0f0",
+        borderWidth: 1.5, borderColor: "#ffcdd2",
+        borderRadius: 16, paddingVertical: 14,
+        flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    },
+    logoutText: { color: "#f44336", fontSize: 14, fontWeight: "700" },
+
+    invoiceCard: {
+        backgroundColor: "#fff", borderRadius: 14, padding: 14,
+        marginBottom: 10, elevation: 2,
+        shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.07, shadowRadius: 4,
+    },
+    invoiceTop: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+    invoiceNum: { fontSize: 15, fontWeight: "700", color: COLORS.text },
+    invoiceDoc: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+    invoiceAmt: { fontSize: 18, fontWeight: "800", color: COLORS.primary },
+    invoiceDate:{ fontSize: 11, color: COLORS.textLight, marginTop: 4 },
+
+    methodCard: {
+        flexDirection: "row", alignItems: "center",
+        backgroundColor: "#fff", marginHorizontal: 0,
+        marginBottom: 10, borderRadius: 14, padding: 14,
+        borderWidth: 1.5, borderColor: COLORS.border, elevation: 1,
+    },
+    methodCardSelected: {
+        borderColor: COLORS.primary, backgroundColor: COLORS.primaryPale,
+        elevation: 3, shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6,
+    },
+    methodIcon:    { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    methodLabel:   { fontSize: 14, fontWeight: "700", color: COLORS.text },
+    methodSub:     { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+    radio:         { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: COLORS.border, alignItems: "center", justifyContent: "center" },
+    radioSelected: { borderColor: COLORS.primary },
+    radioDot:      { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
+    paidTag: {
+        backgroundColor: "#e8f5e9", borderRadius: 8,
+        paddingVertical: 8, alignItems: "center", marginTop: 12,
+    },
+    paidTagText: { color: COLORS.green, fontWeight: "700", fontSize: 13 },
+    payBtn: {
+        flexDirection: "row", alignItems: "center", justifyContent: "center",
+        backgroundColor: COLORS.primary, borderRadius: 12,
+        paddingVertical: 13, marginTop: 14, gap: 8, elevation: 3,
+        shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3, shadowRadius: 6,
+    },
+    payBtnText:   { color: "#fff", fontWeight: "800", fontSize: 15 },
+    statusBanner: { padding: 16, alignItems: "center" },
+    statusText:   { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
 
 export const testResultsStyles = StyleSheet.create({

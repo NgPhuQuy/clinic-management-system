@@ -1,23 +1,3 @@
-"""
-clinic_app/views/prescription.py
-
-Phân quyền theo nghiệp vụ:
-  - Kê đơn (create):         doctor
-  - Xem đơn thuốc:           doctor (của mình) | patient (của mình) | staff | admin
-  - Thêm thuốc vào đơn:      doctor
-  - Cấp phát thuốc (dispense): staff | admin   ← nhân viên dược/điều dưỡng tại quầy
-
-BUG ĐÃ SỬA:
-  1. get_permissions() fallback dùng IsAuthenticated → IsAuthenticatedWithValidToken
-  2. get_queryset() dùng user.role → token scope
-  3. dispense() không có permission check → HasStaffOrAdminScope
-  4. CRITICAL: Double-deduction — dispense() view tự trừ kho, signal cũng trừ.
-     Đã sửa: chỉ view trừ kho, signal chỉ gửi notification (xem signals.py).
-  5. select_related("patient","doctor") sai field → medical_record__*
-  6. filterset_fields có "patient","doctor" không tồn tại trên model
-  7. __import__ hack → import chuẩn
-  8. perform_create truyền doctor= (không tồn tại trên model) → bỏ
-"""
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
@@ -38,13 +18,6 @@ from ..utils import get_token_scopes
 
 
 class PrescriptionViewSet(viewsets.ModelViewSet):
-    """
-    POST /prescriptions/              — Bác sĩ kê đơn
-    GET  /prescriptions/              — Danh sách đơn thuốc
-    GET  /prescriptions/{id}/         — Chi tiết
-    POST /prescriptions/{id}/dispense/ — Staff cấp phát thuốc
-    POST /prescriptions/{id}/add_medicine/ — Bác sĩ thêm thuốc
-    """
     queryset = Prescription.objects.select_related(
         "medical_record__doctor__user",
         "medical_record__patient__user",
@@ -77,19 +50,6 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def dispense(self, request, pk=None):
-        """
-        POST /prescriptions/{id}/dispense/
-        Nhân viên dược/điều dưỡng cấp phát thuốc tại quầy.
-
-        Flow:
-          1. Kiểm tra đơn chưa cấp phát
-          2. Kiểm tra tồn kho đủ không (dry-run)
-          3. Trừ kho theo FEFO (First Expired First Out)
-          4. Set status → dispensed
-          5. Signal tự động gửi notification cho bệnh nhân
-
-        NOTE: Việc trừ kho CHỈ xảy ra ở đây — signal KHÔNG trừ kho thêm lần nữa.
-        """
         prescription = self.get_object()
 
         if prescription.status == Prescription.Status.DISPENSED:
@@ -103,7 +63,6 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # ── Bước 1: Kiểm tra tồn kho trước (dry-run) ──
         shortage_errors = []
         for detail in prescription.details.select_related("medicine").all():
             available = (
@@ -128,7 +87,6 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # ── Bước 2 & 3: Trừ kho theo FEFO + cập nhật đơn (atomic) ──
         with transaction.atomic():
             for detail in prescription.details.select_related("medicine").all():
                 remaining = detail.quantity
@@ -159,7 +117,6 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def add_medicine(self, request, pk=None):
-        """POST /prescriptions/{id}/add_medicine/ — Thêm thuốc vào đơn."""
         prescription = self.get_object()
         if prescription.status != Prescription.Status.PENDING:
             return Response(

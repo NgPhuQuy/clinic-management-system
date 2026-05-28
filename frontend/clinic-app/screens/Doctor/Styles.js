@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { COLORS } from "../../styles/Styles";
 
 export const doctorDashboardStyles = StyleSheet.create({
@@ -169,4 +169,212 @@ export const doctorMedicalRecordsStyles = StyleSheet.create({
     fillHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 },
     fillTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
     fillSubtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+});
+
+export const doctorAppointmentDetailStyles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.bg },
+    statusHeader: { padding: 20, alignItems: "center" },
+    statusHeaderText: { fontSize: 18, fontWeight: "800", color: "#fff" },
+    statusHeaderDate: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 4 },
+    card: {
+        margin: 16, marginBottom: 0, backgroundColor: "#fff",
+        borderRadius: 14, padding: 16, elevation: 2,
+        shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06, shadowRadius: 4,
+    },
+    cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+    cardTitle: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 12 },
+    infoRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
+    infoLabel: { fontSize: 13, color: COLORS.textMuted, marginLeft: 4, marginRight: 6, minWidth: 80 },
+    infoValue: { fontSize: 13, color: COLORS.text, flex: 1, fontWeight: "500" },
+    emptyCard: {
+        margin: 16, marginBottom: 0, backgroundColor: "#fff",
+        borderRadius: 14, padding: 24, alignItems: "center",
+        elevation: 1,
+    },
+    emptyText: { color: COLORS.textMuted, marginTop: 8, fontSize: 14 },
+    actions: { margin: 16, gap: 10 },
+    btn: { borderRadius: 10, paddingVertical: 4 },
+    modalHeader: {
+        backgroundColor: COLORS.primaryDark,
+        paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
+        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    },
+    modalTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
+    input: { backgroundColor: "#fff", marginBottom: 10 },
+    row: { flexDirection: "row", gap: 10 },
+    subTitle: { fontSize: 14, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
+    medList: {
+        backgroundColor: COLORS.primaryPale, borderRadius: 10,
+        padding: 12, marginBottom: 12,
+    },
+    medItem: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+    medName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
+    medDetail: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+    pickerBtn: {
+        flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+        borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
+        padding: 14, backgroundColor: "#fff", marginBottom: 10,
+    },
+    medDropdown: {
+        borderWidth: 1, borderColor: COLORS.border, borderRadius: 8,
+        backgroundColor: "#fff", marginBottom: 10, overflow: "hidden",
+    },
+    medOption: {
+        padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    },
+    medOptionText: { fontSize: 14, fontWeight: "600", color: COLORS.text },
+    medOptionSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+});
+
+export const doctorDetailStyles = StyleSheet.create({
+    header: {
+        backgroundColor: "#1565c0",
+        padding: 24,
+        alignItems: "center",
+        paddingTop: 32,
+    },
+    avatarCircle: {
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        backgroundColor: "#fff",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 12,
+    },
+    name: {
+        fontSize: 20,
+        fontWeight: "bold",
+        color: "#fff",
+    },
+    specialty: {
+        color: "#bbdefb",
+        marginTop: 4,
+    },
+    statsRow: {
+        flexDirection: "row",
+        marginTop: 20,
+        backgroundColor: "rgba(255,255,255,0.15)",
+        borderRadius: 12,
+        padding: 12,
+    },
+    statItem: {
+        flex: 1,
+        alignItems: "center",
+    },
+    statNum: {
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#fff",
+    },
+    statLabel: {
+        fontSize: 11,
+        color: "#bbdefb",
+        marginTop: 2,
+    },
+    statDivider: {
+        width: 1,
+        backgroundColor: "rgba(255,255,255,0.3)",
+    },
+    scheduleItem: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+});
+
+export const doctorListStyles = StyleSheet.create({
+    searchBar: {
+        padding: 12,
+        paddingHorizontal: 16,
+        backgroundColor: "#fff",
+        elevation: 2,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+    },
+    chipsContainer: {
+        height: 52,
+        backgroundColor: "#f5f6fa",
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    chipsContent: {
+        alignItems: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        gap: 8,
+    },
+    chip: {
+        backgroundColor: COLORS.primaryPale,
+        borderRadius: 20,
+        height: 34,
+    },
+    chipSelected: {
+        backgroundColor: COLORS.primary,
+    },
+    chipText: {
+        fontSize: 12,
+        color: COLORS.primary,
+        fontWeight: "600",
+    },
+    chipTextSelected: {
+        color: "#fff",
+    },
+    avatarFallback: {
+        backgroundColor: COLORS.primaryPale,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+});
+
+export const doctorSchedulesStyles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: COLORS.bg },
+    header: {
+        backgroundColor: COLORS.primaryDark,
+        paddingTop: 52, paddingHorizontal: 20, paddingBottom: 16,
+        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    },
+    headerTitle: { fontSize: 20, fontWeight: "800", color: "#fff" },
+    addBtn: {
+        flexDirection: "row", alignItems: "center", gap: 6,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    },
+    addBtnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+    monthHeader: {
+        fontSize: 14, fontWeight: "700", color: COLORS.textMuted,
+        paddingVertical: 10, paddingHorizontal: 4,
+    },
+    card: {
+        backgroundColor: "#fff", borderRadius: 12, padding: 12,
+        flexDirection: "row", alignItems: "center", marginBottom: 10,
+        elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.07, shadowRadius: 4,
+    },
+    dateBox: {
+        width: 56, alignItems: "center", paddingRight: 12,
+        borderRightWidth: 1, borderRightColor: COLORS.border,
+    },
+    dayOfWeek: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
+    dateNum: { fontSize: 24, fontWeight: "900", color: COLORS.text, lineHeight: 28 },
+    dateMonth: { fontSize: 10, color: COLORS.textMuted },
+    timeRange: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+    apptInfo: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+    availBadge: {
+        alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3,
+        borderRadius: 6, marginTop: 6,
+    },
+    cardActions: { alignItems: "center", gap: 4 },
+    iconBtn: { padding: 4 },
+    modalHeader: {
+        backgroundColor: COLORS.primaryDark,
+        paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
+        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    },
+    modalTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
+    input: { backgroundColor: "#fff", marginBottom: 12 },
+    row: { flexDirection: "row", gap: 10 },
 });

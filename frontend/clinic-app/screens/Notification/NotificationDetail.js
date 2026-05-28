@@ -5,7 +5,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import { notifStyles as S, COLORS } from "../../styles/Styles";
+import { COLORS } from "../../styles/Styles";
+import { notifStyles as S } from "./Styles";
 
 const TYPE_MAP = {
     appointment_reminder: {

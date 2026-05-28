@@ -1,6 +1,5 @@
 import hashlib
 import hmac
-import json
 import time
 import uuid
 import urllib.parse
@@ -137,7 +136,6 @@ def _create_vnpay_payment_url(payment: Payment, request) -> dict:
     }
 
     sorted_params = sorted(vnp_params.items())
-    # vnp_SecureHashType is NOT included in hash — only appended to URL after vnp_SecureHash
     query_string = "&".join(f"{k}={urllib.parse.quote_plus(str(v))}" for k, v in sorted_params)
     signature    = hmac.new(hash_secret.encode("utf-8"), query_string.encode("utf-8"), hashlib.sha512).hexdigest()
     payment_url  = f"{vnpay_url}?{query_string}&vnp_SecureHashType=SHA512&vnp_SecureHash={signature}"
@@ -152,7 +150,6 @@ def _verify_vnpay_return(params: dict) -> bool:
     received_hash = params.get("vnp_SecureHash", "")
     verify_params = {k: v for k, v in params.items() if k not in ("vnp_SecureHash", "vnp_SecureHashType")}
     sorted_params = sorted(verify_params.items())
-    # Django URL-decodes query params; hash on raw values (same as VNPay's computation)
     hash_data     = "&".join(f"{k}={v}" for k, v in sorted_params)
     expected      = hmac.new(hash_secret.encode("utf-8"), hash_data.encode("utf-8"), hashlib.sha512).hexdigest()
     return hmac.compare_digest(expected, received_hash)
@@ -189,14 +186,9 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["post"])
     def init(self, request):
-        """
-        POST /payments/init/
-        Body: { "invoice_id": 1, "payment_method": "momo"|"vnpay"|"cash", "note": "Phí khám" }
-        """
         serializer = PaymentInitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # FIX: dùng invoice_id thay vì appointment_id
         invoice = get_object_or_404(
             Invoice,
             pk=serializer.validated_data["invoice_id"],
@@ -213,7 +205,6 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Tái sử dụng pending payment nếu đã có — tránh tạo trùng
         existing = Payment.objects.filter(
             invoice=invoice,
             status=Payment.Status.PENDING,
@@ -256,7 +247,6 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="simulate")
     def simulate(self, request, pk=None):
-        """POST /payments/{id}/simulate/ — Dev only: giả lập thanh toán thành công."""
         if not getattr(settings, "DEBUG", False):
             return Response({"detail": "Chỉ khả dụng trong môi trường DEBUG."}, status=status.HTTP_403_FORBIDDEN)
         payment = self.get_object()
@@ -270,7 +260,6 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def confirm(self, request, pk=None):
-        """POST /payments/{id}/confirm/ — Thu ngân xác nhận đã nhận tiền mặt."""
         payment = self.get_object()
         if payment.status == Payment.Status.SUCCESS:
             return Response({"detail": "Đã xác nhận thanh toán trước đó rồi."}, status=status.HTTP_400_BAD_REQUEST)
@@ -289,9 +278,9 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         if not _verify_momo_ipn(data):
             return Response({"message": "Invalid signature"}, status=status.HTTP_400_BAD_REQUEST)
 
-        order_id = data.get("orderId", "")
+        order_id    = data.get("orderId", "")
         result_code = data.get("resultCode")
-        trans_id = str(data.get("transId", ""))
+        trans_id    = str(data.get("transId", ""))
 
         try:
             payment = Payment.objects.get(transaction_id=order_id)
@@ -302,8 +291,8 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({"message": "Already processed"}, status=status.HTTP_200_OK)
 
         if result_code == 0:
-            payment.status = Payment.Status.SUCCESS
-            payment.paid_at = timezone.now()
+            payment.status         = Payment.Status.SUCCESS
+            payment.paid_at        = timezone.now()
             payment.transaction_id = trans_id or order_id
         else:
             payment.status = Payment.Status.FAILED
@@ -327,7 +316,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             pass
         return Response({"success": success, "message": "Thanh toán thành công" if success else "Thanh toán thất bại", "order_id": order_id})
 
-    @action(detail=False, methods=["get"], url_path="vnpay/return")
+    @action(detail=False, methods=["get", "post"], url_path="vnpay/return")
     def vnpay_return(self, request):
         params = request.query_params.dict()
         if not _verify_vnpay_return(params):
@@ -356,7 +345,6 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get", "post"], url_path="vnpay/ipn")
     def vnpay_ipn(self, request):
-        """VNPay IPN — server-to-server callback (GET or POST)."""
         params = {**request.query_params.dict(), **request.data}
         if not _verify_vnpay_return(params):
             return Response({"RspCode": "97", "Message": "Invalid signature"})

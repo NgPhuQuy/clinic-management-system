@@ -7,7 +7,8 @@ import { useState, useEffect, useContext } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, staffPaymentStyles as SP } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { staffPaymentStyles as SP } from "./Styles";
 
 const PAY_STATUS = {
     all:      { label: "Tất cả",         color: COLORS.textMuted },

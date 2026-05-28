@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.db.models import Count, Sum, Q
+from django.db.models import Sum, Q, F
 from django.utils import timezone
 from rest_framework import generics, filters
 from rest_framework.response import Response
@@ -9,12 +9,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import (
     Appointment, MedicalRecord, Prescription, Patient,
-    Payment, Inventory, InventoryAlert, DoctorSchedule,
+    Payment, Inventory, InventoryAlert, DoctorSchedule, Medicine,
 )
 from ..serializers import (
-    AppointmentSerializer, MedicalRecordSerializer,
-    PrescriptionSerializer, PatientSerializer,
-    InventorySerializer, InventoryAlertSerializer,
+    AppointmentSerializer, PatientSerializer,
+    InventoryAlertSerializer, PaymentSerializer, DoctorScheduleSerializer,
 )
 from ..permissions import (
     HasDoctorOrAdminScope, HasStaffOrAdminScope,
@@ -22,10 +21,6 @@ from ..permissions import (
 )
 from ..utils import get_token_scopes
 
-
-# ─────────────────────────────────────────────
-# Doctor Dashboard
-# ─────────────────────────────────────────────
 
 class DoctorDashboardView(APIView):
     permission_classes = [HasDoctorOrAdminScope]
@@ -68,31 +63,23 @@ class DoctorDashboardView(APIView):
                 "in_progress": appointments_in_progress,
                 "this_month":  appointments_month,
             },
-            "medical_records":  {"this_month": records_month},
-            "prescriptions":    {"pending": prescriptions_pending},
+            "medical_records":       {"this_month": records_month},
+            "prescriptions":         {"pending": prescriptions_pending},
             "upcoming_appointments": AppointmentSerializer(upcoming, many=True).data,
         })
 
-
-# ─────────────────────────────────────────────
-# Staff Dashboard
-# ─────────────────────────────────────────────
 
 class StaffDashboardView(APIView):
     permission_classes = [HasStaffOrAdminScope]
 
     def get(self, request):
-        from django.db.models import Sum, Q, F
-        from ..models import Medicine
-
-        today      = timezone.now().date()
+        today = timezone.now().date()
 
         appointments_today    = Appointment.objects.filter(appointment_date__date=today).count()
         appointments_pending  = Appointment.objects.filter(status="pending").count()
         prescriptions_pending = Prescription.objects.filter(status="pending").count()
         inventory_alerts      = InventoryAlert.objects.filter(is_resolved=False).count()
 
-        # Low stock: Medicine có tổng tồn kho còn hạn <= ngưỡng của thuốc đó
         low_stock_count = (
             Medicine.objects
             .filter(is_active=True)
@@ -132,17 +119,12 @@ class StaffDashboardView(APIView):
         })
 
 
-# ─────────────────────────────────────────────
-# Staff: Patient lookup
-# ─────────────────────────────────────────────
-
 class StaffPatientListView(generics.ListAPIView):
     permission_classes = [HasStaffOrAdminScope]
     serializer_class   = PatientSerializer
     queryset           = Patient.objects.select_related("user").all()
     filter_backends    = [filters.SearchFilter]
-    # FIX: full_name đã xóa khỏi Patient → traverse qua user
-    search_fields = ["user__first_name", "user__last_name", "phone", "insurance_number", "user__email"]
+    search_fields      = ["user__first_name", "user__last_name", "phone", "insurance_number", "user__email"]
 
 
 class StaffPatientDetailView(generics.RetrieveAPIView):
@@ -151,32 +133,18 @@ class StaffPatientDetailView(generics.RetrieveAPIView):
     queryset           = Patient.objects.select_related("user").all()
 
 
-# ─────────────────────────────────────────────
-# Staff: Payment list
-# ─────────────────────────────────────────────
-
 class StaffPaymentListView(generics.ListAPIView):
     permission_classes = [HasStaffOrAdminScope]
+    serializer_class   = PaymentSerializer
     filter_backends    = [DjangoFilterBackend]
     filterset_fields   = ["status", "payment_method"]
 
     def get_queryset(self):
-        # FIX: Payment không còn FK patient/appointment trực tiếp
-        # → select_related qua invoice → appointment → patient
-        from ..models import Payment
         return Payment.objects.select_related(
             "invoice__appointment__patient__user",
             "invoice__appointment__doctor__user",
         ).all()
 
-    def get_serializer_class(self):
-        from ..serializers import PaymentSerializer
-        return PaymentSerializer
-
-
-# ─────────────────────────────────────────────
-# Doctor: My schedules
-# ─────────────────────────────────────────────
 
 class DoctorMyScheduleView(APIView):
     permission_classes = [HasDoctorOrAdminScope]
@@ -187,7 +155,6 @@ class DoctorMyScheduleView(APIView):
         except Exception:
             return Response({"detail": "Không tìm thấy hồ sơ bác sĩ."}, status=400)
 
-        from ..serializers import DoctorScheduleSerializer
         qs = DoctorSchedule.objects.filter(doctor=doctor).order_by("date", "start_time")
 
         date_from = request.query_params.get("date_from")
@@ -199,10 +166,6 @@ class DoctorMyScheduleView(APIView):
 
         return Response(DoctorScheduleSerializer(qs, many=True, context={"request": request}).data)
 
-
-# ─────────────────────────────────────────────
-# Doctor: Today appointments
-# ─────────────────────────────────────────────
 
 class DoctorTodayAppointmentsView(APIView):
     permission_classes = [HasDoctorOrAdminScope]
@@ -227,10 +190,6 @@ class DoctorTodayAppointmentsView(APIView):
 
         return Response(AppointmentSerializer(qs, many=True).data)
 
-
-# ─────────────────────────────────────────────
-# Staff: Inventory alerts
-# ─────────────────────────────────────────────
 
 class StaffInventoryAlertView(APIView):
     permission_classes = [HasStaffOrAdminScope]
