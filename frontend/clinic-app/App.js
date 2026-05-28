@@ -522,14 +522,37 @@ const App = () => {
 
     useEffect(() => {
         if (!user?.token) return;
-        if (Constants.appOwnership === "expo") return; // skip in Expo Go
         const registerPushToken = async () => {
             try {
-                const { status } = await ExpoNotifications.requestPermissionsAsync();
-                if (status !== "granted") return;
-                const { data: pushToken } = await ExpoNotifications.getExpoPushTokenAsync();
-                await authApis(user.token).patch(endpoints["current-user"], { push_token: pushToken });
-            } catch (_) {}
+                // Android 8+ cần notification channel để có tiếng
+                if (Platform.OS === "android") {
+                    await ExpoNotifications.setNotificationChannelAsync("default", {
+                        name: "Phòng khám",
+                        importance: ExpoNotifications.AndroidImportance.MAX,
+                        sound: "default",
+                        vibrationPattern: [0, 250, 250, 250],
+                        enableVibrate: true,
+                    });
+                }
+
+                const { status: existing } = await ExpoNotifications.getPermissionsAsync();
+                let finalStatus = existing;
+                if (existing !== "granted") {
+                    const { status } = await ExpoNotifications.requestPermissionsAsync();
+                    finalStatus = status;
+                }
+                if (finalStatus !== "granted") return;
+
+                const tokenData = await ExpoNotifications.getExpoPushTokenAsync({
+                    projectId: Constants.expoConfig?.extra?.eas?.projectId,
+                });
+                const pushToken = tokenData?.data;
+                if (pushToken) {
+                    await authApis(user.token).patch(endpoints["current-user"], { push_token: pushToken });
+                }
+            } catch (e) {
+                console.warn("Push setup:", e?.message);
+            }
         };
         registerPushToken();
     }, [user?.id]);

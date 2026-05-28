@@ -40,17 +40,17 @@ logger = logging.getLogger(__name__)
 
 def _generate_agora_token(channel_name: str, uid: int) -> str:
     try:
-        from agora_token_builder import RtcTokenBuilder, Role_Publisher
+        from agora_token_builder import RtcTokenBuilder
         return RtcTokenBuilder.buildTokenWithUid(
             settings.AGORA_APP_ID,
             settings.AGORA_APP_CERTIFICATE,
             channel_name,
             uid,
-            Role_Publisher,
+            1,  # Role_Publisher = 1
             int(time.time()) + settings.AGORA_TOKEN_EXPIRY,
         )
-    except ImportError:
-        logger.error("agora-token-builder chưa được cài. Chạy: pip install agora-token-builder")
+    except Exception as e:
+        logger.error(f"Agora token generation failed: {e}")
         return ""
 
 
@@ -130,24 +130,30 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         appointment_time = consultation.appointment.appointment_date
-        now          = timezone.now()
-        window_open  = appointment_time - timedelta(minutes=settings.CONSULTATION_WINDOW_BEFORE_MINUTES)
-        window_close = appointment_time + timedelta(minutes=settings.CONSULTATION_WINDOW_AFTER_MINUTES)
+        now = timezone.now()
+        appt_date_local = timezone.localtime(appointment_time).date()
+        today_local = timezone.localdate()
 
-        if not (window_open <= now <= window_close):
-            local_open  = timezone.localtime(window_open)
-            local_close = timezone.localtime(window_close)
+        if appt_date_local < today_local:
             return Response(
-                {
-                    "detail": (
-                        f"Phòng khám chỉ mở trong khoảng "
-                        f"{local_open.strftime('%H:%M')} – "
-                        f"{local_close.strftime('%H:%M')} "
-                        f"ngày {local_open.strftime('%d/%m/%Y')}."
-                    )
-                },
+                {"detail": "Lịch hẹn đã qua, không thể vào phòng khám."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        if appt_date_local > today_local:
+            window_open = appointment_time - timedelta(minutes=settings.CONSULTATION_WINDOW_BEFORE_MINUTES)
+            if now < window_open:
+                local_appt = timezone.localtime(appointment_time)
+                return Response(
+                    {
+                        "detail": (
+                            f"Phòng khám chưa mở. Lịch hẹn lúc "
+                            f"{local_appt.strftime('%H:%M')} "
+                            f"ngày {local_appt.strftime('%d/%m/%Y')}."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # Bác sĩ đã mở phòng rồi → vào thẳng, trả Agora token luôn
         if consultation.status == Consultation.Status.ACTIVE:
@@ -167,7 +173,7 @@ class ConsultationViewSet(viewsets.ReadOnlyModelViewSet):
         Notification.objects.create(
             user=consultation.appointment.doctor.user,
             title="Bệnh nhân đang chờ khám",
-            message=f"{consultation.appointment.patient.full_name} đã vào phòng chờ.",
+            message=f"{consultation.appointment.patient.user.get_full_name()} đã vào phòng chờ.",
             type=Notification.Type.SYSTEM,
             related_object_id=consultation.pk,
         )

@@ -16,7 +16,7 @@ const QUICK_ACTIONS = [
     { icon: "heart-pulse",                  label: "Hồ sơ sức khoẻ",        screen: "medical-records",  bg: "#e0f7fa", color: "#00838f" },
     { icon: "pill",                         label: "Đơn thuốc",             screen: "prescriptions",    bg: "#fff8e1", color: "#f9a825" },
     { icon: "credit-card-outline",          label: "Thanh toán viện phí",   dev: true,                  bg: "#fff3e0", color: "#ef6c00" },
-    { icon: "flask-outline",                label: "Kết quả cận lâm sàng",  dev: true,                  bg: "#fce4ec", color: "#c2185b" },
+    { icon: "flask-outline",                label: "Kết quả cận lâm sàng",  screen: "test-results",     bg: "#fce4ec", color: "#c2185b" },
     { icon: "hospital-building",            label: "Đăng ký nhập viện",     dev: true,                  bg: "#e8eaf6", color: "#3949ab" },
 ];
 

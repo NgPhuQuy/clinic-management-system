@@ -43,8 +43,9 @@ class AppointmentSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "status", "created_at", "updated_at")
 
     def validate_appointment_date(self, value):
-        if value < timezone.now():
-            raise serializers.ValidationError("Thời gian hẹn phải là trong tương lai.")
+        today = timezone.localtime(timezone.now()).date()
+        if value.date() < today:
+            raise serializers.ValidationError("Thời gian hẹn phải là hôm nay hoặc trong tương lai.")
         return value
 
 
@@ -70,6 +71,12 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id",)
 
+    def validate_appointment_date(self, value):
+        today = timezone.localtime(timezone.now()).date()
+        if value.date() < today:
+            raise serializers.ValidationError("Thời gian hẹn phải là hôm nay hoặc trong tương lai.")
+        return value
+
     def validate(self, data):
         doctor = data.get("doctor")
         if doctor and not doctor.is_available:
@@ -83,7 +90,7 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
             if booked >= schedule.max_appointments:
                 raise serializers.ValidationError("Ca khám này đã đủ số lượng.")
 
-            if appointment_date and schedule.date != appointment_date.date():
+            if appointment_date and schedule.date != timezone.localtime(appointment_date).date():
                 raise serializers.ValidationError("Ngày hẹn không khớp với ngày trong lịch làm việc.")
 
         if doctor and appointment_date:

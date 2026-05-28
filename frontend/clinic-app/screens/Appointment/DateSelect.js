@@ -70,7 +70,7 @@ const DateSelect = () => {
 
             const merged = scheduleResults.flat();
             const dates = new Set(
-                merged.filter(s => s.date > todayStr).map(s => s.date)
+                merged.filter(s => s.date >= todayStr).map(s => s.date)
             );
 
             setAllSchedules(merged);
@@ -115,7 +115,7 @@ const DateSelect = () => {
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
             const isToday = dateStr === todayStr;
-            const isPast = dateStr <= todayStr;
+            const isPast = dateStr < todayStr;
             const holiday = isHoliday(viewYear, viewMonth, d);
             const isAvail = availableDates.has(dateStr) && !holiday;
             const isSelected = dateStr === selectedDate;

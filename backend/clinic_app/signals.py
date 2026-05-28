@@ -20,11 +20,12 @@ def _send_push(user, title, body, data=None):
         _req.post(
             "https://exp.host/--/api/v2/push/send",
             json={
-                "to":    push_token,
-                "title": title,
-                "body":  body,
-                "data":  data or {},
-                "sound": "default",
+                "to":        push_token,
+                "title":     title,
+                "body":      body,
+                "data":      data or {},
+                "sound":     "default",
+                "channelId": "default",
             },
             timeout=5,
         )

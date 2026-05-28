@@ -11,6 +11,34 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 
+const buildRTMHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/></head><body>
+<script src="https://download.agora.io/sdk/release/AgoraRTM-1.5.1.js"></script>
+<script>
+const APP_ID="${appId}",TOKEN="${token}",CHANNEL="${channel}",UID="${uid}";
+let client=null,ch=null;
+const post=d=>window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify(d));
+async function init(){
+  try{
+    if(!window.AgoraRTM){post({type:'ERROR',error:'AgoraRTM SDK not loaded'});return;}
+    client=AgoraRTM.createInstance(APP_ID);
+    await client.login({uid:UID,token:TOKEN||null});
+    ch=client.createChannel(CHANNEL);
+    ch.on('ChannelMessage',function(msg,from){
+      try{var d=JSON.parse(msg.text);post({type:'MSG',data:d});}
+      catch(e){post({type:'MSG',data:{message:msg.text,sender:from,sent_at:new Date().toISOString()}});}
+    });
+    await ch.join();
+    post({type:'READY'});
+  }catch(e){post({type:'ERROR',error:e.message});}
+}
+window.rtmSend=async function(jsonStr){
+  try{if(ch)await ch.sendMessage({text:jsonStr});post({type:'SENT'});}
+  catch(e){post({type:'SEND_ERROR',error:e.message});}
+};
+init();
+</script></body></html>`;
+
 const STATUS_COLOR = {
     waiting: "#ff9800",
     active:  "#4caf50",
@@ -22,67 +50,12 @@ const STATUS_LABEL = {
     ended:   "Đã kết thúc",
 };
 
-// ── Agora RTM WebView HTML ─────────────────────────────────────────────────
-const buildRTMHtml = (appId, rtmToken, channelName, uid) => `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"/></head>
-<body>
-<script src="https://cdn.jsdelivr.net/npm/agora-rtm-sdk@1/AgoraRTM.js"></script>
-<script>
-const APP_ID = "${appId}";
-const TOKEN  = ${rtmToken ? `"${rtmToken}"` : 'null'};
-const CHANNEL = "${channelName}";
-const UID = "${uid}";
-
-const post = (data) => {
-  if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(data));
-};
-
-let rtmClient, rtmChannel;
-
-async function init() {
-  if (!APP_ID) { post({type:'RTM_ERROR', error:'No appId'}); return; }
-  try {
-    rtmClient = AgoraRTM.createInstance(APP_ID, { enableLogUpload: false });
-    await rtmClient.login({ uid: UID, token: TOKEN || undefined });
-
-    rtmChannel = rtmClient.createChannel(CHANNEL);
-    rtmChannel.on('ChannelMessage', (msg, memberId) => {
-      try {
-        const data = JSON.parse(msg.text);
-        post({ type: 'RTM_MESSAGE', data });
-      } catch(e) {}
-    });
-    await rtmChannel.join();
-    post({ type: 'RTM_CONNECTED', channelName: CHANNEL });
-  } catch(e) {
-    post({ type: 'RTM_ERROR', error: e.message });
-  }
-}
-
-window.sendRTMMessage = async (payload) => {
-  if (!rtmChannel) return;
-  try { await rtmChannel.sendMessage({ text: JSON.stringify(payload) }); } catch(e) {}
-};
-
-window.cleanupRTM = async () => {
-  try {
-    if (rtmChannel) await rtmChannel.leave();
-    if (rtmClient)  await rtmClient.logout();
-  } catch(e) {}
-};
-
-init();
-</script>
-</body>
-</html>`;
-
-// ── Component ──────────────────────────────────────────────────────────────
+const POLL_INTERVAL = 3000;
 
 const ConsultationRoom = () => {
-    const nav  = useNavigation();
-    const route = useRoute();
-    const user  = useContext(MyUserContext);
+    const nav    = useNavigation();
+    const route  = useRoute();
+    const user   = useContext(MyUserContext);
     const isDoctor = user.role === "doctor";
 
     const { consultationId } = route.params;
@@ -92,90 +65,64 @@ const ConsultationRoom = () => {
     const [actionLoading, setActionLoading] = useState(false);
     const [entered, setEntered]             = useState(false);
     const [message, setMessage]             = useState("");
-    const [sendingMsg, setSendingMsg]       = useState(false);
+    const [sendingMsg, setSendingMsg]        = useState(false);
     const [messages, setMessages]           = useState([]);
-    const [rtmConfig, setRtmConfig]         = useState(null);
     const [rtmReady, setRtmReady]           = useState(false);
+    const [rtmConfig, setRtmConfig]         = useState(null);
 
-    const flatListRef = useRef(null);
-    const rtmRef      = useRef(null);
-    const statusPollRef = useRef(null);
+    const flatListRef  = useRef(null);
+    const pollRef      = useRef(null);
+    const rtmRef       = useRef(null);
+    const seenIdsRef   = useRef(new Set()); // dedup RTM vs. DB messages
 
-    // ── Load consultation ────────────────────────────────────────────
+    // ── Load consultation + messages (initial + status poll) ─────────
     const loadConsultation = useCallback(async () => {
         try {
             const res = await authApis(user.token).get(endpoints["consultation-detail"](consultationId));
-            setConsultation(res.data);
-            // Seed message history từ REST API (chỉ lần đầu hoặc khi reconnect)
-            if (res.data.messages?.length > 0) {
-                setMessages(res.data.messages);
+            const data = res.data;
+            setConsultation(data);
+            if (data.messages) {
+                // On initial load, seed seenIds and set messages
+                data.messages.forEach(m => seenIdsRef.current.add(String(m.id)));
+                setMessages(data.messages);
             }
-            return res.data;
+            return data;
         } catch (e) {
             console.error("loadConsultation:", e);
         }
     }, [consultationId, user.token]);
 
-    // ── Fetch RTM token ──────────────────────────────────────────────
-    const fetchRTMConfig = useCallback(async () => {
+    // ── Fetch RTM config ─────────────────────────────────────────────
+    const loadRTMConfig = useCallback(async () => {
         try {
             const res = await authApis(user.token).get(endpoints["consultation-rtm-token"](consultationId));
             setRtmConfig(res.data);
         } catch (e) {
-            console.error("fetchRTMConfig:", e);
+            console.warn("RTM config fetch failed:", e?.message);
         }
     }, [consultationId, user.token]);
 
-    // ── Init ────────────────────────────────────────────────────────
+    // ── Start polling (status only, every 5s) ────────────────────────
+    const startPoll = useCallback(() => {
+        clearInterval(pollRef.current);
+        pollRef.current = setInterval(async () => {
+            try {
+                const res = await authApis(user.token).get(endpoints["consultation-detail"](consultationId));
+                setConsultation(res.data);
+                if (res.data?.status === "ended") clearInterval(pollRef.current);
+            } catch {}
+        }, 5000);
+    }, [consultationId, user.token]);
+
+    // ── Init ─────────────────────────────────────────────────────────
     useEffect(() => {
-        Promise.all([loadConsultation(), fetchRTMConfig()])
-            .finally(() => setLoading(false));
-        return () => {
-            clearInterval(statusPollRef.current);
-            rtmRef.current?.injectJavaScript("window.cleanupRTM(); true;");
-        };
+        loadConsultation().finally(() => setLoading(false));
+        loadRTMConfig();
+        startPoll();
+        return () => clearInterval(pollRef.current);
     }, []);
 
-    // ── Poll trạng thái chỉ khi đang waiting ────────────────────────
-    useEffect(() => {
-        if (!consultation || consultation.status !== "waiting") {
-            clearInterval(statusPollRef.current);
-            return;
-        }
-        statusPollRef.current = setInterval(async () => {
-            const updated = await loadConsultation();
-            if (!isDoctor && updated?.status === "active" && entered) {
-                clearInterval(statusPollRef.current);
-            }
-        }, 5000);
-        return () => clearInterval(statusPollRef.current);
-    }, [consultation?.status, entered]);
-
-    // ── RTM message handler ──────────────────────────────────────────
-    const onRTMMessage = useCallback((e) => {
-        try {
-            const msg = JSON.parse(e.nativeEvent.data);
-            if (msg.type === "RTM_CONNECTED") {
-                setRtmReady(true);
-            } else if (msg.type === "RTM_MESSAGE") {
-                const incoming = msg.data;
-                // Chỉ thêm tin nhắn từ người khác (tin mình gửi đã được add khi send)
-                if (String(incoming.sender) !== String(user.id)) {
-                    setMessages(prev => {
-                        const alreadyExists = prev.some(m => m.id === incoming.id);
-                        if (alreadyExists) return prev;
-                        return [...prev, { ...incoming, id: incoming.id || `rtm_${Date.now()}` }];
-                    });
-                    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-                }
-            } else if (msg.type === "RTM_ERROR") {
-                console.warn("RTM Error:", msg.error);
-            }
-        } catch {}
-    }, [user.id]);
-
     // ── Actions ──────────────────────────────────────────────────────
-
     const enterRoom = async () => {
         setActionLoading(true);
         try {
@@ -227,6 +174,7 @@ const ConsultationRoom = () => {
                 onPress: async () => {
                     try {
                         await authApis(user.token).post(endpoints["consultation-end"](consultationId));
+                        clearInterval(pollRef.current);
                         await loadConsultation();
                     } catch (e) {
                         Alert.alert("Lỗi", e?.response?.data?.detail || "Không thể kết thúc.");
@@ -246,55 +194,51 @@ const ConsultationRoom = () => {
         });
     };
 
-    // ── Gửi tin nhắn (REST + RTM) ────────────────────────────────────
+    // ── Nhận tin nhắn từ RTM WebView ────────────────────────────────
+    const handleRTMMessage = useCallback((e) => {
+        try {
+            const msg = JSON.parse(e.nativeEvent.data);
+            if (msg.type === "READY") {
+                setRtmReady(true);
+            } else if (msg.type === "ERROR") {
+                console.warn("RTM Error:", msg.error);
+            } else if (msg.type === "MSG" && msg.data) {
+                const d = msg.data;
+                const id = String(d.id || `rtm_${Date.now()}`);
+                if (seenIdsRef.current.has(id)) return; // dedup
+                seenIdsRef.current.add(id);
+                setMessages(prev => [...prev, d]);
+                setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+            }
+        } catch {}
+    }, []);
+
+    // ── Gửi tin nhắn ────────────────────────────────────────────────
     const sendMessage = async () => {
         const text = message.trim();
         if (!text) return;
         setSendingMsg(true);
-
-        const tempId = `local_${Date.now()}`;
-        const senderName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.username;
-        const now = new Date().toISOString();
-
-        // Optimistic update
-        const optimistic = {
-            id: tempId,
-            message: text,
-            sender: user.id,
-            sender_name: senderName,
-            sent_at: now,
-        };
-        setMessages(prev => [...prev, optimistic]);
         setMessage("");
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
 
         try {
-            // Gửi qua REST (persistence)
+            // 1. Save to DB
             const res = await authApis(user.token).post(
                 endpoints["consultation-messages"](consultationId),
                 { message: text }
             );
-
-            // Thay optimistic bằng bản lưu thật (có id từ server)
             const saved = res.data;
-            setMessages(prev => prev.map(m => m.id === tempId ? saved : m));
 
-            // Broadcast qua RTM để bên kia nhận ngay
+            // 2. Add to local state immediately
+            seenIdsRef.current.add(String(saved.id));
+            setMessages(prev => [...prev, saved]);
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+
+            // 3. Broadcast to other participant via RTM
             if (rtmReady && rtmRef.current) {
-                const rtmPayload = {
-                    id:          saved.id,
-                    message:     saved.message,
-                    sender:      saved.sender,
-                    sender_name: saved.sender_name,
-                    sent_at:     saved.sent_at,
-                };
-                rtmRef.current.injectJavaScript(
-                    `window.sendRTMMessage(${JSON.stringify(rtmPayload)}); true;`
-                );
+                const payload = JSON.stringify(saved);
+                rtmRef.current.injectJavaScript(`window.rtmSend(${JSON.stringify(payload)}); void(0);`);
             }
-        } catch (e) {
-            // Xóa optimistic nếu gửi thất bại
-            setMessages(prev => prev.filter(m => m.id !== tempId));
+        } catch {
             Alert.alert("Lỗi", "Không thể gửi tin nhắn.");
         } finally {
             setSendingMsg(false);
@@ -322,28 +266,17 @@ const ConsultationRoom = () => {
     const isActive  = consultation.status === "active";
     const isWaiting = consultation.status === "waiting";
 
-    // ── RTM HTML ─────────────────────────────────────────────────────
-    const rtmHtml = rtmConfig
-        ? buildRTMHtml(
-            rtmConfig.agora_app_id || consultation.agora_app_id || "",
-            rtmConfig.rtm_token,
-            rtmConfig.channel_name || consultation.room_id,
-            String(user.id),
-          )
-        : null;
-
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
 
-            {/* ── Agora RTM - hidden WebView ── */}
-            {rtmHtml && !isEnded && (
+            {/* ── RTM hidden WebView ── */}
+            {rtmConfig && (
                 <WebView
                     ref={rtmRef}
-                    source={{ html: rtmHtml }}
-                    style={styles.hiddenWebView}
+                    source={{ html: buildRTMHtml(rtmConfig.agora_app_id, rtmConfig.rtm_token, rtmConfig.channel_name, rtmConfig.uid) }}
+                    style={{ width: 0, height: 0, position: "absolute" }}
                     javaScriptEnabled
-                    onMessage={onRTMMessage}
-                    originWhitelist={["*"]}
+                    onMessage={handleRTMMessage}
                 />
             )}
 
@@ -355,9 +288,6 @@ const ConsultationRoom = () => {
                     color="#fff"
                 />
                 <Text style={styles.statusText}>{STATUS_LABEL[consultation.status] || consultation.status}</Text>
-                {rtmReady && !isEnded && (
-                    <View style={styles.rtmDot} />
-                )}
             </View>
 
             <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 8 }}>
@@ -481,17 +411,7 @@ const ConsultationRoom = () => {
 
                 {/* ── Chat ── */}
                 <View style={[Styles.card, { marginHorizontal: 16 }]}>
-                    <View style={styles.chatHeader}>
-                        <Text style={Styles.sectionHeader}>Tin nhắn</Text>
-                        {!isEnded && (
-                            <View style={[styles.rtmStatus, { backgroundColor: rtmReady ? "#e8f5e9" : "#fff3e0" }]}>
-                                <View style={[styles.rtmStatusDot, { backgroundColor: rtmReady ? "#4caf50" : "#ff9800" }]} />
-                                <Text style={[styles.rtmStatusText, { color: rtmReady ? "#2e7d32" : "#e65100" }]}>
-                                    {rtmReady ? "Real-time" : "Đang kết nối..."}
-                                </Text>
-                            </View>
-                        )}
-                    </View>
+                    <Text style={[Styles.sectionHeader, { marginBottom: 8 }]}>Tin nhắn</Text>
 
                     {messages.length === 0 ? (
                         <Text style={[Styles.textSmall, { textAlign: "center", marginVertical: 12 }]}>
@@ -553,13 +473,6 @@ const ConsultationRoom = () => {
 };
 
 const styles = StyleSheet.create({
-    hiddenWebView: {
-        width: 0,
-        height: 0,
-        position: "absolute",
-        opacity: 0,
-    },
-
     statusBar: {
         flexDirection: "row",
         alignItems: "center",
@@ -568,14 +481,6 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     statusText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-    rtmDot: {
-        width: 7,
-        height: 7,
-        borderRadius: 4,
-        backgroundColor: "#fff",
-        marginLeft: 4,
-        opacity: 0.8,
-    },
 
     actionBtn: {
         flexDirection: "row",
@@ -597,23 +502,6 @@ const styles = StyleSheet.create({
 
     endedBox:  { alignItems: "center", paddingVertical: 12, gap: 6 },
     endedText: { fontSize: 15, fontWeight: "600", color: COLORS.green },
-
-    chatHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 8,
-    },
-    rtmStatus: {
-        flexDirection: "row",
-        alignItems: "center",
-        borderRadius: 10,
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        gap: 4,
-    },
-    rtmStatusDot:  { width: 6, height: 6, borderRadius: 3 },
-    rtmStatusText: { fontSize: 10, fontWeight: "700" },
 
     bubble: {
         maxWidth: "78%",
