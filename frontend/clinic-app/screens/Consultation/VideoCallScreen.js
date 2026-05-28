@@ -1,9 +1,8 @@
-import { View, StyleSheet, Alert, StatusBar } from "react-native";
+import { View, StyleSheet, Alert, StatusBar, PermissionsAndroid, Platform } from "react-native";
 import { Text } from "react-native-paper";
-import { useRef, useContext } from "react";
+import { useRef, useContext, useEffect, useState } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
-import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 
 const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
@@ -39,7 +38,7 @@ const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
   <div id="remote-wrap">
     <div id="remote-player"></div>
     <span id="wait-msg">Đang chờ kết nối...</span>
-    <div id="local-wrap" id="local-player"></div>
+    <div id="local-wrap"><div id="local-player" style="width:100%;height:100%"></div></div>
   </div>
   <div id="controls">
     <div class="btn-wrap">
@@ -48,7 +47,7 @@ const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
     </div>
     <div class="btn-wrap">
       <button class="btn" id="btn-end"><span class="material-icons">call_end</span></button>
-      <span class="btn-label">Kết thúc</span>
+      <span class="btn-label">Rời gọi</span>
     </div>
     <div class="btn-wrap">
       <button class="btn" id="btn-cam"><span class="material-icons">videocam</span></button>
@@ -63,8 +62,23 @@ let client,audioTrack,videoTrack,micMuted=false,camMuted=false;
 const $=id=>document.getElementById(id);
 const info=msg=>$('info').textContent=msg;
 
+if(!navigator.mediaDevices) navigator.mediaDevices={};
+if(!navigator.mediaDevices.getUserMedia){
+  const legacy=navigator.getUserMedia||navigator.webkitGetUserMedia||navigator.mozGetUserMedia;
+  if(legacy) navigator.mediaDevices.getUserMedia=legacy.bind(navigator);
+}
+
 async function init(){
   if(!APP_ID||APP_ID==='undefined'){info('Agora chưa được cấu hình');return;}
+  try{
+    // Test getUserMedia trước
+    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+    stream.getTracks().forEach(t=>t.stop());
+  }catch(e){
+    info('Lỗi quyền camera/mic: '+e.name);
+    window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({type:'PERM_ERROR',error:e.name}));
+    return;
+  }
   try{
     client=AgoraRTC.createClient({mode:'rtc',codec:'vp8'});
     client.on('user-published',async(user,type)=>{
@@ -102,8 +116,7 @@ $('btn-end').onclick=async()=>{
   try{if(audioTrack){audioTrack.stop();audioTrack.close();}
       if(videoTrack){videoTrack.stop();videoTrack.close();}
       if(client) await client.leave();}catch(e){}
-  if(window.ReactNativeWebView)
-    window.ReactNativeWebView.postMessage(JSON.stringify({type:'END_CALL'}));
+  window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({type:'END_CALL'}));
 };
 init();
 </script>
@@ -115,6 +128,7 @@ const VideoCallScreen = () => {
     const route = useRoute();
     const user = useContext(MyUserContext);
     const webviewRef = useRef(null);
+    const [permissionsGranted, setPermissionsGranted] = useState(Platform.OS !== "android");
 
     const {
         agoraAppId = "",
@@ -124,45 +138,65 @@ const VideoCallScreen = () => {
         consultationId,
     } = route.params || {};
 
+    useEffect(() => {
+        if (Platform.OS !== "android") return;
+        (async () => {
+            try {
+                const results = await PermissionsAndroid.requestMultiple([
+                    PermissionsAndroid.PERMISSIONS.CAMERA,
+                    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+                ]);
+                const granted =
+                    results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
+                    results[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED;
+                setPermissionsGranted(granted);
+                if (!granted) Alert.alert("Cần quyền truy cập", "Ứng dụng cần quyền camera và microphone để thực hiện video call.");
+            } catch {
+                setPermissionsGranted(true);
+            }
+        })();
+    }, []);
+
     const html = buildHtml(agoraAppId, agoraToken, channelName, uid);
 
-    const handleMessage = async (e) => {
+    const handleMessage = (e) => {
         try {
             const msg = JSON.parse(e.nativeEvent.data);
             if (msg.type === "END_CALL") {
-                await endConsultation();
+                nav.goBack();
+            } else if (msg.type === "PERM_ERROR") {
+                Alert.alert("Lỗi camera/micro", `Không thể truy cập camera/micro: ${msg.error}.\nVui lòng kiểm tra lại quyền trong Settings.`);
             }
         } catch {}
     };
 
-    const endConsultation = async () => {
-        try {
-            if (consultationId) {
-                await authApis(user.token).post(endpoints["consultation-end"](consultationId));
-            }
-        } catch {}
-        nav.goBack();
-    };
-
-    const confirmEnd = () => {
-        Alert.alert("Kết thúc khám", "Bạn có chắc muốn kết thúc phiên khám?", [
-            { text: "Tiếp tục", style: "cancel" },
-            { text: "Kết thúc", style: "destructive", onPress: endConsultation },
-        ]);
-    };
+    if (!permissionsGranted) {
+        return (
+            <View style={[styles.container, { alignItems: "center", justifyContent: "center" }]}>
+                <StatusBar barStyle="light-content" backgroundColor="#111827" />
+                <Text style={{ color: "#fff", fontSize: 15, textAlign: "center", paddingHorizontal: 32 }}>
+                    Cần cấp quyền camera và microphone để thực hiện video call.
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#111827" />
             <WebView
                 ref={webviewRef}
-                source={{ html }}
+                source={{ html, baseUrl: "http://localhost" }}
                 style={styles.webview}
                 originWhitelist={["*"]}
                 allowsInlineMediaPlayback
                 mediaPlaybackRequiresUserAction={false}
                 javaScriptEnabled
                 domStorageEnabled
+                allowFileAccess
+                allowFileAccessFromFileURLs
+                allowUniversalAccessFromFileURLs
+                mixedContentMode="always"
                 onMessage={handleMessage}
                 onPermissionRequest={(e) => e.nativeEvent.request.grant(e.nativeEvent.request.resources)}
             />

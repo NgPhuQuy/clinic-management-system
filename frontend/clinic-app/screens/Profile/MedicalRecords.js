@@ -1,4 +1,4 @@
-import { View, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
+import { View, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from "react-native";
 import { Text } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -156,86 +156,180 @@ export const MedicalRecordDetail = () => {
     );
 };
 
+const TEST_TYPE_LABELS = {
+    blood: "XN Máu", urine: "XN Nước tiểu", stool: "XN Phân",
+    micro: "Vi sinh", xray: "X-quang", ct: "Chụp CT",
+    mri: "Chụp MRI", ultrasound: "Siêu âm", endoscopy: "Nội soi",
+    ecg: "Điện tâm đồ", other: "Khác",
+};
+const TEST_TYPE_ICONS = {
+    blood: "water-plus", urine: "flask-outline", stool: "microscope",
+    micro: "bacteria-outline", xray: "radiobox-marked", ct: "circle-slice-8",
+    mri: "magnet-on", ultrasound: "waveform", endoscopy: "camera-outline",
+    ecg: "pulse", other: "test-tube",
+};
+
 // ─── Test Results (patient) ───────────────────────────────────────────────────
 export const TestResults = () => {
     const user = useContext(MyUserContext);
-    const [items, setItems]   = useState([]);
+    const [items, setItems]     = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState("all");
+    const [refreshing, setRefreshing] = useState(false);
+    const [filter, setFilter]   = useState("all");
 
-    useEffect(() => {
-        authApis(user.token).get(endpoints["medical-records"])
-            .then(r => {
-                const records = r.data.results || r.data;
-                const flat = records.flatMap(rec =>
-                    (rec.test_results || []).map(t => ({
-                        ...t,
-                        recordDate: rec.created_at,
-                        doctorName: rec.doctor_info?.full_name || `#${rec.doctor}`,
-                    }))
-                );
-                setItems(flat);
-            })
-            .catch(console.error)
-            .finally(() => setLoading(false));
-    }, []);
+    const load = async (silent = false) => {
+        if (!silent) setLoading(true);
+        try {
+            const res = await authApis(user.token).get(endpoints["test-results"]);
+            setItems(res.data.results || res.data);
+        } catch (e) {
+            console.error("TestResults load:", e);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => { load(); }, []);
 
     const FILTERS = [
-        { key: "all",       label: "Tất cả" },
-        { key: "completed", label: "Có kết quả" },
-        { key: "ordered",   label: "Chờ kết quả" },
+        { key: "all",       label: "Tất cả",       icon: "test-tube" },
+        { key: "completed", label: "Có kết quả",   icon: "check-circle-outline" },
+        { key: "ordered",   label: "Chờ kết quả",  icon: "clock-outline" },
     ];
     const displayed = filter === "all" ? items : items.filter(t => t.status === filter);
 
-    if (loading) return <View style={[Styles.center, { flex: 1 }]}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
+    if (loading) {
+        return (
+            <View style={[Styles.center, { flex: 1 }]}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+        );
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-            {/* Filter chips */}
-            <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                {FILTERS.map(f => (
-                    <TouchableOpacity
-                        key={f.key}
-                        onPress={() => setFilter(f.key)}
-                        style={[mrStyles.chip, filter === f.key && mrStyles.chipActive]}
-                    >
-                        <Text style={[mrStyles.chipText, filter === f.key && mrStyles.chipTextActive]}>{f.label}</Text>
-                    </TouchableOpacity>
-                ))}
+            {/* Summary chips */}
+            <View style={trStyles.filterRow}>
+                {FILTERS.map(f => {
+                    const count = f.key === "all" ? items.length : items.filter(t => t.status === f.key).length;
+                    const active = filter === f.key;
+                    return (
+                        <TouchableOpacity
+                            key={f.key}
+                            style={[trStyles.chip, active && trStyles.chipActive]}
+                            onPress={() => setFilter(f.key)}
+                        >
+                            <MaterialCommunityIcons
+                                name={f.icon}
+                                size={14}
+                                color={active ? "#fff" : COLORS.textMuted}
+                            />
+                            <Text style={[trStyles.chipText, active && trStyles.chipTextActive]}>
+                                {f.label}
+                            </Text>
+                            <View style={[trStyles.chipBadge, active && trStyles.chipBadgeActive]}>
+                                <Text style={[trStyles.chipBadgeText, active && { color: COLORS.primary }]}>
+                                    {count}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    );
+                })}
             </View>
 
             {displayed.length === 0 ? (
                 <View style={[Styles.center, { flex: 1 }]}>
                     <MaterialCommunityIcons name="test-tube-empty" size={64} color={COLORS.textLight} />
-                    <Text style={{ marginTop: 12, color: COLORS.textMuted, fontWeight: "600" }}>Chưa có kết quả xét nghiệm</Text>
+                    <Text style={{ marginTop: 12, color: COLORS.textMuted, fontWeight: "600" }}>
+                        {filter === "completed" ? "Chưa có xét nghiệm có kết quả"
+                            : filter === "ordered" ? "Không có xét nghiệm đang chờ"
+                            : "Chưa có kết quả xét nghiệm nào"}
+                    </Text>
                 </View>
             ) : (
                 <FlatList
                     data={displayed}
-                    keyExtractor={(_, i) => String(i)}
+                    keyExtractor={(item) => String(item.id)}
                     contentContainerStyle={{ padding: 16, gap: 10 }}
-                    renderItem={({ item }) => (
-                        <View style={mrStyles.testCard}>
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                                <Text style={mrStyles.testName}>{item.test_name}</Text>
-                                <View style={[mrStyles.statusChip, { backgroundColor: item.status === "completed" ? COLORS.green + "22" : COLORS.orange + "22" }]}>
-                                    <Text style={[mrStyles.statusChipText, { color: item.status === "completed" ? COLORS.green : COLORS.orange }]}>
-                                        {item.status === "completed" ? "Có kết quả" : "Chờ kết quả"}
-                                    </Text>
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={() => { setRefreshing(true); load(true); }}
+                            colors={[COLORS.primary]}
+                        />
+                    }
+                    renderItem={({ item }) => {
+                        const isDone = item.status === "completed";
+                        return (
+                            <View style={trStyles.card}>
+                                {/* Header: type + status */}
+                                <View style={trStyles.cardHeader}>
+                                    <View style={trStyles.typeTag}>
+                                        <MaterialCommunityIcons
+                                            name={TEST_TYPE_ICONS[item.test_type] || "test-tube"}
+                                            size={13}
+                                            color={COLORS.primary}
+                                        />
+                                        <Text style={trStyles.typeText}>
+                                            {TEST_TYPE_LABELS[item.test_type] || item.test_type}
+                                        </Text>
+                                    </View>
+                                    <View style={[trStyles.statusBadge, isDone ? trStyles.statusDone : trStyles.statusPending]}>
+                                        <MaterialCommunityIcons
+                                            name={isDone ? "check-circle" : "clock-outline"}
+                                            size={12}
+                                            color={isDone ? COLORS.green : COLORS.orange}
+                                        />
+                                        <Text style={[trStyles.statusText, { color: isDone ? COLORS.green : COLORS.orange }]}>
+                                            {isDone ? "Có kết quả" : "Chờ kết quả"}
+                                        </Text>
+                                    </View>
                                 </View>
+
+                                {/* Test name */}
+                                <Text style={trStyles.testName}>{item.test_name}</Text>
+
+                                {/* Meta */}
+                                <View style={trStyles.metaRow}>
+                                    {item.doctor_name ? (
+                                        <View style={trStyles.metaItem}>
+                                            <MaterialCommunityIcons name="doctor" size={12} color={COLORS.textMuted} />
+                                            <Text style={trStyles.metaText}>BS. {item.doctor_name}</Text>
+                                        </View>
+                                    ) : null}
+                                    {item.test_date ? (
+                                        <View style={trStyles.metaItem}>
+                                            <MaterialCommunityIcons name="calendar" size={12} color={COLORS.textMuted} />
+                                            <Text style={trStyles.metaText}>
+                                                {new Date(item.test_date).toLocaleDateString("vi-VN")}
+                                            </Text>
+                                        </View>
+                                    ) : null}
+                                </View>
+
+                                {/* Result or pending */}
+                                {isDone ? (
+                                    <View style={trStyles.resultBox}>
+                                        <Text style={trStyles.resultLabel}>Kết quả</Text>
+                                        <Text style={trStyles.resultValue}>
+                                            {item.result}{item.unit ? ` ${item.unit}` : ""}
+                                        </Text>
+                                        {item.reference_range ? (
+                                            <Text style={trStyles.refText}>
+                                                Tham chiếu: {item.reference_range}
+                                            </Text>
+                                        ) : null}
+                                    </View>
+                                ) : (
+                                    <View style={trStyles.pendingBox}>
+                                        <MaterialCommunityIcons name="clock-sand" size={14} color={COLORS.orange} />
+                                        <Text style={trStyles.pendingText}>Đang chờ kết quả từ phòng xét nghiệm</Text>
+                                    </View>
+                                )}
                             </View>
-                            <Text style={mrStyles.testMeta}>BS. {item.doctorName} · {new Date(item.recordDate).toLocaleDateString("vi-VN")}</Text>
-                            {item.test_date && <Text style={mrStyles.testMeta}>Ngày XN: {new Date(item.test_date).toLocaleDateString("vi-VN")}</Text>}
-                            {item.result ? (
-                                <View style={mrStyles.resultBox}>
-                                    <Text style={mrStyles.testResult}>{item.result} {item.unit || ""}</Text>
-                                    {item.reference_range && <Text style={mrStyles.testRef}>Tham chiếu: {item.reference_range}</Text>}
-                                </View>
-                            ) : (
-                                <Text style={[mrStyles.testPending, { marginTop: 6 }]}>Đang chờ kết quả từ phòng xét nghiệm</Text>
-                            )}
-                        </View>
-                    )}
+                        );
+                    }}
                 />
             )}
         </View>
@@ -282,6 +376,66 @@ const mrStyles = StyleSheet.create({
     chipActive:    { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
     chipText:      { fontSize: 13, fontWeight: "600", color: COLORS.textMuted },
     chipTextActive:{ color: "#fff" },
+});
+
+const trStyles = StyleSheet.create({
+    filterRow: {
+        flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 12,
+        backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: COLORS.border,
+        flexWrap: "wrap",
+    },
+    chip: {
+        flexDirection: "row", alignItems: "center", gap: 5,
+        paddingHorizontal: 12, paddingVertical: 7,
+        borderRadius: 20, borderWidth: 1.5, borderColor: "#e0e0e0", backgroundColor: "#fff",
+    },
+    chipActive:     { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+    chipText:       { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
+    chipTextActive: { color: "#fff" },
+    chipBadge: {
+        minWidth: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.primaryPale,
+        alignItems: "center", justifyContent: "center", paddingHorizontal: 4,
+    },
+    chipBadgeActive: { backgroundColor: "rgba(255,255,255,0.25)" },
+    chipBadgeText:   { fontSize: 10, fontWeight: "700", color: COLORS.primary },
+
+    card: {
+        backgroundColor: "#fff", borderRadius: 14, padding: 14,
+        elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06, shadowRadius: 4,
+    },
+    cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+    typeTag: {
+        flexDirection: "row", alignItems: "center", gap: 5,
+        backgroundColor: COLORS.primaryPale, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+    },
+    typeText: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
+    statusBadge: {
+        flexDirection: "row", alignItems: "center", gap: 4,
+        borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1,
+    },
+    statusDone:    { backgroundColor: COLORS.green + "18", borderColor: COLORS.green + "44" },
+    statusPending: { backgroundColor: COLORS.orange + "18", borderColor: COLORS.orange + "44" },
+    statusText:    { fontSize: 11, fontWeight: "700" },
+
+    testName: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
+    metaRow:  { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 8 },
+    metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+    metaText: { fontSize: 12, color: COLORS.textMuted },
+
+    resultBox: {
+        backgroundColor: COLORS.bg, borderRadius: 10, padding: 10,
+        borderLeftWidth: 3, borderLeftColor: COLORS.green,
+    },
+    resultLabel: { fontSize: 11, fontWeight: "700", color: COLORS.textMuted, marginBottom: 2 },
+    resultValue: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+    refText:     { fontSize: 12, color: COLORS.textMuted, marginTop: 3 },
+
+    pendingBox: {
+        flexDirection: "row", alignItems: "center", gap: 8,
+        backgroundColor: COLORS.orange + "12", borderRadius: 8, padding: 10,
+    },
+    pendingText: { fontSize: 12, color: COLORS.orange, fontStyle: "italic", flex: 1 },
 });
 
 export default MedicalRecords;
