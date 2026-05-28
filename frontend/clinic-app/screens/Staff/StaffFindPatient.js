@@ -8,7 +8,8 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, staffFindPatientStyles as S } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { staffFindPatientStyles as S } from "./Styles";
 
 const PatientCard = ({ item, onPress }) => (
     <TouchableOpacity style={S.card} onPress={onPress} activeOpacity={0.85}>

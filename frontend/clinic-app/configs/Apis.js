@@ -5,6 +5,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 export const endpoints = {
     'register': '/auth/register/',
     'login': '/auth/login/',
+    'google-oauth-url': 'auth/google/',
     'current-user': '/auth/me/',
     'change-password': '/auth/change-password/',
 
@@ -82,8 +83,6 @@ export const endpoints = {
     'consultation-messages': (id) => `/consultations/${id}/messages/`,
     'consultation-rtm-token': (id) => `/consultations/${id}/rtm-token/`,
 
-    'admin-dashboard': '/admin/dashboard/',
-    'admin-reports': '/admin/dashboard/reports/',
 };
 
 export const authApis = (token) => {

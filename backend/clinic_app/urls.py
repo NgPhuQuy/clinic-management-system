@@ -34,13 +34,13 @@ urlpatterns = [
 
     # ── Auth ─────────────────────────────────────────────────────────────
     path("auth/login/",           views.LoginView.as_view(),          name="login"),
+    path("auth/google/",           views.GoogleOAuthRedirectView.as_view(), name="google-oauth"),
+    path("auth/google/callback/",  views.GoogleOAuthCallbackView.as_view(), name="google-callback"),
     path("auth/register/",        views.RegisterView.as_view(),       name="register"),
     path("auth/me/",              views.MeView.as_view(),             name="me"),
     path("auth/change-password/", views.ChangePasswordView.as_view(), name="change-password"),
 
-    # ── Admin Dashboard ──────────────────────────────────────────────────
-    path("admin/dashboard/",         views.DashboardView.as_view(),        name="dashboard"),
-    path("admin/dashboard/reports/", views.DashboardReportsView.as_view(), name="dashboard-reports"),
+    path("admin/dashboard/", views.DashboardView.as_view(), name="dashboard"),
 
     # ── Doctor Dashboard & Tools ─────────────────────────────────────────
     path("doctor/dashboard/",           DoctorDashboardView.as_view(),        name="doctor-dashboard"),
@@ -88,13 +88,3 @@ urlpatterns = [
 # 10. Staff cấp thuốc       → POST /prescriptions/{id}/dispense/ [staff]
 # 11. Staff thu tiền         → POST /payments/{id}/confirm/      [staff]
 #
-# ─────────────────────────────────────────────────────────────────────────────
-# BÁO CÁO THỐNG KÊ
-# ─────────────────────────────────────────────────────────────────────────────
-#
-#  GET /api/admin/dashboard/reports/?type=age_group    — Bệnh nhân theo độ tuổi
-#  GET /api/admin/dashboard/reports/?type=gender       — Bệnh nhân theo giới tính
-#  GET /api/admin/dashboard/reports/?type=specialty    — Lượt khám theo chuyên khoa
-#  GET /api/admin/dashboard/reports/?type=disease      — Bệnh phổ biến cộng đồng
-#  GET /api/admin/dashboard/reports/?type=service      — Dịch vụ y tế sử dụng
-#  GET /api/admin/dashboard/reports/?type=revenue&period=month — Doanh thu chi tiết

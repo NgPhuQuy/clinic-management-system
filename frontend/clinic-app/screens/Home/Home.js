@@ -7,7 +7,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, homeStyles } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { homeStyles } from "./Styles";
 
 const QUICK_ACTIONS = [
     { icon: "calendar-check-outline",       label: "Đặt khám",              screen: "specialty-select", bg: "#e3f2fd", color: "#1565c0" },

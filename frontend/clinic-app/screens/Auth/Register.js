@@ -6,7 +6,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Apis, { authApis, endpoints } from "../../configs/Apis";
 import { useNavigation } from "@react-navigation/native";
 import { MyDispatchContext } from "../../contexts/MyContext";
-import Styles, { registerStyles as S } from "../../styles/Styles";
+import Styles from "../../styles/Styles";
+import { registerStyles as S } from "./Styles";
 
 const Register = () => {
     const fields = [

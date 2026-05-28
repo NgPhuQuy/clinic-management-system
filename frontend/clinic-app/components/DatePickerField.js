@@ -1,8 +1,8 @@
-import { View, TouchableOpacity, useWindowDimensions } from "react-native";
+import { View, TouchableOpacity, useWindowDimensions, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 import { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { COLORS, datePickerStyles as S } from "../styles/Styles";
+import { COLORS } from "../styles/Styles";
 
 const DAY_NAMES = ["CN","T2","T3","T4","T5","T6","T7"];
 const MONTH_VI  = ["Th.1","Th.2","Th.3","Th.4","Th.5","Th.6","Th.7","Th.8","Th.9","Th.10","Th.11","Th.12"];
@@ -103,6 +103,37 @@ export const DatePickerField = ({ value, onChange, label = "Ngày", clearLabel =
         </View>
     );
 };
+
+const S = StyleSheet.create({
+    field: {
+        flexDirection: "row", alignItems: "center",
+        borderWidth: 1.5, borderColor: COLORS.border, borderRadius: 8,
+        paddingHorizontal: 14, paddingVertical: 12,
+        backgroundColor: "#fff", gap: 8,
+    },
+    fieldLabel: {
+        position: "absolute", top: 14, left: 14,
+        fontSize: 14, color: COLORS.textMuted,
+        backgroundColor: "#fff", paddingHorizontal: 4,
+    },
+    fieldValue:    { flex: 1, fontSize: 14, color: COLORS.text, paddingTop: 6 },
+    calWrap:       { backgroundColor: "#fff", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: COLORS.border, marginTop: 4, elevation: 4 },
+    calHeader:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+    calMonthTxt:   { fontSize: 14, fontWeight: "700", color: COLORS.text },
+    dayName:       { textAlign: "center", fontSize: 11, fontWeight: "600", color: COLORS.textMuted, paddingVertical: 4 },
+    dayCell:       { alignItems: "center", justifyContent: "center", borderRadius: 4 },
+    dayCellToday:  { backgroundColor: COLORS.primaryPale },
+    dayCellSel:    { backgroundColor: COLORS.primary, borderRadius: 6 },
+    dayText:       { fontSize: 13, color: COLORS.text },
+    clearBtn:      { marginTop: 8, alignItems: "center", paddingVertical: 6 },
+    clearBtnText:  { fontSize: 12, color: COLORS.red, fontWeight: "600" },
+    timeSection:   { fontSize: 11, fontWeight: "700", color: COLORS.textMuted, textTransform: "uppercase", marginBottom: 6, letterSpacing: 0.5 },
+    timeGrid:      { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    timeCell:      { minWidth: 38, paddingHorizontal: 8, paddingVertical: 7, borderRadius: 8, backgroundColor: COLORS.bg, alignItems: "center", borderWidth: 1, borderColor: COLORS.border },
+    timeCellWide:  { minWidth: 56 },
+    timeCellSel:   { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+    timeCellTxt:   { fontSize: 13, color: COLORS.text },
+});
 
 const HOURS   = Array.from({length: 24}, (_, i) => String(i).padStart(2, "0"));
 const MINUTES = ["00", "10", "15", "20", "30", "40", "45", "50"];

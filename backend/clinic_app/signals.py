@@ -1,23 +1,22 @@
 import logging
 
+import requests
+from django.db.models import Sum
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from .models import Consultation, Notification, InventoryAlert
+
 logger = logging.getLogger(__name__)
 
-
-# ─────────────────────────────────────────────
-# Helper: gửi Expo push notification
-# ─────────────────────────────────────────────
 
 def _send_push(user, title, body, data=None):
     push_token = getattr(user, "push_token", None)
     if not push_token or not push_token.startswith("ExponentPushToken"):
         return
     try:
-        import requests as _req
-        _req.post(
+        requests.post(
             "https://exp.host/--/api/v2/push/send",
             json={
                 "to":        push_token,
@@ -33,10 +32,6 @@ def _send_push(user, title, body, data=None):
         logger.warning("Push notification failed for user %s: %s", user.pk, exc)
 
 
-# ─────────────────────────────────────────────
-# Helper: cache old status (dùng chung cho nhiều model)
-# ─────────────────────────────────────────────
-
 def _cache_old_status(sender, instance, **kwargs):
     if instance.pk:
         try:
@@ -47,21 +42,13 @@ def _cache_old_status(sender, instance, **kwargs):
         instance._old_status = None
 
 
-# ─────────────────────────────────────────────
-# INVENTORY — auto alert khi thấp / sắp hết hạn / hết hạn
-# ─────────────────────────────────────────────
-
 @receiver(post_save, sender="clinic_app.Inventory")
 def check_inventory_alerts(sender, instance, **kwargs):
-    from django.db.models import Sum, Q
-    from .models import InventoryAlert
-
     today         = timezone.now().date()
     medicine      = instance.medicine
     medicine_name = medicine.name
     batch         = instance.batch_number
 
-    # ── Tổng tồn kho còn hạn của toàn bộ lô thuốc này ──
     total_valid = (
         medicine.inventory_batches
         .filter(expiry_date__gt=today)
@@ -69,7 +56,6 @@ def check_inventory_alerts(sender, instance, **kwargs):
         or 0
     )
 
-    # LOW_STOCK — dựa trên TỔNG thuốc còn hạn, không phải từng lô
     if total_valid <= medicine.warning_threshold:
         msg = (
             f"Thuốc '{medicine_name}' còn tổng {total_valid} {medicine.unit} "
@@ -77,20 +63,18 @@ def check_inventory_alerts(sender, instance, **kwargs):
         )
         InventoryAlert.objects.get_or_create(
             medicine=medicine,
-            inventory=None,            # alert ở cấp thuốc, không gắn lô cụ thể
+            inventory=None,
             alert_type=InventoryAlert.AlertType.LOW_STOCK,
             is_resolved=False,
             defaults={"message": msg},
         )
     else:
-        # Nếu vừa nhập thêm và tổng đã vượt ngưỡng → tự resolve alert cũ
         InventoryAlert.objects.filter(
             medicine=medicine,
             alert_type=InventoryAlert.AlertType.LOW_STOCK,
             is_resolved=False,
         ).update(is_resolved=True, resolved_at=timezone.now())
 
-    # EXPIRED / NEAR_EXPIRY — vẫn ở cấp lô vì hạn sử dụng là thuộc tính của lô
     if instance.expiry_date < today:
         InventoryAlert.objects.get_or_create(
             medicine=medicine,
@@ -114,17 +98,11 @@ def check_inventory_alerts(sender, instance, **kwargs):
         )
 
 
-# ─────────────────────────────────────────────
-# APPOINTMENT — cache status + notify + auto Consultation
-# ─────────────────────────────────────────────
-
 pre_save.connect(_cache_old_status, sender="clinic_app.Appointment")
 
 
 @receiver(post_save, sender="clinic_app.Appointment")
 def on_appointment_saved(sender, instance, created, **kwargs):
-    from .models import Consultation, Notification
-
     old_status = getattr(instance, "_old_status", None)
     new_status = instance.status
 
@@ -132,8 +110,8 @@ def on_appointment_saved(sender, instance, created, **kwargs):
         return
 
     patient_user = instance.patient.user
+    doctor_name  = instance.doctor.user.get_full_name()
 
-    doctor_name = instance.doctor.user.get_full_name()
     STATUS_MESSAGES = {
         "confirmed": (
             Notification.Type.APPOINTMENT_CONFIRMED,
@@ -177,7 +155,6 @@ def on_appointment_saved(sender, instance, created, **kwargs):
         )
         _send_push(patient_user, title, message, data={"appointment_id": instance.pk})
 
-    # Auto-tạo Consultation khi confirmed
     if new_status == "confirmed":
         consultation, created_c = Consultation.objects.get_or_create(
             appointment=instance,
@@ -195,17 +172,11 @@ def on_appointment_saved(sender, instance, created, **kwargs):
             )
 
 
-# ─────────────────────────────────────────────
-# PRESCRIPTION — notify khi dispensed
-# ─────────────────────────────────────────────
-
 pre_save.connect(_cache_old_status, sender="clinic_app.Prescription")
 
 
 @receiver(post_save, sender="clinic_app.Prescription")
 def on_prescription_saved(sender, instance, created, **kwargs):
-    from .models import Notification
-
     old_status = getattr(instance, "_old_status", None)
     if created or old_status == instance.status:
         return
@@ -228,17 +199,11 @@ def on_prescription_saved(sender, instance, created, **kwargs):
         logger.info("Prescription #%s dispensed — notification sent to patient.", instance.pk)
 
 
-# ─────────────────────────────────────────────
-# PAYMENT — notify khi thanh toán thành công
-# ─────────────────────────────────────────────
-
 pre_save.connect(_cache_old_status, sender="clinic_app.Payment")
 
 
 @receiver(post_save, sender="clinic_app.Payment")
 def on_payment_saved(sender, instance, created, **kwargs):
-    from .models import Notification
-
     old_status = getattr(instance, "_old_status", None)
     if created or old_status == instance.status:
         return
@@ -250,7 +215,6 @@ def on_payment_saved(sender, instance, created, **kwargs):
         except Exception:
             return
 
-        # Auto-confirm appointment nếu đang ở trạng thái pending
         if appointment.status == "pending":
             appointment.status = "confirmed"
             appointment.save(update_fields=["status"])

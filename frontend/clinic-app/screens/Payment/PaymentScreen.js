@@ -8,8 +8,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, paymentScreenStyles as PS } from "../../styles/Styles";
-import { paymentScreenStyles as styles } from "./Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { paymentScreenStyles as PS, paymentScreenStyles as styles } from "./Styles";
 
 const ALL_METHODS = [
     {

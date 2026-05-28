@@ -1,20 +1,29 @@
-import logging
+import secrets
+import urllib.parse
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.http import HttpResponse
+from django.utils import timezone
+from oauth2_provider.models import AccessToken, Application
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 import requests
 
-from ..models import Doctor, Patient, Notification
+from ..models import Patient, Notification
+
 from ..permissions import IsAuthenticatedWithValidToken
 from ..serializers import ChangePasswordSerializer, RegisterSerializer, UserSerializer
 
-logger = logging.getLogger(__name__)
 User = get_user_model()
 
+def _deep_link(url):
+    response = HttpResponse(status=302)
+    response["Location"] = url
+    return response
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -23,13 +32,13 @@ class LoginView(APIView):
         username = request.data.get("username")
         password = request.data.get("password")
 
+        user = authenticate(request, username=username, password=password)
+
         if not username or not password:
             return Response(
                 {"detail": "Vui lòng nhập username và password."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        user = authenticate(request, username=username, password=password)
 
         if user is None:
             return Response(
@@ -102,6 +111,105 @@ class RegisterView(generics.CreateAPIView):
         )
 
 
+class GoogleOAuthRedirectView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        params = urllib.parse.urlencode({
+            "client_id":     settings.GOOGLE_CLIENT_ID,
+            "redirect_uri":  settings.GOOGLE_REDIRECT_URI,
+            "response_type": "code",
+            "scope":         "openid email profile",
+            "prompt":        "select_account",
+        })
+        return Response({"url": f"https://accounts.google.com/o/oauth2/v2/auth?{params}"})
+
+
+class GoogleOAuthCallbackView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        code  = request.query_params.get("code")
+        error = request.query_params.get("error")
+
+        if error or not code:
+            return _deep_link("com.clinic.app://auth?error=access_denied")
+
+        try:
+            token_res = requests.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code":          code,
+                    "client_id":     settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "redirect_uri":  settings.GOOGLE_REDIRECT_URI,
+                    "grant_type":    "authorization_code",
+                },
+                timeout=10,
+            )
+            if token_res.status_code != 200:
+                return _deep_link("com.clinic.app://auth?error=token_exchange_failed")
+
+            id_token = token_res.json().get("id_token")
+            info_res = requests.get(
+                "https://oauth2.googleapis.com/tokeninfo",
+                params={"id_token": id_token},
+                timeout=10,
+            )
+            if info_res.status_code != 200:
+                return _deep_link("com.clinic.app://auth?error=invalid_token")
+
+            info       = info_res.json()
+            email      = info.get("email")
+            first_name = info.get("given_name", "")
+            last_name  = info.get("family_name", "")
+
+            if not email:
+                return _deep_link("com.clinic.app://auth?error=no_email")
+
+        except requests.RequestException:
+            return _deep_link("com.clinic.app://auth?error=network_error")
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "username":   email.split("@")[0],
+                "first_name": first_name,
+                "last_name":  last_name,
+                "role":       User.Role.PATIENT,
+            },
+        )
+        if created:
+            user.set_password(secrets.token_urlsafe(32))
+            user.save()
+            Patient.objects.create(user=user)
+            Notification.objects.create(
+                user=user,
+                title="Chào mừng đến với ClinicCare!",
+                message="Tài khoản Google của bạn đã được kết nối thành công.",
+                type=Notification.Type.SYSTEM,
+            )
+
+        if not user.is_active:
+            return _deep_link("com.clinic.app://auth?error=account_disabled")
+
+        app = Application.objects.filter(client_id=settings.CLIENT_ID).first()
+        access_token = AccessToken.objects.create(
+            user=user,
+            application=app,
+            token=secrets.token_urlsafe(32),
+            expires=timezone.now() + timedelta(hours=1),
+            scope=user.role,
+        )
+
+        params = urllib.parse.urlencode({
+            "token": access_token.token,
+            "scope": user.role,
+        })
+        return _deep_link(f"com.clinic.app://auth?{params}")
+
+
+
 class MeView(generics.RetrieveUpdateAPIView):
     serializer_class   = UserSerializer
     permission_classes = [IsAuthenticatedWithValidToken]
@@ -124,5 +232,3 @@ class ChangePasswordView(generics.UpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"detail": "Đổi mật khẩu thành công."})
-
-

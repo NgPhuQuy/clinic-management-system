@@ -7,7 +7,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useRef, useState, useCallback, useContext } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import { COLORS, paymentWebViewStyles as S } from "../../styles/Styles";
+import { COLORS } from "../../styles/Styles";
+import { paymentWebViewStyles as S } from "./Styles";
 import apis, { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 

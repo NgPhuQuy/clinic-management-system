@@ -9,7 +9,8 @@ import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, notifStyles as S } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { notifStyles as S } from "./Styles";
 
 const TYPE_MAP = {
     appointment_reminder:  { icon: "calendar-clock",     bg: "#e8f5e9", color: COLORS.green },

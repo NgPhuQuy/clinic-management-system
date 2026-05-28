@@ -30,7 +30,6 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'dev-fallback-key-change-in-prod')
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = ['*']
-# ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 
 # Application definition
 
@@ -111,7 +110,7 @@ OAUTH2_PROVIDER = {
     "SCOPES": {
         "admin":   "Toàn quyền quản trị hệ thống",
         "doctor":  "Quyền bác sĩ — hồ sơ bệnh án, đơn thuốc, lịch khám",
-        "staff":   "Quyền nhân viên y tế — xác nhận thanh toán, cấp thuốc/trừ kho thuốc",
+        "staff":   "Quyền nhân viên y tế — cấp thuốc/trừ kho thuốc, nhập kết quả xét nghiệm",
         "patient": "Quyền bệnh nhân — đặt lịch, xem hồ sơ cá nhân, thanh toán",
         "read":    "Chỉ đọc",
     },
@@ -121,9 +120,6 @@ OAUTH2_PROVIDER = {
     "ROTATE_REFRESH_TOKEN": True,
 }
 
-# ─────────────────────────────────────────────
-# CORS
-# ─────────────────────────────────────────────
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
@@ -155,10 +151,6 @@ DATABASES = {
     }
 }
 
-
-# ─────────────────────────────────────────────
-# CLOUDINARY
-# ─────────────────────────────────────────────
 import cloudinary
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME", ""),
@@ -208,9 +200,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ─────────────────────────────────────────────
-# SWAGGER
-# ─────────────────────────────────────────────
+
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
         "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
@@ -218,9 +208,6 @@ SWAGGER_SETTINGS = {
     "USE_SESSION_AUTH": False,
 }
 
-# ─────────────────────────────────────────────
-# LOGGING (chỉ bật khi DEBUG)
-# ─────────────────────────────────────────────
 if DEBUG:
     LOGGING = {
         "version": 1,
@@ -231,27 +218,22 @@ if DEBUG:
         },
     }
 
-# ─────────────────────────────────────────────
-# OAUTH2 (CLIENT_ID, CLIENT_SECRET)
-# ─────────────────────────────────────────────
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+
+GOOGLE_CLIENT_ID     = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI  = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback/")
 
 # agora settings (video call real time)
 AGORA_APP_ID          = os.getenv("AGORA_APP_ID")
 AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE")
 AGORA_TOKEN_EXPIRY    = int(os.getenv("AGORA_TOKEN_EXPIRY"))
 
-# ─────────────────────────────────────────────
-# BUSINESS CONSTANTS
-# ─────────────────────────────────────────────
 CONSULTATION_WINDOW_BEFORE_MINUTES = 30
 CONSULTATION_WINDOW_AFTER_MINUTES = 120
 INVENTORY_NEAR_EXPIRY_DAYS = 30
 
-# ─────────────────────────────────────────────
-# PAYMENT GATEWAYS
-# ─────────────────────────────────────────────
 
 # URL backend 
 BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:8000")

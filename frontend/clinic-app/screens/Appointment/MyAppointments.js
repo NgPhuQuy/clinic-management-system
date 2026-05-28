@@ -4,7 +4,8 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { myAppointmentsStyles as S } from "../../styles/Styles";
+import Styles from "../../styles/Styles";
+import { myAppointmentsStyles as S } from "./Styles";
 
 const STATUS_FILTERS = [
     { label: "Tất cả", value: null },

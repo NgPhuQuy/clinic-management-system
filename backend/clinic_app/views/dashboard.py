@@ -1,6 +1,4 @@
-from datetime import timedelta
-from django.db.models import Case, CharField, Count, Sum, Q, F, Value, When
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
+from django.db.models import Count, Sum
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,8 +14,9 @@ class DashboardView(APIView):
     permission_classes = [HasAdminScope]
 
     def get(self, request):
-        today      = timezone.now().date()
-        this_month = timezone.now().replace(day=1).date()
+        now        = timezone.now()
+        today      = now.date()
+        this_month = now.replace(day=1).date()
 
         total_patients     = Patient.objects.count()
         new_patients_month = Patient.objects.filter(
@@ -71,174 +70,7 @@ class DashboardView(APIView):
                 "today":      revenue_today,
                 "this_month": revenue_month,
             },
-            "top_diagnoses":   top_diagnoses,
-            "top_services":    top_services,
+            "top_diagnoses":    top_diagnoses,
+            "top_services":     top_services,
             "inventory_alerts": pending_alerts,
         })
-
-
-class DashboardReportsView(APIView):
-    permission_classes = [HasAdminScope]
-
-    def get(self, request):
-        report_type = request.query_params.get("type", "age_group")
-        period      = request.query_params.get("period", "month")
-        days        = int(request.query_params.get("days", 30))
-        since       = timezone.now().date() - timedelta(days=days)
-
-        handler = {
-            "age_group": self._report_age_group,
-            "gender":    self._report_gender,
-            "specialty": self._report_specialty,
-            "disease":   self._report_disease,
-            "service":   self._report_service,
-            "revenue":   self._report_revenue,
-        }.get(report_type)
-
-        if handler is None:
-            return Response(
-                {"detail": f"Loại báo cáo '{report_type}' không hợp lệ. "
-                           f"Chọn: age_group, gender, specialty, disease, service, revenue."},
-                status=400,
-            )
-
-        data = handler(since=since, period=period)
-        return Response({"type": report_type, "period": period, "days": days, "data": data})
-
-    def _report_age_group(self, since, **kwargs):
-        current_year = timezone.now().year
-        data = (
-            Patient.objects
-            .annotate(
-                age_group=Case(
-                    When(date_of_birth__isnull=True, then=Value("unknown")),
-                    When(date_of_birth__year__gte=current_year - 17, then=Value("<18")),
-                    When(date_of_birth__year__gte=current_year - 30, then=Value("18-30")),
-                    When(date_of_birth__year__gte=current_year - 45, then=Value("31-45")),
-                    When(date_of_birth__year__gte=current_year - 60, then=Value("46-60")),
-                    default=Value(">60"),
-                    output_field=CharField(),
-                )
-            )
-            .values("age_group")
-            .annotate(count=Count("id"))
-            .order_by("age_group")
-        )
-        return [{"age_group": item["age_group"], "count": item["count"]} for item in data]
-
-    # ── 2. Bệnh nhân theo giới tính ────────────────────────────────────────
-
-    def _report_gender(self, since, **kwargs):
-        """Phân bố giới tính bệnh nhân."""
-        data = (
-            Patient.objects
-            .values("gender")
-            .annotate(count=Count("id"))
-            .order_by("gender")
-        )
-        return list(data)
-
-    # ── 3. Lượt khám theo chuyên khoa ──────────────────────────────────────
-
-    def _report_specialty(self, since, **kwargs):
-        data = (
-            Appointment.objects
-            .filter(
-                appointment_date__date__gte=since,
-                status__in=["completed", "in_progress"],
-            )
-            .values("doctor__specialty__name")
-            .annotate(count=Count("id"))
-            .order_by("-count")
-        )
-        return [
-            {"specialty": item["doctor__specialty__name"], "count": item["count"]}
-            for item in data
-        ]
-
-    # ── 4. Bệnh phổ biến trong cộng đồng ──────────────────────────────────
-
-    def _report_disease(self, since, **kwargs):
-        data = (
-            MedicalRecord.objects
-            .filter(created_at__date__gte=since)
-            .values("diagnosis")
-            .annotate(count=Count("id"))
-            .order_by("-count")[:20]
-        )
-        return list(data)
-
-    # ── 5. Dịch vụ y tế được sử dụng ──────────────────────────────────────
-
-    def _report_service(self, since, **kwargs):
-        """
-        Số lượng dịch vụ y tế được sử dụng.
-        Đề tài: "báo cáo số lượng dịch vụ y tế được sử dụng"
-        """
-        data = (
-            AppointmentService.objects
-            .filter(appointment__appointment_date__date__gte=since)
-            .values("service__name", "service__specialty__name")
-            .annotate(
-                count=Count("id"),
-                revenue=Sum(F("quantity") * F("price_at_time")),
-            )
-            .order_by("-count")
-        )
-        return [
-            {
-                "service":   item["service__name"],
-                "specialty": item["service__specialty__name"],
-                "count":     item["count"],
-                "revenue":   item["revenue"],
-            }
-            for item in data
-        ]
-
-    # ── 6. Doanh thu chi tiết theo thời gian ───────────────────────────────
-
-    def _report_revenue(self, since, period="month", **kwargs):
-        trunc_fn = {
-            "day":   TruncDay,
-            "week":  TruncWeek,
-            "month": TruncMonth,
-        }.get(period, TruncMonth)
-
-        timeline = (
-            Payment.objects
-            .filter(status="success", paid_at__date__gte=since)
-            .annotate(period=trunc_fn("paid_at"))
-            .values("period")
-            .annotate(
-                total=Sum("amount"),
-                count=Count("id"),
-            )
-            .order_by("period")
-        )
-
-        by_method = (
-            Payment.objects
-            .filter(status="success", paid_at__date__gte=since)
-            .values("payment_method")
-            .annotate(total=Sum("amount"), count=Count("id"))
-            .order_by("-total")
-        )
-
-        total_revenue = (
-            Payment.objects
-            .filter(status="success", paid_at__date__gte=since)
-            .aggregate(total=Sum("amount"))["total"] or 0
-        )
-
-        return {
-            "total":     total_revenue,
-            "timeline":  [
-                {
-                    "period": item["period"].strftime("%Y-%m-%d") if item["period"] else None,
-                    "total":  item["total"],
-                    "count":  item["count"],
-                }
-                for item in timeline
-            ],
-            "by_method": list(by_method),
-        }

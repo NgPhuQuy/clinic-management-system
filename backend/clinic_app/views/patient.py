@@ -21,12 +21,10 @@ class PatientViewSet(viewsets.ModelViewSet):
             return [IsAuthenticatedWithValidToken(), IsOwnerOrAdmin()]
         if self.action in ("appointments", "medical_records"):
             return [IsAuthenticatedWithValidToken()]
-        # list, create, destroy → admin only
         return [HasAdminScope()]
 
     @action(detail=False, methods=["get", "patch"], url_path="me")
     def me(self, request):
-        """GET/PATCH /api/patients/me/ — Xem và cập nhật hồ sơ bệnh nhân của mình."""
         patient = get_object_or_404(Patient, user=request.user)
         if request.method == "PATCH":
             serializer = PatientSerializer(patient, data=request.data, partial=True)
@@ -37,7 +35,6 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def appointments(self, request, pk=None):
-        """GET /api/patients/{id}/appointments/ — Lịch sử khám bệnh."""
         patient = self.get_object()
         qs = patient.appointments.select_related("doctor__specialty").order_by("-appointment_date")
         serializer = AppointmentSerializer(qs, many=True)
@@ -45,7 +42,6 @@ class PatientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def medical_records(self, request, pk=None):
-        """GET /api/patients/{id}/medical_records/ — Hồ sơ bệnh án."""
         patient = self.get_object()
         qs = patient.medical_records.prefetch_related("test_results").order_by("-created_at")
         serializer = MedicalRecordSerializer(qs, many=True)

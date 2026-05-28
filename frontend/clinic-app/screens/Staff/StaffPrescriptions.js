@@ -8,7 +8,8 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
-import Styles, { COLORS, staffPrescriptionsStyles as S } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
+import { staffPrescriptionsStyles as S } from "./Styles";
 
 const STATUS_CONFIG = {
     all:       { label: "Tất cả",       color: COLORS.textMuted },

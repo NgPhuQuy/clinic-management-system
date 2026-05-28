@@ -11,9 +11,9 @@ import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext, MyDispatchContext } from "../../contexts/MyContext";
-import Styles, { COLORS, profileStyles as PS } from "../../styles/Styles";
+import Styles, { COLORS } from "../../styles/Styles";
 import { DatePickerField } from "../../components/DatePickerField";
-import { editProfileStyles as editStyles, paymentsStyles as payStyles } from "./Styles";
+import { editProfileStyles as editStyles, paymentsStyles as payStyles, profileStyles as PS } from "./Styles";
 
 const ROLE_LABELS = { patient: "Bệnh nhân", doctor: "Bác sĩ", staff: "Nhân viên", admin: "Quản trị viên" };
 

@@ -39,7 +39,6 @@ class DoctorViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def appointments(self, request, pk=None):
-        """GET /api/doctors/{id}/appointments/"""
         doctor = self.get_object()
         qs = doctor.appointments.select_related("patient").order_by("appointment_date")
         status_filter = request.query_params.get("status")

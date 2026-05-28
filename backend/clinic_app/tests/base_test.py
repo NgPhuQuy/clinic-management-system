@@ -1,10 +1,3 @@
-"""
-base_test.py — Lớp nền và các factory dùng chung cho toàn bộ test suite.
-
-Mỗi test module import BaseAPITestCase thay vì viết lại setup.
-
-"""
-
 from datetime import timedelta
 from django.utils import timezone
 from oauth2_provider.models import AccessToken, Application
@@ -18,22 +11,11 @@ from clinic_app.models import (
 
 User = get_user_model()
 
-
-# ─────────────────────────────────────────────────────────────
-# Scope mapping: user.role → OAuth2 scope
-# Dùng để auth() tự động gắn đúng scope cho từng user
-# ─────────────────────────────────────────────────────────────
-
 ROLE_TO_SCOPE = {
     "patient": "patient read",
     "doctor":  "doctor read",
     "admin":   "admin read",
 }
-
-
-# ─────────────────────────────────────────────────────────────
-# Factories — tạo object nhanh, không cần thư viện factory_boy
-# ─────────────────────────────────────────────────────────────
 
 def make_user(email, password="Test@1234", role="patient", **kwargs):
     """
@@ -89,16 +71,6 @@ def make_admin_user(email="admin@test.com", **kwargs):
 
 
 def get_oauth2_token_for_user(user, scope=None):
-    """
-    Tạo AccessToken cho user và trả về token string.
-
-    BUG FIX: scope mặc định trước là "read" → nhiều permission test sẽ fail
-    vì HasAdminScope/HasDoctorScope/HasPatientScope đều yêu cầu scope cụ thể.
-    Nay auto-map từ user.role nếu scope không truyền vào.
-
-    Returns:
-        str: access token string (dùng cho Authorization: Bearer <token>)
-    """
     if scope is None:
         scope = ROLE_TO_SCOPE.get(user.role, "read")
 
@@ -120,23 +92,10 @@ def get_oauth2_token_for_user(user, scope=None):
     return token.token
 
 
-# ─────────────────────────────────────────────────────────────
-# Base test class
-# ─────────────────────────────────────────────────────────────
-
 class BaseAPITestCase(APITestCase):
-    """
-    Mọi test class đều kế thừa class này.
-    Cung cấp:
-      - self.client  (APIClient)
-      - self.admin / self.doctor_user / self.patient_user
-      - self.auth(user)  → gắn OAuth2 Bearer token vào client (đúng scope theo role)
-      - self.auth(user, scope="admin read")  → override scope nếu cần
-    """
 
     @classmethod
     def setUpTestData(cls):
-        # Dùng setUpTestData để tạo 1 lần cho cả class (nhanh hơn setUp)
         cls.specialty, _ = Specialty.objects.get_or_create(
             name="Nội khoa", defaults={"description": "Khoa nội tổng quát"}
         )
@@ -149,14 +108,9 @@ class BaseAPITestCase(APITestCase):
         self.client = APIClient()
 
     def auth(self, user, scope=None):
-        """
-        Gắn OAuth2 Bearer token cho user vào self.client.
-        Scope tự động map theo user.role nếu không truyền vào.
-        """
         token = get_oauth2_token_for_user(user, scope=scope)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         return token
 
     def unauth(self):
-        """Xóa credentials (anonymous request)."""
         self.client.credentials()
