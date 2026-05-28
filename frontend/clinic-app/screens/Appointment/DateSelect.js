@@ -1,5 +1,5 @@
 import {
-    View, ScrollView, TouchableOpacity, StyleSheet,
+    View, ScrollView, TouchableOpacity,
     ActivityIndicator, useWindowDimensions,
 } from "react-native";
 import { Text } from "react-native-paper";
@@ -9,9 +9,9 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import { COLORS } from "../../styles/Styles";
+import { dateSelectStyles as styles } from "./Styles";
 
 const WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-// MM-DD fixed holidays
 const FIXED_HOLIDAYS = new Set(["01-01", "04-30", "05-01", "09-02"]);
 
 const toDateStr = (d) =>
@@ -162,7 +162,6 @@ const DateSelect = () => {
         <View style={{ flex: 1, backgroundColor: "#fff" }}>
             <ScrollView>
                 <View style={styles.calCard}>
-                    {/* Month navigation */}
                     <View style={styles.monthNav}>
                         <TouchableOpacity style={styles.navBtn} onPress={prevMonth}>
                             <MaterialCommunityIcons name="chevron-left" size={22} color={COLORS.text} />
@@ -175,7 +174,6 @@ const DateSelect = () => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Weekday headers */}
                     <View style={styles.weekRow}>
                         {WEEKDAYS.map((d, i) => (
                             <Text key={d} style={[styles.weekDay, { width: CELL_SIZE }, i === 0 && styles.weekDaySun]}>
@@ -184,7 +182,6 @@ const DateSelect = () => {
                         ))}
                     </View>
 
-                    {/* Days grid */}
                     {loading ? (
                         <View style={{ paddingVertical: 48, alignItems: "center" }}>
                             <ActivityIndicator color={COLORS.primary} />
@@ -199,7 +196,6 @@ const DateSelect = () => {
                     )}
                 </View>
 
-                {/* Legend */}
                 {!loading && (
                     <View style={styles.legendCard}>
                         <View style={styles.hintBorder}>
@@ -230,138 +226,5 @@ const DateSelect = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    calCard: {
-        margin: 16,
-        backgroundColor: "#fff",
-        borderRadius: 16,
-        padding: 12,
-        elevation: 3,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-    },
-    monthNav: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 16,
-        paddingHorizontal: 4,
-    },
-    navBtn: {
-        width: 36, height: 36,
-        borderRadius: 8,
-        backgroundColor: "#f0f0f0",
-        alignItems: "center", justifyContent: "center",
-    },
-    navBtnActive: {
-        backgroundColor: COLORS.primary,
-    },
-    monthTitle: {
-        fontSize: 16,
-        fontWeight: "800",
-        color: COLORS.primary,
-    },
-    weekRow: {
-        flexDirection: "row",
-        marginBottom: 4,
-    },
-    weekDay: {
-        textAlign: "center",
-        fontSize: 12,
-        fontWeight: "700",
-        color: COLORS.textMuted,
-        paddingVertical: 4,
-    },
-    weekDaySun: {
-        color: COLORS.red,
-    },
-    daysGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-    },
-    dayCell: {
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 8,
-        marginVertical: 2,
-        paddingVertical: 4,
-    },
-    dayCellToday: {
-        borderWidth: 2,
-        borderColor: COLORS.primary,
-    },
-    dayCellAvail: {
-        backgroundColor: COLORS.primary,
-    },
-    dayCellSelected: {
-        backgroundColor: COLORS.primaryDark,
-    },
-    dayCellHoliday: {
-        borderWidth: 2,
-        borderColor: COLORS.orange,
-    },
-    dayText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: COLORS.text,
-    },
-    dayTextPast: {
-        color: COLORS.textLight,
-        fontWeight: "400",
-    },
-    dayTextAvail: {
-        color: "#fff",
-        fontWeight: "700",
-    },
-    dayTextSelected: {
-        color: "#fff",
-        fontWeight: "800",
-    },
-    dayTextToday: {
-        color: COLORS.primary,
-        fontWeight: "800",
-    },
-    subLabel: {
-        fontSize: 8,
-        fontWeight: "600",
-    },
-    subLabelWhite: { color: "#fff" },
-    subLabelBlue:  { color: COLORS.primary },
-    subLabelOrange: { fontSize: 8, fontWeight: "600", color: COLORS.orange },
-    legendCard: {
-        marginHorizontal: 16,
-        marginBottom: 24,
-    },
-    hintBorder: {
-        borderLeftWidth: 3,
-        borderLeftColor: COLORS.primary,
-        paddingLeft: 10,
-        paddingVertical: 6,
-        marginBottom: 14,
-    },
-    hintText: {
-        fontSize: 13,
-        color: COLORS.text,
-    },
-    legendRow: {
-        gap: 6,
-    },
-    legendItem: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-        marginBottom: 4,
-    },
-    legendBox: {
-        width: 20, height: 20,
-        borderRadius: 4,
-    },
-    legendText: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-    },
-});
 
 export default DateSelect;

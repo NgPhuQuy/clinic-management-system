@@ -63,6 +63,7 @@ export const endpoints = {
     'inventory-near-expiry': '/inventory/near_expiry/',
     'inventory-alerts': '/inventory-alerts/',
     'inventory-alert-resolve': (id) => `/inventory-alerts/${id}/resolve/`,
+    'inventory-dispose': (id) => `/inventory/${id}/dispose/`,
 
     'notifications': '/notifications/',
     'notification-read': (id) => `/notifications/${id}/read/`,

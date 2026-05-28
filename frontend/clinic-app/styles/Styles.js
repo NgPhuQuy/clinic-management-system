@@ -2,7 +2,6 @@ import { StyleSheet, Platform } from "react-native";
 
 const SCREEN_W = 375;
 
-// ─────────────────────────────── COLOR PALETTE ───────────────────────────────
 export const COLORS = {
     primary:      "#1565c0",
     primaryDark:  "#0d47a1",
@@ -43,7 +42,6 @@ export const ICON_BG = {
     amber:  { bg: "#fff8e1", color: "#f57f17" },
 };
 
-// ─────────────────────────── APPOINTMENT STATUS ───────────────────────────────
 export const STATUS_CONFIG = {
     all:         { label: "Tất cả",       color: COLORS.textMuted },
     pending:     { label: "Chờ xác nhận", color: COLORS.orange },
@@ -54,9 +52,7 @@ export const STATUS_CONFIG = {
     no_show:     { label: "Không đến",    color: COLORS.textLight },
 };
 
-// ─────────────────────────── SHARED STYLES ────────────────────────────────────
 const Styles = StyleSheet.create({
-    // ── Layout ──
     container:  { flex: 1, backgroundColor: COLORS.bg },
     padding:    { padding: 16 },
     margin:     { marginBottom: 12 },
@@ -65,7 +61,6 @@ const Styles = StyleSheet.create({
     flex1:      { flex: 1 },
     scrollContent: { padding: 16, paddingBottom: 32 },
 
-    // ── Card ──
     card: {
         backgroundColor: COLORS.white,
         borderRadius: 16,
@@ -91,7 +86,6 @@ const Styles = StyleSheet.create({
         borderColor: "transparent",
     },
 
-    // ── Typography ──
     title: {
         fontSize: 20,
         fontWeight: "800",
@@ -114,7 +108,6 @@ const Styles = StyleSheet.create({
         marginVertical: 10,
     },
 
-    // ── Badge ──
     badge: {
         paddingHorizontal: 10,
         paddingVertical: 4,
@@ -123,7 +116,6 @@ const Styles = StyleSheet.create({
     },
     badgeText: { fontSize: 11, fontWeight: "700", color: "#fff" },
 
-    // ── Avatar ──
     avatar:      { width: 80,  height: 80,  borderRadius: 40 },
     avatarLarge: { width: 100, height: 100, borderRadius: 50 },
     avatarCircle: {
@@ -135,7 +127,6 @@ const Styles = StyleSheet.create({
         justifyContent: "center",
     },
 
-    // ── Button ──
     btnPrimary: {
         backgroundColor: COLORS.primary,
         borderRadius: 14,
@@ -159,7 +150,6 @@ const Styles = StyleSheet.create({
     },
     btnOutlineText: { color: COLORS.primary, fontWeight: "700", fontSize: 15 },
 
-    // ── Header (shared across dashboards) ──
     header: {
         paddingHorizontal: 20,
         paddingTop: Platform.OS === "ios" ? 56 : 48,
@@ -179,13 +169,11 @@ const Styles = StyleSheet.create({
         justifyContent: "center",
     },
 
-    // ── Section ──
     section:       { margin: 16, marginBottom: 0 },
     sectionRow:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
     sectionTitle:  { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 },
     seeAll:        { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
 
-    // ── Stat card (Doctor & Staff dashboard) ──
     statCard: {
         backgroundColor: "#fff",
         borderRadius: 12,
@@ -204,7 +192,6 @@ const Styles = StyleSheet.create({
     statValue: { fontSize: 22, fontWeight: "800", color: COLORS.text },
     statLabel: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
 
-    // ── Quick action grid ──
     actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
     actionBtn: {
         width: "31%",
@@ -221,7 +208,6 @@ const Styles = StyleSheet.create({
     actionIcon:  { width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 },
     actionLabel: { fontSize: 11, fontWeight: "600", color: COLORS.text, textAlign: "center" },
 
-    // ── Appointment list item (mini) ──
     apptItem: {
         backgroundColor: "#fff",
         borderRadius: 12,
@@ -237,11 +223,9 @@ const Styles = StyleSheet.create({
     apptPatient: { fontSize: 14, fontWeight: "700", color: COLORS.text },
     apptSub:     { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
 
-    // ── Status badge ──
     statusBadge:  { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
     statusText:   { fontSize: 10, fontWeight: "700" },
 
-    // ── Filter chip ──
     filterChip: {
         paddingHorizontal: 14,
         paddingVertical: 6,
@@ -254,13 +238,11 @@ const Styles = StyleSheet.create({
     filterChipText:       { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
     filterChipTextActive: { color: "#fff" },
 
-    // ── Revenue card (Staff) ──
     revenueRow:   { flexDirection: "row", margin: 16, marginBottom: 0, gap: 10 },
     revenueCard:  { flex: 1, borderRadius: 14, padding: 14 },
     revenueLabel: { fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 6 },
     revenueValue: { fontSize: 15, fontWeight: "800", color: "#fff", marginTop: 2 },
 
-    // ── Profile (StaffDoctorProfile) ──
     profileHeader: {
         paddingTop: Platform.OS === "ios" ? 56 : 48,
         paddingBottom: 28,
@@ -297,11 +279,9 @@ const Styles = StyleSheet.create({
     menuIcon:    { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginRight: 12 },
     menuLabel:   { flex: 1, fontSize: 14, fontWeight: "600", color: COLORS.text },
 
-    // ── Search bar ──
     searchWrap:  { backgroundColor: "#fff", paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 },
     searchInput: { backgroundColor: COLORS.bg, elevation: 0, height: 44 },
 
-    // ── Appointment card (list) ──
     appointmentCard: {
         backgroundColor: "#fff",
         borderRadius: 14,
@@ -327,7 +307,6 @@ const Styles = StyleSheet.create({
     },
     apptActionLabel: { fontSize: 11, fontWeight: "700" },
 
-    // ── Schedule / Calendar picker ──
     calendarWrap: {
         backgroundColor: "#fff",
         borderRadius: 16,
@@ -378,7 +357,6 @@ const Styles = StyleSheet.create({
     timeSlotTextSelected: { color: "#fff" },
     timeSlotFull:     { opacity: 0.35 },
 
-    // ── Book appointment form ──
     bookForm: {
         backgroundColor: "#fff",
         margin: 16,
@@ -388,7 +366,6 @@ const Styles = StyleSheet.create({
     },
     bookBtn: { borderRadius: 8, paddingVertical: 4, marginBottom: 10 },
 
-    // ── Date picker trigger ──
     datePickerBtn: {
         borderWidth: 1.5,
         borderColor: COLORS.primary,
@@ -402,7 +379,6 @@ const Styles = StyleSheet.create({
     },
     datePickerBtnText: { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: "600" },
 
-    // ── Doctor schedule list item ──
     scheduleItem: {
         flexDirection: "row",
         alignItems: "center",
@@ -421,18 +397,15 @@ const Styles = StyleSheet.create({
         alignItems: "center",
     },
 
-    // ── Empty state ──
     emptyWrap:   { alignItems: "center", marginTop: 60, paddingHorizontal: 32 },
     emptyText:   { color: COLORS.textMuted, marginTop: 12, fontSize: 14, textAlign: "center" },
     emptySubtext:{ color: COLORS.textLight, fontSize: 12, marginTop: 4, textAlign: "center" },
 
-    // ── Loading ──
     loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg },
 });
 
 export default Styles;
 
-// ─────────────────────────────── NOTIFICATION ────────────────────────────────
 export const notifStyles = StyleSheet.create({
     header: {
         backgroundColor: COLORS.primaryDark,
@@ -510,7 +483,6 @@ export const notifStyles = StyleSheet.create({
         backgroundColor: COLORS.primaryPale,
         alignItems: "center", justifyContent: "center",
     },
-    // NotificationDetail
     detailHeader: {
         backgroundColor: COLORS.primaryDark,
         paddingTop: Platform.OS === "ios" ? 56 : 48,
@@ -554,7 +526,6 @@ export const notifStyles = StyleSheet.create({
     detailActionText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });
 
-// ─────────────────────────────── PROFILE / PAYMENT ───────────────────────────
 export const profileStyles = StyleSheet.create({
     header: {
         backgroundColor: COLORS.primaryDark,
@@ -634,7 +605,6 @@ export const profileStyles = StyleSheet.create({
     },
     logoutText: { color: "#f44336", fontSize: 14, fontWeight: "700" },
 
-    // Invoice list
     invoiceCard: {
         backgroundColor: "#fff", borderRadius: 14, padding: 14,
         marginBottom: 10, elevation: 2,
@@ -647,7 +617,6 @@ export const profileStyles = StyleSheet.create({
     invoiceAmt: { fontSize: 18, fontWeight: "800", color: COLORS.primary },
     invoiceDate:{ fontSize: 11, color: COLORS.textLight, marginTop: 4 },
 
-    // Payment method card
     methodCard: {
         flexDirection: "row", alignItems: "center",
         backgroundColor: "#fff", marginHorizontal: 0,
@@ -682,7 +651,6 @@ export const profileStyles = StyleSheet.create({
     statusText:   { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
 
-// ─────────────────────────────── PAYMENT SCREEN ──────────────────────────────
 export const paymentScreenStyles = StyleSheet.create({
     sectionLabel: {
         fontSize: 11, fontWeight: "700", color: COLORS.textLight,
@@ -714,7 +682,6 @@ export const paymentScreenStyles = StyleSheet.create({
     radioDot:      { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
 });
 
-// ─────────────────────────────── STAFF PAYMENTS ──────────────────────────────
 export const staffPaymentStyles = StyleSheet.create({
     summaryBanner: {
         flexDirection: "row", backgroundColor: COLORS.orange,
@@ -770,8 +737,6 @@ export const staffPaymentStyles = StyleSheet.create({
     confirmBtn: { borderRadius: 10, marginBottom: 4 },
 });
 
-// ── MedicalRecords ──
-
 export const medicalRecordsStyles = StyleSheet.create({
     row: {
         flexDirection: "row",
@@ -779,8 +744,6 @@ export const medicalRecordsStyles = StyleSheet.create({
     },
     testResult: {},
 });
-
-// ── AppointmentDetail ──
 
 export const appointmentDetailStyles = StyleSheet.create({
     statusBanner: {
@@ -826,8 +789,6 @@ export const appointmentDetailStyles = StyleSheet.create({
     },
 });
 
-// ── MyAppointments ──
-
 export const myAppointmentsStyles = StyleSheet.create({
     filterRow: {
         flexDirection: "row",
@@ -851,8 +812,6 @@ export const myAppointmentsStyles = StyleSheet.create({
         marginBottom: 8,
     },
 });
-
-// ── Login ──
 
 export const loginStyles = StyleSheet.create({
     header: {
@@ -890,8 +849,6 @@ export const loginStyles = StyleSheet.create({
     },
 });
 
-// ── Register ──
-
 export const registerStyles = StyleSheet.create({
     form: {
         backgroundColor: "#fff",
@@ -917,8 +874,6 @@ export const registerStyles = StyleSheet.create({
     },
 });
 
-// ── DoctorAppointmentDetail ──
-
 export const doctorAppointmentDetailStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.bg },
     statusHeader: { padding: 20, alignItems: "center" },
@@ -943,7 +898,6 @@ export const doctorAppointmentDetailStyles = StyleSheet.create({
     emptyText: { color: COLORS.textMuted, marginTop: 8, fontSize: 14 },
     actions: { margin: 16, gap: 10 },
     btn: { borderRadius: 10, paddingVertical: 4 },
-    // Modal styles
     modalHeader: {
         backgroundColor: COLORS.primaryDark,
         paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
@@ -975,8 +929,6 @@ export const doctorAppointmentDetailStyles = StyleSheet.create({
     medOptionText: { fontSize: 14, fontWeight: "600", color: COLORS.text },
     medOptionSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
 });
-
-// ── DoctorDetail ──
 
 export const doctorDetailStyles = StyleSheet.create({
     header: {
@@ -1035,8 +987,6 @@ export const doctorDetailStyles = StyleSheet.create({
     },
 });
 
-// ── DoctorList ──
-
 export const doctorListStyles = StyleSheet.create({
     searchBar: {
         padding: 12,
@@ -1083,8 +1033,6 @@ export const doctorListStyles = StyleSheet.create({
     },
 });
 
-// ── DoctorSchedules ──
-
 export const doctorSchedulesStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.bg },
     header: {
@@ -1124,7 +1072,6 @@ export const doctorSchedulesStyles = StyleSheet.create({
     },
     cardActions: { alignItems: "center", gap: 4 },
     iconBtn: { padding: 4 },
-    // Modal
     modalHeader: {
         backgroundColor: COLORS.primaryDark,
         paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
@@ -1135,10 +1082,7 @@ export const doctorSchedulesStyles = StyleSheet.create({
     row: { flexDirection: "row", gap: 10 },
 });
 
-// ── Home ──
-
 export const homeStyles = StyleSheet.create({
-    /* Header */
     header: {
         backgroundColor: COLORS.primaryDark,
         paddingTop: 52,
@@ -1170,7 +1114,6 @@ export const homeStyles = StyleSheet.create({
     userName: { color: "#fff", fontSize: 22, fontWeight: "800", marginTop: 2 },
     tagLine:  { color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 4 },
 
-    /* Search */
     searchWrap: { paddingHorizontal: 16, marginTop: -20, zIndex: 10 },
     searchBar: {
         backgroundColor: "#fff",
@@ -1195,7 +1138,6 @@ export const homeStyles = StyleSheet.create({
     },
     searchBtnText: { color: COLORS.primary, fontWeight: "700", fontSize: 12 },
 
-    /* Section */
     section: { paddingHorizontal: 16, paddingTop: 24 },
     sectionHeader: {
         flexDirection: "row",
@@ -1206,7 +1148,6 @@ export const homeStyles = StyleSheet.create({
     sectionTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
     sectionLink:  { fontSize: 12, fontWeight: "700", color: COLORS.primary },
 
-    /* Quick grid */
     quickGrid: {
         flexDirection: "row",
         flexWrap: "wrap",
@@ -1238,7 +1179,6 @@ export const homeStyles = StyleSheet.create({
         lineHeight: 14,
     },
 
-    /* Appointment card */
     apptCard: {
         backgroundColor: COLORS.primaryDark,
         borderRadius: 16,
@@ -1268,7 +1208,6 @@ export const homeStyles = StyleSheet.create({
     },
     apptBadgeText: { fontSize: 10, fontWeight: "700" },
 
-    /* Specialty chips */
     specChip: {
         flexDirection: "row",
         alignItems: "center",
@@ -1284,7 +1223,6 @@ export const homeStyles = StyleSheet.create({
     },
     specText: { fontSize: 12, fontWeight: "600", color: COLORS.text },
 
-    /* Doctor card */
     docCard: {
         backgroundColor: "#fff",
         borderRadius: 16,
@@ -1324,7 +1262,6 @@ export const homeStyles = StyleSheet.create({
     },
     docBtnText: { color: "#fff", fontSize: 11, fontWeight: "700" },
 
-    /* Health banner */
     healthBanner: {
         backgroundColor: "#e8f5e9",
         borderRadius: 16,
@@ -1355,8 +1292,6 @@ export const homeStyles = StyleSheet.create({
     iconMb:       { marginBottom: 8 },
     spacerMd:     { height: 24 },
 });
-
-// ── PaymentResult ──
 
 export const paymentResultStyles = StyleSheet.create({
     container: {
@@ -1400,8 +1335,6 @@ export const paymentResultStyles = StyleSheet.create({
     btnOutlineText: { color: COLORS.primary, fontWeight: "700", fontSize: 14 },
 });
 
-// ── PaymentWebView ──
-
 export const paymentWebViewStyles = StyleSheet.create({
     header: {
         backgroundColor: COLORS.primaryDark,
@@ -1428,8 +1361,6 @@ export const paymentWebViewStyles = StyleSheet.create({
     loadingText: { color: COLORS.textMuted, fontSize: 13 },
 });
 
-// ── StaffAppointmentDetail ──
-
 export const staffAppointmentDetailStyles = StyleSheet.create({
     container:    { flex: 1, backgroundColor: COLORS.bg },
     statusBanner: { padding: 20, alignItems: "center" },
@@ -1454,8 +1385,6 @@ export const staffAppointmentDetailStyles = StyleSheet.create({
     btn:     { borderRadius: 10, paddingVertical: 4 },
 });
 
-// ── StaffFindPatient ──
-
 export const staffFindPatientStyles = StyleSheet.create({
     container:   { flex: 1, backgroundColor: COLORS.bg },
     searchBox:   { backgroundColor: "#fff", padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
@@ -1477,7 +1406,6 @@ export const staffFindPatientStyles = StyleSheet.create({
     infoRow:     { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
     infoText:    { fontSize: 12, color: COLORS.textMuted },
     emptyText:   { color: COLORS.textMuted, marginTop: 12, fontSize: 14 },
-    // Modal
     modalOverlay: {
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
         backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end",
@@ -1513,8 +1441,6 @@ export const staffFindPatientStyles = StyleSheet.create({
     apptStatus: { fontSize: 11, fontWeight: "600", marginTop: 2 },
     emptyAppt:  { color: COLORS.textMuted, textAlign: "center", paddingVertical: 12 },
 });
-
-// ── StaffInventory ──
 
 export const staffInventoryStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.bg },
@@ -1555,10 +1481,11 @@ export const staffInventoryStyles = StyleSheet.create({
     alertTypeBadge:{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: "flex-start", marginTop: 3 },
     alertTypeText: { fontSize: 11, fontWeight: "700" },
     resolveBtn:    { padding: 6, borderRadius: 8, backgroundColor: COLORS.greenPale },
+    disposeBtn:    { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 8, paddingVertical: 7, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: COLORS.red + "50", backgroundColor: COLORS.red + "0d", alignSelf: "flex-start" },
+    disposeBtnText:{ fontSize: 12, fontWeight: "600" },
     alertMsg:      { fontSize: 13, color: COLORS.text, marginTop: 4, marginBottom: 4 },
     dateText:      { fontSize: 12, color: COLORS.textLight },
     emptyText:     { color: COLORS.textMuted, marginTop: 12, fontSize: 14 },
-    // Modal
     modalHeader: {
         backgroundColor: COLORS.primaryDark, paddingTop: 52,
         paddingHorizontal: 16, paddingBottom: 16,
@@ -1578,11 +1505,18 @@ export const staffInventoryStyles = StyleSheet.create({
     dropdownItem:  { padding: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
     dropdownText:  { fontSize: 14, fontWeight: "600", color: COLORS.text },
     dropdownSub:   { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+    searchRow: {
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 10, paddingVertical: 8,
+        borderBottomWidth: 1, borderBottomColor: COLORS.border,
+        gap: 6,
+    },
+    searchInput: {
+        flex: 1, fontSize: 13, color: COLORS.text, paddingVertical: 0,
+    },
     input:         { backgroundColor: "#fff", marginBottom: 10 },
     row:           { flexDirection: "row", gap: 10 },
 });
-
-// ── StaffPrescriptions ──
 
 export const staffPrescriptionsStyles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.bg },
@@ -1618,7 +1552,6 @@ export const staffPrescriptionsStyles = StyleSheet.create({
     },
     dispenseBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
     emptyText: { color: COLORS.textMuted, marginTop: 12, fontSize: 14 },
-    // Detail overlay
     detailOverlay: {
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
         backgroundColor: "rgba(0,0,0,0.5)",
@@ -1642,4 +1575,58 @@ export const staffPrescriptionsStyles = StyleSheet.create({
     detailTotal:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderTopWidth: 1, borderTopColor: COLORS.border, marginBottom: 12 },
     detailTotalLabel: { fontSize: 14, fontWeight: "600", color: COLORS.textMuted },
     detailTotalValue: { fontSize: 18, fontWeight: "800", color: COLORS.primary },
+});
+
+export const doctorCardStyles = StyleSheet.create({
+    card: {
+        backgroundColor: "#fff", borderRadius: 16, padding: 14,
+        flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10,
+        elevation: 2, shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6,
+    },
+    avatar: {
+        width: 54, height: 54, borderRadius: 16,
+        backgroundColor: COLORS.primaryPale,
+        alignItems: "center", justifyContent: "center", overflow: "hidden",
+    },
+    avatarImg: { width: 54, height: 54 },
+    name:      { fontSize: 13, fontWeight: "700", color: COLORS.text },
+    specialty: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+    expBadge:  {
+        backgroundColor: COLORS.primaryPale, borderRadius: 8,
+        paddingHorizontal: 8, paddingVertical: 3,
+        marginTop: 6, alignSelf: "flex-start",
+    },
+    expText:   { fontSize: 10, fontWeight: "600", color: COLORS.primary },
+});
+
+export const datePickerStyles = StyleSheet.create({
+    field: {
+        flexDirection: "row", alignItems: "center",
+        borderWidth: 1.5, borderColor: COLORS.border, borderRadius: 8,
+        paddingHorizontal: 14, paddingVertical: 12,
+        backgroundColor: "#fff", gap: 8,
+    },
+    fieldLabel: {
+        position: "absolute", top: 14, left: 14,
+        fontSize: 14, color: COLORS.textMuted,
+        backgroundColor: "#fff", paddingHorizontal: 4,
+    },
+    fieldValue:    { flex: 1, fontSize: 14, color: COLORS.text, paddingTop: 6 },
+    calWrap:       { backgroundColor: "#fff", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: COLORS.border, marginTop: 4, elevation: 4 },
+    calHeader:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+    calMonthTxt:   { fontSize: 14, fontWeight: "700", color: COLORS.text },
+    dayName:       { textAlign: "center", fontSize: 11, fontWeight: "600", color: COLORS.textMuted, paddingVertical: 4 },
+    dayCell:       { alignItems: "center", justifyContent: "center", borderRadius: 4 },
+    dayCellToday:  { backgroundColor: COLORS.primaryPale },
+    dayCellSel:    { backgroundColor: COLORS.primary, borderRadius: 6 },
+    dayText:       { fontSize: 13, color: COLORS.text },
+    clearBtn:      { marginTop: 8, alignItems: "center", paddingVertical: 6 },
+    clearBtnText:  { fontSize: 12, color: COLORS.red, fontWeight: "600" },
+    timeSection:   { fontSize: 11, fontWeight: "700", color: COLORS.textMuted, textTransform: "uppercase", marginBottom: 6, letterSpacing: 0.5 },
+    timeGrid:      { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    timeCell:      { minWidth: 38, paddingHorizontal: 8, paddingVertical: 7, borderRadius: 8, backgroundColor: COLORS.bg, alignItems: "center", borderWidth: 1, borderColor: COLORS.border },
+    timeCellWide:  { minWidth: 56 },
+    timeCellSel:   { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+    timeCellTxt:   { fontSize: 13, color: COLORS.text },
 });

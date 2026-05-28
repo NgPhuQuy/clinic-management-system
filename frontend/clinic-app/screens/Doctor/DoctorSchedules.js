@@ -11,27 +11,6 @@ import Styles, { COLORS, doctorSchedulesStyles as S } from "../../styles/Styles"
 import { DatePickerField, TimePickerField } from "../../components/DatePickerField";
 
 
-const MOCK_SCHEDULES = (() => {
-    const today = new Date();
-    const slots = [];
-    for (let d = 0; d < 14; d++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + d);
-        if (date.getDay() === 0) continue; // skip Sunday
-        const isAM = d % 2 === 0;
-        slots.push({
-            id: d + 1,
-            date: date.toISOString().slice(0,10),
-            start_time: isAM ? "07:30:00" : "13:00:00",
-            end_time:   isAM ? "11:30:00" : "17:00:00",
-            max_appointments: 10,
-            current_appointments: Math.floor(Math.random() * 8),
-            is_available: d > 0,
-        });
-    }
-    return slots;
-})();
-
 const DAYS_VN = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 const pastToggleStyle = StyleSheet.create({
@@ -201,8 +180,7 @@ const DoctorSchedules = () => {
             const res = await authApis(user.token).get(endpoints["doctor-my-schedules"]);
             setSchedules(res.data);
         } catch (e) {
-            console.warn("DoctorSchedules: dùng mock –", e?.response?.status || e.message);
-            setSchedules(MOCK_SCHEDULES);
+            console.warn("DoctorSchedules load error:", e?.response?.status || e.message);
         } finally {
             setLoading(false);
         }
@@ -245,7 +223,6 @@ const DoctorSchedules = () => {
     const pastCount  = schedules.filter(s => s.date < today).length;
     const visible    = showPast ? schedules : schedules.filter(s => s.date >= today);
 
-    // Group lịch theo tháng
     const groupedSchedules = visible.reduce((acc, s) => {
         const month = s.date?.slice(0, 7) || "";
         if (!acc[month]) acc[month] = [];
@@ -257,7 +234,6 @@ const DoctorSchedules = () => {
 
     return (
         <View style={S.container}>
-            {/* Header */}
             <View style={S.header}>
                 <Text style={S.headerTitle}>Lịch làm việc</Text>
                 <TouchableOpacity
@@ -269,7 +245,6 @@ const DoctorSchedules = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Past schedule toggle */}
             {!loading && pastCount > 0 && (
                 <TouchableOpacity
                     style={pastToggleStyle.bar}

@@ -31,6 +31,25 @@ from ..serializers import (
 from ..permissions import HasAdminScope, HasStaffOrAdminScope, IsAuthenticatedWithValidToken
 
 
+def _medicine_qs_with_stock():
+    """Queryset Medicine annotate tổng tồn kho còn hạn, chưa bị hủy."""
+    today = timezone.now().date()
+    return (
+        Medicine.objects
+        .select_related("category")
+        .filter(is_active=True)
+        .annotate(
+            _total_stock_annotated=Sum(
+                "inventory_batches__quantity",
+                filter=Q(
+                    inventory_batches__expiry_date__gt=today,
+                    inventory_batches__is_disposed=False,
+                ),
+            )
+        )
+    )
+
+
 class MedicineCategoryViewSet(viewsets.ModelViewSet):
     """Danh mục thuốc — chỉ admin tạo/sửa/xóa."""
     queryset         = MedicineCategory.objects.all()
@@ -50,13 +69,7 @@ class MedicineViewSet(viewsets.ModelViewSet):
     search_fields    = ["name", "code", "generic_name"]
 
     def get_queryset(self):
-        today = timezone.now().date()
-        return Medicine.objects.select_related("category").filter(is_active=True).annotate(
-            total_stock=Sum(
-                "inventory_batches__quantity",
-                filter=Q(inventory_batches__expiry_date__gt=today),
-            )
-        )
+        return _medicine_qs_with_stock()
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
@@ -66,37 +79,54 @@ class MedicineViewSet(viewsets.ModelViewSet):
 
 class InventoryViewSet(viewsets.ModelViewSet):
     """
-    Tồn kho thuốc.
+    Tồn kho thuốc. Soft-delete qua action dispose — không có hard delete cho staff.
     """
-    queryset         = Inventory.objects.select_related("medicine").all()
     serializer_class = InventorySerializer
     filter_backends  = [DjangoFilterBackend]
     filterset_fields = ["medicine"]
 
+    def get_queryset(self):
+        # Mặc định chỉ hiện lô chưa bị hủy
+        return Inventory.objects.select_related("medicine").filter(is_disposed=False)
+
     def get_permissions(self):
         if self.action == "destroy":
-            # Chỉ admin xóa lô thuốc
             return [HasAdminScope()]
-        if self.action in ("create", "update", "partial_update"):
-            # Staff dược sĩ nhập kho / cập nhật lô
+        if self.action in ("create", "update", "partial_update", "dispose"):
             return [HasStaffOrAdminScope()]
         return [IsAuthenticatedWithValidToken()]
 
     @action(detail=False, methods=["get"])
     def low_stock(self, request):
-        """GET /api/inventory/low_stock/"""
-        qs = self.get_queryset().filter(quantity__lte=F("warning_threshold"))
-        return Response(self.get_serializer(qs, many=True).data)
+        """
+        GET /api/inventory/low_stock/
+        Trả về danh sách Medicine có tổng tồn kho còn hạn, chưa hủy <= warning_threshold.
+        """
+        qs = _medicine_qs_with_stock().filter(
+            Q(_total_stock_annotated__lte=F("warning_threshold"))
+            | Q(_total_stock_annotated__isnull=True)
+        )
+        return Response(MedicineSerializer(qs, many=True).data)
 
     @action(detail=False, methods=["get"])
     def near_expiry(self, request):
-        """GET /api/inventory/near_expiry/ — Thuốc hết hạn trong 30 ngày."""
+        """GET /api/inventory/near_expiry/ — Lô chưa hủy, hết hạn trong N ngày."""
         threshold = timezone.now().date() + timedelta(days=settings.INVENTORY_NEAR_EXPIRY_DAYS)
-        qs = self.get_queryset().filter(
+        qs = Inventory.objects.select_related("medicine").filter(
             expiry_date__lte=threshold,
             expiry_date__gt=timezone.now().date(),
+            is_disposed=False,
         )
-        return Response(self.get_serializer(qs, many=True).data)
+        return Response(InventorySerializer(qs, many=True).data)
+
+    @action(detail=True, methods=["patch"])
+    def dispose(self, request, pk=None):
+        """PATCH /api/inventory/{id}/dispose/ — Soft delete lô thuốc."""
+        batch = self.get_object()
+        batch.is_disposed = True
+        batch.disposed_at = timezone.now()
+        batch.save(update_fields=["is_disposed", "disposed_at"])
+        return Response({"detail": "Đã xuất hủy lô thuốc."})
 
 
 class InventoryAlertViewSet(viewsets.ModelViewSet):

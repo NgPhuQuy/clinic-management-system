@@ -1,7 +1,3 @@
-/**
- * screens/Notification/NotificationDetail.js
- * Chi tiết một thông báo – hiển thị đầy đủ nội dung, action button tuỳ loại
- */
 import { View, ScrollView, TouchableOpacity, StatusBar } from "react-native";
 import { Text } from "react-native-paper";
 import { useContext } from "react";
@@ -68,7 +64,6 @@ const TYPE_MAP = {
     },
 };
 
-// Ánh xạ notification_type từ backend sang key trong TYPE_MAP
 const normaliseType = (t) => {
     if (!t) return "general";
     const map = {
@@ -88,7 +83,6 @@ const NotificationDetail = () => {
     const route  = useRoute();
     const user   = useContext(MyUserContext);
 
-    // notification object truyền qua params (đã đọc sẵn trong Notifications.js)
     const { notification } = route.params || {};
 
     if (!notification) {
@@ -111,7 +105,6 @@ const NotificationDetail = () => {
 
     const handleAction = () => {
         if (!cfg.screen) return;
-        // Điều hướng tuỳ thuộc vào loại thông báo
         if (cfg.screen === "my-appointments" && notification.related_object_id) {
             nav.navigate("appointment-detail", { id: notification.related_object_id });
         } else {
@@ -123,7 +116,6 @@ const NotificationDetail = () => {
         <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
             <StatusBar backgroundColor={cfg.headerBg} barStyle="light-content" />
 
-            {/* Header */}
             <View style={[S.detailHeader, { backgroundColor: cfg.headerBg }]}>
                 <View style={[S.detailIconWrap, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
                     <MaterialCommunityIcons name={cfg.icon} size={36} color="#fff" />
@@ -131,7 +123,6 @@ const NotificationDetail = () => {
                 <Text style={S.detailTitle}>{notification.title}</Text>
                 {createdAt ? <Text style={S.detailTime}>{createdAt}</Text> : null}
 
-                {/* Trạng thái đọc */}
                 <View style={{
                     marginTop: 10,
                     paddingHorizontal: 12, paddingVertical: 4,
@@ -144,7 +135,6 @@ const NotificationDetail = () => {
             </View>
 
             <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-                {/* Loại thông báo chip */}
                 <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
                     <View style={{
                         alignSelf: "flex-start",
@@ -159,13 +149,11 @@ const NotificationDetail = () => {
                     </View>
                 </View>
 
-                {/* Nội dung */}
                 <View style={S.detailBody}>
                     <Text style={S.detailMsgTitle}>Nội dung thông báo</Text>
                     <Text style={S.detailMsgText}>{notification.message}</Text>
                 </View>
 
-                {/* Thông tin bổ sung nếu có related object */}
                 {notification.related_object_id && (
                     <View style={[S.detailBody, { marginTop: 0 }]}>
                         <Text style={S.detailMsgTitle}>Thông tin liên quan</Text>
@@ -181,14 +169,12 @@ const NotificationDetail = () => {
                     </View>
                 )}
 
-                {/* Action button */}
                 {cfg.action && (
                     <TouchableOpacity style={S.detailActionBtn} onPress={handleAction} activeOpacity={0.85}>
                         <Text style={S.detailActionText}>{cfg.action} →</Text>
                     </TouchableOpacity>
                 )}
 
-                {/* Back button */}
                 <TouchableOpacity
                     style={{
                         margin: 16, marginTop: cfg.action ? 4 : 16,

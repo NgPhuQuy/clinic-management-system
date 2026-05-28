@@ -81,7 +81,6 @@ const DoctorDetail = () => {
 
     return (
         <ScrollView style={Styles.container}>
-            {/* ── Header ── */}
             <View style={S.header}>
                 <DoctorAvatarLarge uri={doctor.avatar || doctor.avatar_url} />
                 <Text style={S.name}>BS. {doctor.full_name}</Text>
@@ -112,7 +111,6 @@ const DoctorDetail = () => {
             </View>
 
             <View style={Styles.padding}>
-                {/* ── Bio ── */}
                 {doctor.bio ? (
                     <View style={[Styles.card, { marginBottom: 12 }]}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -123,7 +121,6 @@ const DoctorDetail = () => {
                     </View>
                 ) : null}
 
-                {/* ── Thông tin chuyên môn ── */}
                 <View style={[Styles.card, { marginBottom: 12 }]}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
                         <MaterialCommunityIcons name="stethoscope" size={18} color={COLORS.primary} />
@@ -136,7 +133,6 @@ const DoctorDetail = () => {
                     ) : null}
                 </View>
 
-                {/* ── Lịch làm việc ── */}
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
                     <MaterialCommunityIcons name="calendar-clock-outline" size={18} color={COLORS.primary} />
                     <Text style={Styles.sectionHeader}>Lịch làm việc có sẵn</Text>
@@ -161,7 +157,6 @@ const DoctorDetail = () => {
                             })}
                             activeOpacity={0.75}
                         >
-                            {/* Date box */}
                             <View style={{ backgroundColor: COLORS.primaryPale, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, alignItems: "center", minWidth: 60 }}>
                                 <Text style={{ fontSize: 11, fontWeight: "700", color: COLORS.primary }}>
                                     {new Date(s.date).toLocaleDateString("vi-VN", { weekday: "short" }).replace("Thứ ", "T")}
@@ -174,7 +169,6 @@ const DoctorDetail = () => {
                                 </Text>
                             </View>
 
-                            {/* Info */}
                             <View style={{ flex: 1 }}>
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 }}>
                                     <MaterialCommunityIcons name="clock-outline" size={13} color={COLORS.textMuted} />
@@ -190,7 +184,6 @@ const DoctorDetail = () => {
                                 </View>
                             </View>
 
-                            {/* Action */}
                             <View style={{ backgroundColor: COLORS.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 }}>
                                 <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>Đặt lịch</Text>
                             </View>
@@ -198,7 +191,6 @@ const DoctorDetail = () => {
                     ))
                 )}
 
-                {/* ── Book button ── */}
                 <TouchableOpacity
                     style={[Styles.btnPrimary, { flexDirection: "row", gap: 8, marginTop: 4 }]}
                     onPress={() => nav.navigate("book-appointment", {

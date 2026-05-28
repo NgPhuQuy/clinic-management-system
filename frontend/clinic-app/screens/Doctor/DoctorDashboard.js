@@ -1,6 +1,6 @@
 import {
     View, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, StatusBar, StyleSheet,
+    ActivityIndicator, RefreshControl, StatusBar,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
@@ -10,49 +10,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, STATUS_CONFIG } from "../../styles/Styles";
+import { doctorDashboardStyles as styles } from "./Styles";
 
-// ── Mock data khi backend chưa sẵn sàng ──────────────────────────────────────
-const MOCK_DASHBOARD = {
-    appointments: { today: 8, pending: 3, in_progress: 1, this_month: 47 },
-    upcoming_appointments: [
-        {
-            id: 1,
-            appointment_date: new Date(Date.now() + 1.5*3600*1000).toISOString(),
-            patient_info: { full_name: "Nguyễn Thị Mai" },
-            reason: "Đau ngực, khó thở khi gắng sức",
-            status: "confirmed",
-        },
-        {
-            id: 2,
-            appointment_date: new Date(Date.now() + 3*3600*1000).toISOString(),
-            patient_info: { full_name: "Trần Văn Bảo" },
-            reason: "Kiểm tra sức khỏe định kỳ",
-            status: "pending",
-        },
-        {
-            id: 3,
-            appointment_date: new Date(Date.now() + 5*3600*1000).toISOString(),
-            patient_info: { full_name: "Lê Thị Cúc" },
-            reason: "Tim đập nhanh, hồi hộp, mệt mỏi",
-            status: "confirmed",
-        },
-        {
-            id: 4,
-            appointment_date: new Date(Date.now() + 7*3600*1000).toISOString(),
-            patient_info: { full_name: "Phạm Minh Đức" },
-            reason: "Tăng huyết áp không kiểm soát",
-            status: "pending",
-        },
-    ],
-    doctor_info: {
-        full_name: "Nguyễn Văn An",
-        specialty: "Tim mạch",
-        total_patients: 312,
-        rating: 4.8,
-    },
-};
-
-// ── Sub-components ────────────────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, color, onPress }) => (
     <TouchableOpacity
         style={[Styles.statCard, { borderLeftColor: color }]}
@@ -95,7 +54,7 @@ const AppointmentItem = ({ item, onPress }) => {
     );
 };
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+
 const DoctorDashboard = () => {
     const nav  = useNavigation();
     const user = useContext(MyUserContext);
@@ -113,8 +72,7 @@ const DoctorDashboard = () => {
             const res = await authApis(user.token).get(endpoints["doctor-dashboard"]);
             setData(res.data);
         } catch (e) {
-            console.warn("DoctorDashboard: dùng mock data –", e?.response?.status || e.message);
-            setData(MOCK_DASHBOARD);
+            console.warn("DoctorDashboard load error:", e?.response?.status || e.message);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -146,10 +104,12 @@ const DoctorDashboard = () => {
         >
             <StatusBar backgroundColor={COLORS.primaryDark} barStyle="light-content" />
 
-            {/* Header */}
+
             <View style={[styles.header, { paddingTop: top + 16 }]}>
                 <View>
-                    <Text style={styles.greeting}>Xin chào, BS. {user?.first_name || user?.username}!</Text>
+                    <Text style={styles.greeting}>
+                        Xin chào, BS. {[user?.last_name, user?.first_name].filter(Boolean).join(" ") || user?.username}!
+                    </Text>
                     <Text style={styles.dateText}>{today}</Text>
                 </View>
                 <TouchableOpacity style={Styles.notifBtn} onPress={() => nav.navigate("notifications")}>
@@ -157,7 +117,7 @@ const DoctorDashboard = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Info strip */}
+
             {(docInfo.total_patients || docInfo.rating) ? (
                 <View style={{ flexDirection: "row", margin: 16, marginBottom: 0, gap: 10 }}>
                     <View style={[Styles.revenueCard, { backgroundColor: COLORS.primary }]}>
@@ -173,7 +133,7 @@ const DoctorDashboard = () => {
                 </View>
             ) : null}
 
-            {/* Quick Stats */}
+
             <View style={Styles.section}>
                 <Text style={Styles.sectionTitle}>Tổng quan hôm nay</Text>
                 <View style={{ gap: 10 }}>
@@ -208,7 +168,7 @@ const DoctorDashboard = () => {
                 </View>
             </View>
 
-            {/* Quick Actions */}
+
             <View style={Styles.section}>
                 <Text style={Styles.sectionTitle}>Chức năng nhanh</Text>
                 <View style={Styles.actionsGrid}>
@@ -235,7 +195,7 @@ const DoctorDashboard = () => {
                 </View>
             </View>
 
-            {/* Upcoming Appointments */}
+
             {upcoming.length > 0 && (
                 <View style={Styles.section}>
                     <View style={Styles.sectionRow}>
@@ -259,18 +219,5 @@ const DoctorDashboard = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: COLORS.primaryDark,
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 24,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    greeting: { fontSize: 20, fontWeight: "800", color: "#fff" },
-    dateText:  { fontSize: 13, color: "#bbdefb", marginTop: 4 },
-});
 
 export default DoctorDashboard;

@@ -1,4 +1,4 @@
-import { View, ScrollView, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { View, ScrollView, TouchableOpacity, Image } from "react-native";
 import { Button, HelperText, Text, TextInput } from "react-native-paper";
 import * as ImgPicker from "expo-image-picker";
 import { useState, useContext } from "react";
@@ -18,7 +18,7 @@ const Register = () => {
         { field: "confirm", title: "Xác nhận mật khẩu", icon: "eye", secureTextEntry: true },
     ];
 
-    const [user, setUser] = useState({ role: "patient" }); // hardcode patient
+    const [user, setUser] = useState({ role: "patient" });
     const [err, setErr] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
@@ -120,7 +120,6 @@ const Register = () => {
                     />
                 ))}
 
-                {/* Avatar picker */}
                 <TouchableOpacity onPress={pickAvatar} style={S.avatarPicker}>
                     <Text style={{ color: "#1565c0" }}>📷  Chọn ảnh đại diện...</Text>
                 </TouchableOpacity>

@@ -167,8 +167,6 @@ const ProfileStack = () => (
     </Stack.Navigator>
 );
 
-// ─────────────────────────── PATIENT TABS ───────────────────────────
-
 const AppTabs = () => {
     const tabStyle = useTabStyle();
     return (
@@ -216,8 +214,6 @@ const AppTabs = () => {
     </Tab.Navigator>
     );
 };
-
-// ─────────────────────────── DOCTOR STACKS ───────────────────────────
 
 const DoctorHomeStack = () => (
     <Stack.Navigator screenOptions={HS}>
@@ -278,8 +274,6 @@ const DoctorProfileStack = () => (
     </Stack.Navigator>
 );
 
-// ─────────────────────────── DOCTOR TABS ───────────────────────────
-
 const DoctorTabs = () => {
     const tabStyle = useTabStyle();
     return (
@@ -337,8 +331,6 @@ const DoctorTabs = () => {
     </Tab.Navigator>
     );
 };
-
-// ─────────────────────────── STAFF STACKS ───────────────────────────
 
 const StaffHomeStack = () => (
     <Stack.Navigator screenOptions={HS}>
@@ -402,8 +394,6 @@ const StaffProfileStack = () => (
         <Stack.Screen name="change-password"     component={ChangePassword}     options={{ title: "Đổi mật khẩu" }} />
     </Stack.Navigator>
 );
-
-// ─────────────────────────── STAFF TABS ───────────────────────────
 
 const StaffTabs = () => {
     const tabStyle = useTabStyle();
@@ -473,16 +463,12 @@ const StaffTabs = () => {
     );
 };
 
-// ─────────────────────────── AUTH STACK ───────────────────────────
-
 const AuthStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" component={Login} />
         <Stack.Screen name="register" component={Register} />
     </Stack.Navigator>
 );
-
-// ─────────────────────────── ROOT ───────────────────────────
 
 const getRoleNavigator = (role) => {
     switch (role) {
@@ -524,7 +510,6 @@ const App = () => {
         if (!user?.token) return;
         const registerPushToken = async () => {
             try {
-                // Android 8+ cần notification channel để có tiếng
                 if (Platform.OS === "android") {
                     await ExpoNotifications.setNotificationChannelAsync("default", {
                         name: "Phòng khám",

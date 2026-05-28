@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, Image, TouchableOpacity, useWindowDimensions } from "react-native";
+import { View, ScrollView, Image, TouchableOpacity, useWindowDimensions } from "react-native";
 import { Text, TextInput, Button, HelperText } from "react-native-paper";
 import { useState, useContext, useEffect, useRef } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -7,6 +7,7 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 import { DatePickerField, TimePickerField } from "../../components/DatePickerField";
+import { bookAppointmentStyles as styles } from "./Styles";
 
 const HOLD_MINUTES = 10;
 
@@ -40,7 +41,6 @@ const TIME_SLOTS = [
     "13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30",
 ];
 
-// ─── Mini calendar component ─────────────────────────────────────────────────
 const CalendarPicker = ({ selectedDate, onSelect, onClose }) => {
     const { width: SCREEN_W } = useWindowDimensions();
     const today = new Date();
@@ -68,8 +68,7 @@ const CalendarPicker = ({ selectedDate, onSelect, onClose }) => {
 
     return (
         <View style={Styles.calendarWrap}>
-            {/* Month nav */}
-            <View style={Styles.calendarHeader}>
+                <View style={Styles.calendarHeader}>
                 <TouchableOpacity onPress={prevMonth} hitSlop={{top:10,bottom:10,left:10,right:10}}>
                     <MaterialCommunityIcons name="chevron-left" size={24} color={COLORS.primary} />
                 </TouchableOpacity>
@@ -81,14 +80,12 @@ const CalendarPicker = ({ selectedDate, onSelect, onClose }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Day headers */}
             <View style={{ flexDirection: "row" }}>
                 {DAY_NAMES.map(d => (
                     <Text key={d} style={[Styles.calendarDayName, { width: DAY_SIZE }]}>{d}</Text>
                 ))}
             </View>
 
-            {/* Day cells */}
             <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                 {cells.map((day, idx) => {
                     if (!day) return <View key={`e${idx}`} style={{ width: DAY_SIZE, height: DAY_SIZE }} />;
@@ -125,7 +122,6 @@ const CalendarPicker = ({ selectedDate, onSelect, onClose }) => {
     );
 };
 
-// ─── Time slot picker ────────────────────────────────────────────────────────
 const TimePicker = ({ selectedTime, onSelect }) => (
     <View style={Styles.timeSlotRow}>
         {TIME_SLOTS.map(t => (
@@ -142,7 +138,6 @@ const TimePicker = ({ selectedTime, onSelect }) => (
     </View>
 );
 
-// ─── Main screen ─────────────────────────────────────────────────────────────
 const BookAppointment = () => {
     const nav    = useNavigation();
     const route  = useRoute();
@@ -159,7 +154,6 @@ const BookAppointment = () => {
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState(null);
 
-    // 10-minute countdown
     const startTime = useRef(Date.now());
     const [secondsLeft, setSecondsLeft] = useState(HOLD_MINUTES * 60);
     const expired = secondsLeft <= 0;
@@ -233,7 +227,6 @@ const BookAppointment = () => {
         <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
             <View style={[Styles.padding, styles.form]}>
 
-                {/* Doctor info */}
                 <View style={styles.doctorCard}>
                     <DoctorAvatar uri={doctorAvatar} size={54} />
                     <View style={{ flex: 1, marginLeft: 12 }}>
@@ -259,7 +252,6 @@ const BookAppointment = () => {
                     </View>
                 </View>
 
-                {/* Countdown */}
                 <View style={[styles.countdown, expired && styles.countdownExpired]}>
                     <MaterialCommunityIcons
                         name={expired ? "clock-alert-outline" : "timer-sand"}
@@ -347,82 +339,5 @@ const BookAppointment = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    form: {
-        backgroundColor: "#fff",
-        margin: 16,
-        borderRadius: 16,
-        elevation: 3,
-        padding: 20,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-    },
-    doctorCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: COLORS.primaryPale,
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 14,
-    },
-    doctorName: {
-        fontSize: 15,
-        fontWeight: "700",
-        color: COLORS.primaryDark,
-        marginBottom: 4,
-    },
-    infoLine: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 2,
-    },
-    infoText: {
-        fontSize: 12,
-        color: COLORS.primary,
-        fontWeight: "600",
-    },
-    countdown: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: COLORS.primaryPale,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: COLORS.primaryMid,
-    },
-    countdownExpired: {
-        backgroundColor: COLORS.redPale,
-        borderColor: COLORS.redLight,
-    },
-    countdownText: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: COLORS.primary,
-    },
-    confirmBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        backgroundColor: COLORS.primary,
-        borderRadius: 12,
-        paddingVertical: 14,
-        marginBottom: 10,
-        elevation: 3,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-    },
-    confirmBtnText: {
-        color: "#fff",
-        fontWeight: "800",
-        fontSize: 15,
-    },
-});
 
 export default BookAppointment;

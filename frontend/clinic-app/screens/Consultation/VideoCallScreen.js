@@ -1,9 +1,10 @@
-import { View, StyleSheet, Alert, StatusBar, PermissionsAndroid, Platform } from "react-native";
+import { View, Alert, StatusBar, PermissionsAndroid, Platform } from "react-native";
 import { Text } from "react-native-paper";
 import { useRef, useContext, useEffect, useState } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
 import { MyUserContext } from "../../contexts/MyContext";
+import { videoCallScreenStyles as styles } from "./Styles";
 
 const buildHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
 <html>
@@ -71,7 +72,6 @@ if(!navigator.mediaDevices.getUserMedia){
 async function init(){
   if(!APP_ID||APP_ID==='undefined'){info('Agora chưa được cấu hình');return;}
   try{
-    // Test getUserMedia trước
     const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
     stream.getTracks().forEach(t=>t.stop());
   }catch(e){
@@ -204,9 +204,5 @@ const VideoCallScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#111827" },
-    webview: { flex: 1 },
-});
 
 export default VideoCallScreen;

@@ -1,7 +1,3 @@
-/**
- * screens/Doctor/DoctorAppointments.js
- * Bác sĩ quản lý lịch hẹn – kết nối backend, fallback mock
- */
 import {
     View, FlatList, TouchableOpacity,
     ActivityIndicator, Alert, RefreshControl,
@@ -27,14 +23,6 @@ const TRANSITION_ICONS = {
     no_show:     "account-off-outline",
 };
 
-const MOCK_APPOINTMENTS = [
-    { id:1, patient_info:{full_name:"Nguyễn Thị Mai"},  appointment_date: new Date(Date.now()+1*3600*1000).toISOString(), status:"pending",     reason:"Đau ngực, khó thở khi gắng sức" },
-    { id:2, patient_info:{full_name:"Trần Văn Bảo"},     appointment_date: new Date(Date.now()+2*3600*1000).toISOString(), status:"confirmed",   reason:"Kiểm tra sức khỏe định kỳ" },
-    { id:3, patient_info:{full_name:"Lê Thị Cúc"},        appointment_date: new Date(Date.now()+3*3600*1000).toISOString(), status:"in_progress", reason:"Tim đập nhanh, hồi hộp" },
-    { id:4, patient_info:{full_name:"Phạm Minh Đức"},    appointment_date: new Date(Date.now()-2*3600*1000).toISOString(), status:"completed",   reason:"Tăng huyết áp không kiểm soát" },
-    { id:5, patient_info:{full_name:"Hoàng Thị Em"},      appointment_date: new Date(Date.now()-4*3600*1000).toISOString(), status:"cancelled",   reason:"Đau đầu dữ dội, chóng mặt" },
-    { id:6, patient_info:{full_name:"Vũ Văn Phúc"},       appointment_date: new Date(Date.now()+5*3600*1000).toISOString(), status:"pending",     reason:"Đau lưng lan xuống chân" },
-];
 
 const AppointmentCard = ({ item, onUpdateStatus, onPress }) => {
     const date    = new Date(item.appointment_date);
@@ -111,11 +99,7 @@ const DoctorAppointments = () => {
             const res = await authApis(user.token).get(endpoints["appointments"], { params });
             setAppointments(res.data.results || res.data);
         } catch (e) {
-            console.warn("DoctorAppointments: dùng mock –", e?.response?.status || e.message);
-            const filtered = activeFilter === "all"
-                ? MOCK_APPOINTMENTS
-                : MOCK_APPOINTMENTS.filter(a => a.status === activeFilter);
-            setAppointments(filtered);
+            console.warn("DoctorAppointments load error:", e?.response?.status || e.message);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -140,7 +124,6 @@ const DoctorAppointments = () => {
                             );
                             setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
                         } catch (e) {
-                            // Nếu backend lỗi, vẫn cập nhật UI mock
                             setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
                         }
                     },

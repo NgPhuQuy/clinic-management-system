@@ -1,4 +1,4 @@
-import { View, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
 import { Text } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
+import { doctorConsultationsStyles as styles } from "./Styles";
 
 const STATUS_COLOR = { waiting: "#ff9800", active: "#4caf50", ended: "#9e9e9e" };
 const STATUS_LABEL = { waiting: "Chờ bắt đầu", active: "Đang khám", ended: "Đã kết thúc" };
@@ -22,7 +23,6 @@ const DoctorConsultations = () => {
         try {
             const res = await authApis(user.token).get(endpoints["consultations"]);
             const data = res.data?.results ?? res.data ?? [];
-            // Sắp xếp: waiting lên đầu, rồi active, rồi ended
             const order = { waiting: 0, active: 1, ended: 2 };
             setConsultations([...data].sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3)));
         } catch (e) {
@@ -114,31 +114,5 @@ const DoctorConsultations = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    card: {
-        backgroundColor: "#fff",
-        borderRadius: 14,
-        padding: 16,
-        flexDirection: "row",
-        alignItems: "center",
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-    },
-    cardLeft: { marginRight: 12 },
-    statusDot: { width: 12, height: 12, borderRadius: 6 },
-    roomId: { fontSize: 15, fontWeight: "700", color: COLORS.text },
-    apptId: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    cardRight: { alignItems: "flex-end" },
-    badge: {
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-    },
-    badgeText: { fontSize: 11, fontWeight: "700" },
-    sectionTitle: { fontSize: 13, fontWeight: "700", color: COLORS.textMuted, letterSpacing: 0.5 },
-});
 
 export default DoctorConsultations;

@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Image } from "react-native";
+import { View, ScrollView, ActivityIndicator, Alert, TouchableOpacity, Image } from "react-native";
 import { Text, Button } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
+import { appointmentDetailStyles as styles } from "./Styles";
 
 const STATUS_COLORS = {
     pending: "#ff9800", confirmed: "#4caf50", cancelled: "#f44336",
@@ -30,7 +31,6 @@ const PAY_METHOD_ICONS = {
     banking: "bank-transfer", credit_card: "credit-card",
 };
 
-// Dòng thông tin có icon
 const InfoRow = ({ icon, iconColor = COLORS.primary, iconBg, label, value, last }) => (
     <View style={[styles.infoRow, last && { borderBottomWidth: 0 }]}>
         <View style={[styles.infoIcon, { backgroundColor: iconBg || COLORS.primaryPale }]}>
@@ -159,7 +159,6 @@ const AppointmentDetail = () => {
 
     return (
         <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
-            {/* Status banner */}
             <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[appt.status] || "#9e9e9e" }]}>
                 <MaterialCommunityIcons
                     name={appt.status === "completed" ? "check-circle" : appt.status === "cancelled" ? "close-circle" : "clock-outline"}
@@ -169,7 +168,6 @@ const AppointmentDetail = () => {
             </View>
 
             <View style={Styles.padding}>
-                {/* Doctor card */}
                 <View style={[Styles.card, styles.doctorCard]}>
                     <DoctorAvatar uri={doctorAvatar} size={52} />
                     <View style={{ flex: 1, marginLeft: 12 }}>
@@ -187,7 +185,6 @@ const AppointmentDetail = () => {
                     </View>
                 </View>
 
-                {/* Appointment info */}
                 <View style={Styles.card}>
                     <Text style={styles.cardTitle}>Chi tiết lịch hẹn</Text>
                     <InfoRow
@@ -224,7 +221,6 @@ const AppointmentDetail = () => {
                     />
                 </View>
 
-                {/* Cost breakdown */}
                 {(appt.appointment_services?.length > 0 || appt.doctor_info?.consultation_fee > 0) && (
                     <View style={Styles.card}>
                         <Text style={styles.cardTitle}>Chi phí khám</Text>
@@ -252,7 +248,6 @@ const AppointmentDetail = () => {
                     </View>
                 )}
 
-                {/* Payment card */}
                 <View style={Styles.card}>
                     <Text style={styles.cardTitle}>Thanh toán</Text>
 
@@ -334,7 +329,6 @@ const AppointmentDetail = () => {
                     )}
                 </View>
 
-                {/* Consultation room */}
                 {appt.consultation_id && ["confirmed", "in_progress"].includes(appt.status) && (
                     <TouchableOpacity
                         style={styles.consultBtn}
@@ -346,7 +340,6 @@ const AppointmentDetail = () => {
                     </TouchableOpacity>
                 )}
 
-                {/* Medical record */}
                 {appt.medical_record_id && (
                     <Button
                         mode="outlined"
@@ -359,7 +352,6 @@ const AppointmentDetail = () => {
                     </Button>
                 )}
 
-                {/* Cancel */}
                 {canCancel && (
                     <TouchableOpacity
                         style={[styles.cancelBtn, cancelling && { opacity: 0.6 }]}
@@ -378,150 +370,5 @@ const AppointmentDetail = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    statusBanner: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        paddingVertical: 14,
-    },
-    statusText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-
-    doctorCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#fff",
-        marginBottom: 12,
-    },
-    doctorName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
-    doctorSpec: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-
-    cardTitle: {
-        fontSize: 13,
-        fontWeight: "700",
-        color: COLORS.textMuted,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-        marginBottom: 4,
-        paddingHorizontal: 16,
-        paddingTop: 14,
-    },
-    infoRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 11,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
-    },
-    infoIcon: {
-        width: 30, height: 30,
-        borderRadius: 8,
-        alignItems: "center", justifyContent: "center",
-    },
-    infoLabel: { fontSize: 11, color: COLORS.textMuted, marginBottom: 1 },
-    infoValue: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-
-    costRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-    },
-    costLabel: { fontSize: 13, color: COLORS.textMuted },
-    costValue: { fontSize: 13, fontWeight: "600", color: COLORS.primary },
-    costDivider: { height: 1, backgroundColor: COLORS.border, marginHorizontal: 16, marginVertical: 4 },
-    totalValue: { fontSize: 17, fontWeight: "800", color: COLORS.primary },
-
-    refundBanner: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        backgroundColor: COLORS.purplePale,
-        borderRadius: 8,
-        padding: 10,
-        marginHorizontal: 16,
-        marginBottom: 8,
-    },
-    refundText: { fontSize: 13, color: COLORS.purple, fontWeight: "600" },
-
-    payRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 9,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
-    },
-    payLabel: { fontSize: 12, color: COLORS.textMuted },
-    payAmount: { fontSize: 16, fontWeight: "800", color: COLORS.primary },
-    payMethodRow: { flexDirection: "row", alignItems: "center" },
-    payMethodText: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-    payMeta: { fontSize: 12, color: COLORS.textMuted },
-
-    payBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: COLORS.primary,
-        borderRadius: 12,
-        paddingVertical: 13,
-        marginTop: 14,
-        marginHorizontal: 16,
-        marginBottom: 4,
-        gap: 8,
-        elevation: 3,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-    },
-    payBtnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
-    paidTag: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: COLORS.greenPale,
-        borderRadius: 8,
-        paddingVertical: 8,
-        marginTop: 10,
-        marginHorizontal: 16,
-        marginBottom: 4,
-    },
-    paidTagText: { color: COLORS.green, fontWeight: "700", fontSize: 13 },
-
-    consultBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: COLORS.green,
-        borderRadius: 12,
-        paddingVertical: 13,
-        marginBottom: 12,
-        gap: 8,
-        elevation: 3,
-        shadowColor: COLORS.green,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-    },
-    consultBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
-
-    cancelBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        borderWidth: 1.5,
-        borderColor: COLORS.red,
-        borderRadius: 12,
-        paddingVertical: 12,
-        marginTop: 4,
-    },
-    cancelBtnText: { color: COLORS.red, fontWeight: "700", fontSize: 14 },
-});
 
 export default AppointmentDetail;

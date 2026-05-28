@@ -26,6 +26,7 @@ class Medicine(models.Model):
     requires_prescription = models.BooleanField(default=False, help_text="Cần kê đơn")
     description           = models.TextField(blank=True)
     is_active             = models.BooleanField(default=True)
+    warning_threshold     = models.PositiveIntegerField(default=50, help_text="Ngưỡng cảnh báo tồn kho thấp (tính trên tổng tất cả lô còn hạn)")
 
     class Meta:
         db_table            = "medicines"
@@ -46,6 +47,8 @@ class Inventory(models.Model):
     import_price      = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     supplier          = models.CharField(max_length=255, blank=True)
     warning_threshold = models.PositiveIntegerField(default=10, help_text="Ngưỡng cảnh báo số lượng thấp")
+    is_disposed       = models.BooleanField(default=False, help_text="Đã xuất hủy")
+    disposed_at       = models.DateTimeField(null=True, blank=True, help_text="Thời điểm xuất hủy")
 
     class Meta:
         db_table            = "inventory"

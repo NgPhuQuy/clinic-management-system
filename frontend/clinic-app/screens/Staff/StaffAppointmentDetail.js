@@ -1,12 +1,5 @@
-/**
- * screens/Staff/StaffAppointmentDetail.js
- * Nhân viên xem chi tiết 1 lịch hẹn:
- *   - Thông tin bệnh nhân + bác sĩ
- *   - Chuyển trạng thái (xác nhận, hủy, v.v.)
- *   - Xem thanh toán → điều hướng thu tiền
- */
 import {
-    View, ScrollView, StyleSheet, TouchableOpacity,
+    View, ScrollView, TouchableOpacity,
     ActivityIndicator, Alert,
 } from "react-native";
 import { Text, Button } from "react-native-paper";
@@ -53,14 +46,14 @@ const InfoRow = ({ icon, label, value, valueColor }) => (
 );
 
 const StaffAppointmentDetail = () => {
-    const nav   = useNavigation();
+    const nav = useNavigation();
     const route = useRoute();
-    const user  = useContext(MyUserContext);
+    const user = useContext(MyUserContext);
     const { id } = route.params;
 
-    const [appt,       setAppt]       = useState(null);
-    const [loading,    setLoading]    = useState(true);
-    const [updating,   setUpdating]   = useState(false);
+    const [appt, setAppt] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [updating, setUpdating] = useState(false);
 
     const load = async () => {
         try {
@@ -114,18 +107,18 @@ const StaffAppointmentDetail = () => {
         </View>
     );
 
-    const statusColor  = STATUS_COLORS[appt.status]  || COLORS.textMuted;
-    const statusLabel  = STATUS_LABELS[appt.status]   || appt.status;
-    const patient      = appt.patient_info            || {};
-    const doctor       = appt.doctor_info             || {};
-    const payment      = appt.payment;
-    const apptDate     = new Date(appt.appointment_date);
+    const statusColor = STATUS_COLORS[appt.status] || COLORS.textMuted;
+    const statusLabel = STATUS_LABELS[appt.status] || appt.status;
+    const patient = appt.patient_info || {};
+    const doctor = appt.doctor_info || {};
+    const payment = appt.payment;
+    const apptDate = new Date(appt.appointment_date);
 
-    const canConfirm   = appt.status === "pending";
-    const canStart     = appt.status === "confirmed";
-    const canComplete  = appt.status === "in_progress";
-    const canCancel    = ["pending", "confirmed", "in_progress"].includes(appt.status);
-    const canNoShow    = ["pending", "confirmed"].includes(appt.status);
+    const canConfirm = appt.status === "pending";
+    const canStart = appt.status === "confirmed";
+    const canComplete = appt.status === "in_progress";
+    const canCancel = ["pending", "confirmed", "in_progress"].includes(appt.status);
+    const canNoShow = ["pending", "confirmed"].includes(appt.status);
     const canCollectCash =
         payment?.payment_method === "cash" &&
         payment?.status === "pending" &&
@@ -133,7 +126,6 @@ const StaffAppointmentDetail = () => {
 
     return (
         <ScrollView style={S.container}>
-            {/* Status banner */}
             <View style={[S.statusBanner, { backgroundColor: statusColor }]}>
                 <Text style={S.statusBannerLabel}>{statusLabel}</Text>
                 <Text style={S.statusBannerDate}>
@@ -142,28 +134,25 @@ const StaffAppointmentDetail = () => {
                 </Text>
             </View>
 
-            {/* Patient */}
             <Section title="Thông tin bệnh nhân">
-                <InfoRow icon="account"        label="Họ tên"     value={patient.full_name} />
-                <InfoRow icon="phone"          label="Điện thoại" value={patient.phone} />
-                <InfoRow icon="cake-variant"   label="Ngày sinh"  value={patient.date_of_birth} />
+                <InfoRow icon="account" label="Họ tên" value={patient.full_name} />
+                <InfoRow icon="phone" label="Điện thoại" value={patient.phone} />
+                <InfoRow icon="cake-variant" label="Ngày sinh" value={patient.date_of_birth} />
             </Section>
 
-            {/* Doctor */}
             <Section title="Bác sĩ điều trị">
-                <InfoRow icon="doctor"         label="Bác sĩ"       value={`BS. ${doctor.full_name || ""}`} />
-                <InfoRow icon="hospital"       label="Chuyên khoa"  value={doctor.specialty_name} />
-                <InfoRow icon="cash"           label="Phí khám"
+                <InfoRow icon="doctor" label="Bác sĩ" value={`BS. ${doctor.full_name || ""}`} />
+                <InfoRow icon="hospital" label="Chuyên khoa" value={doctor.specialty_name} />
+                <InfoRow icon="cash" label="Phí khám"
                     value={doctor.consultation_fee
                         ? `${Number(doctor.consultation_fee).toLocaleString("vi-VN")}đ`
                         : null}
                 />
             </Section>
 
-            {/* Appointment detail */}
             <Section title="Chi tiết lịch hẹn">
                 <InfoRow icon="text-box-outline" label="Lý do khám" value={appt.reason} />
-                <InfoRow icon="note-outline"     label="Ghi chú"    value={appt.notes} />
+                <InfoRow icon="note-outline" label="Ghi chú" value={appt.notes} />
                 {appt.appointment_services?.length > 0 && (
                     <View style={S.services}>
                         <Text style={S.serviceTitle}>Dịch vụ / Xét nghiệm:</Text>
@@ -181,7 +170,6 @@ const StaffAppointmentDetail = () => {
                 )}
             </Section>
 
-            {/* Payment */}
             {payment && (
                 <Section title="Thanh toán">
                     <InfoRow
@@ -210,7 +198,6 @@ const StaffAppointmentDetail = () => {
                 </Section>
             )}
 
-            {/* Action buttons */}
             <View style={S.actions}>
                 {canConfirm && (
                     <Button
@@ -251,10 +238,10 @@ const StaffAppointmentDetail = () => {
                         icon="cash-register"
                         onPress={() =>
                             nav.navigate("staff-collect-payment", {
-                                paymentId:       payment.id,
-                                amount:          payment.amount,
-                                patientName:     patient.full_name,
-                                appointmentId:   appt.id,
+                                paymentId: payment.id,
+                                amount: payment.amount,
+                                patientName: patient.full_name,
+                                appointmentId: appt.id,
                             })
                         }
                         style={[S.btn, { backgroundColor: COLORS.orange }]}

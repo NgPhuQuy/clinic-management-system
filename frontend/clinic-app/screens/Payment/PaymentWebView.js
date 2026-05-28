@@ -31,7 +31,6 @@ const PaymentWebView = () => {
     const [simulating,  setSimulating]  = useState(false);
     const handled = useRef(false);
 
-    // Async: gọi backend cập nhật status → navigate to result
     const processReturnUrl = useCallback(async (url) => {
         let urlObj;
         try { urlObj = new URL(url); } catch { return false; }
@@ -53,8 +52,6 @@ const PaymentWebView = () => {
             errorCode = params.vnp_ResponseCode ?? "?";
         }
 
-        // Gọi backend để cập nhật trạng thái payment trong DB
-        // (IPN từ MoMo không đến được localhost khi test local)
         try {
             const ep = isMoMoReturn ? endpoints["momo-return"] : endpoints["vnpay-return"];
             await apis.get(ep, { params });
@@ -73,7 +70,6 @@ const PaymentWebView = () => {
         return true;
     }, [nav, paymentId, method, fromBooking]);
 
-    // Sync: kiểm tra URL có phải return URL không, nếu có thì chặn WebView và xử lý async
     const handleReturnUrl = useCallback((url) => {
         let urlObj;
         try { urlObj = new URL(url); } catch { return false; }
@@ -89,7 +85,6 @@ const PaymentWebView = () => {
 
     const onShouldStartLoadWithRequest = useCallback((request) => {
         const url = request.url;
-        // Block deep links (momo://, intent://, market://, etc.) to prevent app-open dialog
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             return false;
         }
@@ -118,7 +113,6 @@ const PaymentWebView = () => {
             ]
         );
 
-    // Dev-only: giả lập thanh toán thành công
     const handleSimulate = async () => {
         if (!paymentId) return;
         setSimulating(true);
@@ -146,7 +140,6 @@ const PaymentWebView = () => {
                 <Text style={S.headerTitle}>
                     {method === "momo" ? "Thanh toán MoMo" : "Thanh toán VNPay"}
                 </Text>
-                {/* Nút giả lập — chỉ hiện trong dev mode */}
                 {__DEV__ && (
                     <TouchableOpacity
                         onPress={handleSimulate}

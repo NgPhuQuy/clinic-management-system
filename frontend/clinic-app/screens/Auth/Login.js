@@ -1,4 +1,4 @@
-import { View, ScrollView, Image, StyleSheet } from "react-native";
+import { View, ScrollView, Image } from "react-native";
 import { Button, HelperText, Text, TextInput } from "react-native-paper";
 import { useState, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -61,7 +61,6 @@ const Login = () => {
                     {err}
                 </HelperText>
 
-                {/* Tên đăng nhập */}
                 <TextInput
                     label="Tên đăng nhập"
                     value={user.username || ""}
@@ -78,7 +77,6 @@ const Login = () => {
                     activeOutlineColor="#1565c0"
                 />
 
-                {/* Mật khẩu */}
                 <TextInput
                     ref={passwordRef}
                     label="Mật khẩu"

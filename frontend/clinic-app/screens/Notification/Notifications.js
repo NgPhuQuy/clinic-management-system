@@ -1,7 +1,3 @@
-/**
- * screens/Notification/Notifications.js
- * Danh sách thông báo – bấm vào → NotificationDetail
- */
 import {
     View, FlatList, TouchableOpacity,
     ActivityIndicator, StatusBar,
@@ -26,14 +22,6 @@ const TYPE_MAP = {
     system:                { icon: "bell-outline",       bg: "#e3f2fd", color: COLORS.primary },
 };
 
-const MOCK_NOTIFICATIONS = [
-    { id:1, title:"Nhắc lịch khám",        message:"Bạn có lịch hẹn với BS. Nguyễn Văn An vào 09:00 ngày mai. Vui lòng đến đúng giờ.",                   notification_type:"appointment_reminder", related_object_id:1, related_object_type:"appointment", is_read:false, created_at: new Date(Date.now()-1*3600*1000).toISOString() },
-    { id:2, title:"Thanh toán thành công", message:"Hóa đơn #000012 đã thanh toán 450.000đ qua MoMo thành công.",                                        notification_type:"payment_success",      related_object_id:12, related_object_type:"payment",     is_read:false, created_at: new Date(Date.now()-3*3600*1000).toISOString() },
-    { id:3, title:"Đơn thuốc đã sẵn sàng",message:"Đơn thuốc #8 đã được cấp phát. Vui lòng đến nhận tại quầy dược.",                                    notification_type:"prescription_ready",   related_object_id:8,  related_object_type:"prescription", is_read:true,  created_at: new Date(Date.now()-5*3600*1000).toISOString() },
-    { id:4, title:"Cập nhật hệ thống",     message:"Hệ thống sẽ bảo trì lúc 02:00 ngày mai, dự kiến 30 phút. Vui lòng hoàn tất các tác vụ trước giờ đó.",notification_type:"system",              is_read:true,  created_at: new Date(Date.now()-24*3600*1000).toISOString() },
-    { id:5, title:"Nhắc lịch khám",        message:"Bạn có lịch hẹn với BS. Trần Thị Bích vào 14:00 ngày 28/05/2026. Vui lòng mang theo CMND.",          notification_type:"appointment_reminder", related_object_id:5, related_object_type:"appointment", is_read:false, created_at: new Date(Date.now()-48*3600*1000).toISOString() },
-    { id:6, title:"Tài khoản xác thực",    message:"Tài khoản của bạn đã được xác thực thành công. Chào mừng đến với hệ thống!",                          notification_type:"system",              is_read:true,  created_at: new Date(Date.now()-72*3600*1000).toISOString() },
-];
 
 const Notifications = () => {
     const nav  = useNavigation();
@@ -47,13 +35,12 @@ const Notifications = () => {
 
     const load = async () => {
         try {
-            if (!user?.token) { setNotifications(MOCK_NOTIFICATIONS); return; }
+            if (!user?.token) return;
             const res = await authApis(user.token).get(endpoints["notifications"]);
             const data = res.data.results || res.data;
-            setNotifications(data.length > 0 ? data : MOCK_NOTIFICATIONS);
+            setNotifications(data);
         } catch (e) {
-            console.warn("Notifications mock:", e?.response?.status);
-            setNotifications(MOCK_NOTIFICATIONS);
+            console.warn("Notifications load error:", e?.response?.status);
         } finally {
             setLoading(false);
         }
@@ -62,18 +49,17 @@ const Notifications = () => {
     const markRead = async (id) => {
         try {
             await authApis(user.token).patch(endpoints["notification-read"](id), {});
-        } catch (_) { /* ignore */ }
+        } catch (_) {}
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     };
 
     const markAllRead = async () => {
         try { await authApis(user.token).patch(endpoints["notification-read-all"], {}); }
-        catch (_) { /* ignore */ }
+        catch (_) {}
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     };
 
     const openDetail = (item) => {
-        // Đánh dấu đã đọc trước khi mở
         if (!item.is_read) markRead(item.id);
         nav.navigate("notification-detail", { notification: item });
     };
@@ -115,7 +101,6 @@ const Notifications = () => {
         <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
 
-            {/* Header */}
             <View style={[S.header, { paddingTop: top + 16 }]}>
                 <View style={S.headerLeft}>
                     <MaterialCommunityIcons name="bell" size={22} color="#fff" style={{ marginRight: 8 }} />
@@ -129,7 +114,6 @@ const Notifications = () => {
                 )}
             </View>
 
-            {/* Tabs */}
             <View style={S.tabs}>
                 {["all", "unread"].map(key => (
                     <TouchableOpacity

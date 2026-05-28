@@ -1,5 +1,5 @@
 import {
-    View, FlatList, StyleSheet, TouchableOpacity,
+    View, FlatList, TouchableOpacity,
     ActivityIndicator, RefreshControl, ScrollView, Modal,
 } from "react-native";
 import { Text, TextInput, Button, HelperText, Searchbar } from "react-native-paper";
@@ -10,6 +10,7 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
 import { DatePickerField } from "../../components/DatePickerField";
+import { doctorMedicalRecordsStyles as styles } from "./Styles";
 
 const TEST_TYPE_LABELS = {
     blood: "XN Máu", urine: "XN Nước tiểu", stool: "XN Phân",
@@ -496,87 +497,5 @@ const DoctorMedicalRecords = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    card: {
-        backgroundColor: "#fff", borderRadius: 14, padding: 14,
-        elevation: 2,
-        shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06, shadowRadius: 4,
-    },
-    cardTop: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-    patientName: { fontSize: 15, fontWeight: "700", color: COLORS.text },
-    dateText: { fontSize: 12, color: COLORS.textMuted },
-    prescBadge: { backgroundColor: COLORS.greenPale, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-    prescBadgeText: { fontSize: 11, color: COLORS.green, fontWeight: "700" },
-    divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 8 },
-    diagnosisLabel: { fontSize: 12, color: COLORS.textMuted, marginBottom: 2 },
-    diagnosisText: { fontSize: 14, color: COLORS.text, fontWeight: "500" },
-    testCountBadge: {
-        flexDirection: "row", alignItems: "center", gap: 4,
-        backgroundColor: COLORS.primaryPale, borderRadius: 6,
-        paddingHorizontal: 7, paddingVertical: 3,
-        borderWidth: 1, borderColor: COLORS.primaryMid,
-    },
-    testCountText: { fontSize: 11, color: COLORS.primary, fontWeight: "600" },
-    sectionTitle: { fontSize: 13, fontWeight: "700", color: COLORS.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 },
-    bigName: { fontSize: 20, fontWeight: "800", color: COLORS.text },
-    subMuted: { fontSize: 13, color: COLORS.textMuted, marginTop: 4 },
-    infoBlock: { marginBottom: 10 },
-    infoLabel: { fontSize: 12, color: COLORS.textMuted },
-    infoValue: { fontSize: 14, color: COLORS.text, fontWeight: "500", marginTop: 2 },
-    sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-    addTestBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.primary },
-    testItem: { backgroundColor: COLORS.bg, borderRadius: 10, padding: 10, marginBottom: 8 },
-    testHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-    typeTag: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.primaryPale, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-    typeTagText: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
-    statusBadgeText: { fontSize: 11, fontWeight: "700" },
-    testName: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginTop: 2 },
-    testDate: { fontSize: 11, color: COLORS.textMuted, marginTop: 1 },
-    testResult: { fontSize: 13, color: COLORS.text, marginTop: 4 },
-    testRef: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-    fillBtn: {
-        flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6,
-        alignSelf: "flex-start",
-        paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6,
-        borderWidth: 1, borderColor: COLORS.primary, backgroundColor: COLORS.primaryPale,
-    },
-    fillBtnText: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
-    emptyText: { color: COLORS.textMuted, fontSize: 13, textAlign: "center", paddingVertical: 10 },
-    modalHeader: {
-        backgroundColor: COLORS.primaryDark, paddingTop: 52, paddingHorizontal: 16, paddingBottom: 16,
-        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    },
-    modalTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
-    modeRow: {
-        flexDirection: "row", backgroundColor: "#fff",
-        paddingHorizontal: 16, paddingVertical: 10, gap: 10,
-        borderBottomWidth: 1, borderBottomColor: COLORS.border,
-    },
-    modeBtn: {
-        flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-        paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.border,
-    },
-    modeBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-    modeBtnText: { fontSize: 13, fontWeight: "700", color: COLORS.textMuted },
-    input: { backgroundColor: "#fff", marginBottom: 10 },
-    fieldLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 8 },
-    typeChip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 16, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: "#fff" },
-    typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-    typeChipText: { fontSize: 12, fontWeight: "600", color: COLORS.textMuted },
-    hintBox: {
-        flexDirection: "row", alignItems: "center", gap: 8,
-        backgroundColor: COLORS.primaryPale, borderRadius: 8,
-        padding: 10, marginBottom: 12,
-        borderWidth: 1, borderColor: COLORS.primaryMid,
-    },
-    hintText: { flex: 1, fontSize: 12, color: COLORS.primary, fontWeight: "500" },
-    fillOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
-    fillSheet: { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 },
-    fillHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 },
-    fillTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
-    fillSubtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
-});
 
 export default DoctorMedicalRecords;

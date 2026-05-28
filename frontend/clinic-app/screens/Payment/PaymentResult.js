@@ -10,21 +10,16 @@ const PaymentResult = () => {
     const route = useRoute();
     const { success, paymentId, method, message, isCash, fromBooking = false } = route.params;
 
-    // isCash là trường hợp đặc biệt → luôn hiển thị màn "chờ thanh toán tại quầy"
     const isCashPending = isCash && !success;
 
     const handlePrimaryAction = () => {
         if (success || isCashPending) {
-            // ✅ Từ luồng đặt lịch → về "Lịch hẹn của tôi"
             if (fromBooking) {
                 nav.navigate("my-appointments");
             } else {
-                // Từ AppointmentDetail → pop(2) về AppointmentDetail
-                // Stack: AppointmentDetail → PaymentScreen → PaymentResult (WebView đã bị replace)
                 nav.pop(2);
             }
         } else {
-            // Thất bại → quay lại PaymentScreen để chọn lại
             nav.pop(1);
         }
     };
