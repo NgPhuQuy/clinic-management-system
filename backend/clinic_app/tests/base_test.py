@@ -57,7 +57,7 @@ def make_user(email, password="Test@1234", role="patient", **kwargs):
 
 def make_patient_user(email="patient@test.com", **kwargs):
     user = make_user(email, role="patient", **kwargs)
-    Patient.objects.get_or_create(user=user, defaults={"full_name": user.username})
+    Patient.objects.get_or_create(user=user)
     return user
 
 
@@ -70,7 +70,6 @@ def make_doctor_user(email="doctor@test.com", specialty=None, **kwargs):
     Doctor.objects.get_or_create(
         user=user,
         defaults={
-            "full_name": user.username,
             "specialty": specialty,
             "license_number": f"LIC-{user.id or 1}",
             "consultation_fee": 200_000,
@@ -84,6 +83,7 @@ def make_admin_user(email="admin@test.com", **kwargs):
         email=email,
         username=email.split("@")[0],
         password="Admin@1234",
+        role="admin",
         **kwargs,
     )
 

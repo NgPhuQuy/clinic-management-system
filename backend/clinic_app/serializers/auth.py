@@ -71,7 +71,7 @@ class UserSerializer(serializers.ModelSerializer):
                 "id":               s.id,
                 "position":         s.position,
                 "position_display": s.get_position_display(),
-                "department":       s.department,
+                "department":       s.department.name if s.department else None,
                 "phone":            s.phone,
                 "employee_id":      s.employee_id,
             }

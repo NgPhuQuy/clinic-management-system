@@ -2,19 +2,48 @@ from rest_framework.permissions import BasePermission
 
 
 class HasAdminScope(BasePermission):
-    required_scopes = ["admin"]
+    message = "Yêu cầu scope 'admin'."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return "admin" in _get_token_scopes(request)
+
 
 class HasDoctorScope(BasePermission):
-    required_scopes = ["doctor"]
+    message = "Yêu cầu scope 'doctor'."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return "doctor" in _get_token_scopes(request)
+
 
 class HasStaffScope(BasePermission):
-    required_scopes = ["staff"]
+    message = "Yêu cầu scope 'staff'."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return "staff" in _get_token_scopes(request)
+
 
 class HasPatientScope(BasePermission):
-    required_scopes = ["patient"]
+    message = "Yêu cầu scope 'patient'."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return "patient" in _get_token_scopes(request)
+
 
 class HasReadScope(BasePermission):
-    required_scopes = ["read"]
+    message = "Yêu cầu scope 'read'."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return "read" in _get_token_scopes(request)
 
 
 def _get_token_scopes(request) -> set:
