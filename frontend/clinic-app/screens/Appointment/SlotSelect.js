@@ -1,11 +1,12 @@
 import {
-    View, FlatList, TouchableOpacity, StyleSheet, Image,
+    View, FlatList, TouchableOpacity, Image,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { COLORS } from "../../styles/Styles";
+import { slotSelectStyles as styles } from "./Styles";
 
 const DoctorAvatar = ({ uri, size = 52 }) => {
     const [error, setError] = useState(false);
@@ -69,7 +70,6 @@ const SlotSelect = () => {
 
     return (
         <View style={{ flex: 1, backgroundColor: "#f0f4fa" }}>
-            {/* Date header */}
             <View style={styles.dateHeader}>
                 <MaterialCommunityIcons name="calendar-check" size={18} color={COLORS.primary} />
                 <View style={{ marginLeft: 8 }}>
@@ -100,86 +100,5 @@ const SlotSelect = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    dateHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#fff",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
-    },
-    specialtyLabel: {
-        fontSize: 11,
-        color: COLORS.primary,
-        fontWeight: "700",
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-        marginBottom: 1,
-    },
-    dateText: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: COLORS.text,
-    },
-    card: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#fff",
-        borderRadius: 14,
-        padding: 14,
-        marginBottom: 10,
-        elevation: 2,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.07,
-        shadowRadius: 6,
-    },
-    docName: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: COLORS.text,
-    },
-    timeRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 4,
-    },
-    timeText: {
-        fontSize: 13,
-        color: COLORS.primary,
-        fontWeight: "600",
-    },
-    slotInfo: {
-        fontSize: 11,
-        color: COLORS.textMuted,
-        marginTop: 3,
-    },
-    selectBtn: {
-        backgroundColor: COLORS.primary,
-        borderRadius: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-    },
-    selectBtnText: {
-        color: "#fff",
-        fontSize: 12,
-        fontWeight: "700",
-    },
-    emptyText: {
-        marginTop: 12,
-        fontSize: 14,
-        color: COLORS.textMuted,
-        fontWeight: "600",
-        textAlign: "center",
-    },
-    emptySubText: {
-        marginTop: 4,
-        fontSize: 12,
-        color: COLORS.textLight,
-        textAlign: "center",
-    },
-});
 
 export default SlotSelect;

@@ -1,5 +1,5 @@
 import {
-    View, ScrollView, TouchableOpacity, StyleSheet,
+    View, ScrollView, TouchableOpacity,
     FlatList, ActivityIndicator, Image,
 } from "react-native";
 import { Text, TextInput, Chip } from "react-native-paper";
@@ -10,7 +10,6 @@ import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, doctorListStyles as S } from "../../styles/Styles";
 
-// Avatar bác sĩ: ưu tiên ảnh API, fallback về icon
 const DoctorAvatar = ({ uri, size = 56 }) => {
     const [error, setError] = useState(false);
     if (uri && !error) {
@@ -111,7 +110,6 @@ const DoctorList = () => {
 
     return (
         <View style={Styles.container}>
-            {/* Search bar */}
             <View style={S.searchBar}>
                 <TextInput
                     placeholder="Tìm bác sĩ..."
@@ -159,7 +157,6 @@ const DoctorList = () => {
                 </ScrollView>
             </View>
 
-            {/* List */}
             {loading ? (
                 <View style={[Styles.center, { flex: 1 }]}>
                     <ActivityIndicator size="large" color={COLORS.primary} />

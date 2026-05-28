@@ -1,5 +1,5 @@
 import {
-    View, FlatList, TouchableOpacity, StyleSheet,
+    View, FlatList, TouchableOpacity,
     ActivityIndicator, TextInput,
 } from "react-native";
 import { Text } from "react-native-paper";
@@ -9,6 +9,7 @@ import { useNavigation } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import { COLORS } from "../../styles/Styles";
+import { specialtySelectStyles as styles } from "./Styles";
 
 const SpecialtySelect = () => {
     const nav = useNavigation();
@@ -112,61 +113,5 @@ const SpecialtySelect = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    searchWrap: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        margin: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        backgroundColor: "#f5f6fa",
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: 14,
-        color: COLORS.text,
-    },
-    card: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        backgroundColor: "#fff",
-    },
-    cardTop: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        marginBottom: 3,
-    },
-    specName: {
-        flex: 1,
-        fontSize: 14,
-        fontWeight: "800",
-        color: COLORS.text,
-        marginRight: 8,
-    },
-    specFee: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: COLORS.primary,
-        flexShrink: 0,
-    },
-    specNote: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-        fontStyle: "italic",
-        marginBottom: 2,
-    },
-    specDesc: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-        lineHeight: 17,
-    },
-});
 
 export default SpecialtySelect;

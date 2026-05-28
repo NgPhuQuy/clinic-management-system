@@ -82,23 +82,34 @@ class StaffDashboardView(APIView):
     permission_classes = [HasStaffOrAdminScope]
 
     def get(self, request):
+        from django.db.models import Sum, Q, F
+        from ..models import Medicine
+
         today      = timezone.now().date()
-        this_month = timezone.now().replace(day=1).date()
 
-        appointments_today   = Appointment.objects.filter(appointment_date__date=today).count()
-        appointments_pending = Appointment.objects.filter(status="pending").count()
+        appointments_today    = Appointment.objects.filter(appointment_date__date=today).count()
+        appointments_pending  = Appointment.objects.filter(status="pending").count()
         prescriptions_pending = Prescription.objects.filter(status="pending").count()
+        inventory_alerts      = InventoryAlert.objects.filter(is_resolved=False).count()
 
-        payments_pending_cash = Payment.objects.filter(
-            status="pending",
-            payment_method="cash",
+        # Low stock: Medicine có tổng tồn kho còn hạn <= ngưỡng của thuốc đó
+        low_stock_count = (
+            Medicine.objects
+            .filter(is_active=True)
+            .annotate(
+                total_valid=Sum(
+                    "inventory_batches__quantity",
+                    filter=Q(inventory_batches__expiry_date__gt=today),
+                )
+            )
+            .filter(Q(total_valid__lte=F("warning_threshold")) | Q(total_valid__isnull=True))
+            .count()
+        )
+
+        near_expiry_count = Inventory.objects.filter(
+            expiry_date__lte=today + timedelta(days=30),
+            expiry_date__gt=today,
         ).count()
-
-        inventory_alerts  = InventoryAlert.objects.filter(is_resolved=False).count()
-        revenue_today     = Payment.objects.filter(status="success", paid_at__date=today).aggregate(total=Sum("amount"))["total"] or 0
-        revenue_month     = Payment.objects.filter(status="success", paid_at__date__gte=this_month).aggregate(total=Sum("amount"))["total"] or 0
-        low_stock_count   = Inventory.objects.filter(quantity__lte=10).count()
-        near_expiry_count = Inventory.objects.filter(expiry_date__lte=today + timedelta(days=30), expiry_date__gt=today).count()
 
         todays_appointments = Appointment.objects.filter(
             appointment_date__date=today,
@@ -107,13 +118,11 @@ class StaffDashboardView(APIView):
         ).prefetch_related("appointment_services__service").order_by("appointment_date")[:20]
 
         return Response({
-            "appointments": {"today": appointments_today, "pending": appointments_pending},
-            "prescriptions": {"pending": prescriptions_pending},
-            "payments": {
-                "pending_cash":  payments_pending_cash,
-                "revenue_today": revenue_today,
-                "revenue_month": revenue_month,
+            "appointments": {
+                "today":   appointments_today,
+                "pending": appointments_pending,
             },
+            "prescriptions": {"pending": prescriptions_pending},
             "inventory": {
                 "alerts":      inventory_alerts,
                 "low_stock":   low_stock_count,

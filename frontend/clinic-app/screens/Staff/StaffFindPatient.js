@@ -1,12 +1,5 @@
-/**
- * screens/Staff/StaffFindPatient.js
- * Nhân viên tìm kiếm bệnh nhân:
- *   - Tìm theo tên, SĐT, số BHYT
- *   - Xem thông tin cơ bản + lịch sử khám
- *   - Điều hướng đến lịch hẹn cụ thể
- */
 import {
-    View, FlatList, StyleSheet, TouchableOpacity,
+    View, FlatList, TouchableOpacity,
     ActivityIndicator, RefreshControl,
 } from "react-native";
 import { Text, Searchbar } from "react-native-paper";
@@ -19,7 +12,6 @@ import Styles, { COLORS, staffFindPatientStyles as S } from "../../styles/Styles
 
 const PatientCard = ({ item, onPress }) => (
     <TouchableOpacity style={S.card} onPress={onPress} activeOpacity={0.85}>
-        {/* Avatar placeholder */}
         <View style={S.avatar}>
             <Text style={S.avatarText}>
                 {(item.full_name || "?").charAt(0).toUpperCase()}
@@ -52,7 +44,6 @@ const PatientCard = ({ item, onPress }) => (
     </TouchableOpacity>
 );
 
-// Chi tiết bệnh nhân: lịch sử khám
 const PatientDetailModal = ({ patient, onClose, nav }) => {
     const user = useContext(MyUserContext);
     const [appointments, setAppointments] = useState([]);
@@ -83,7 +74,6 @@ const PatientDetailModal = ({ patient, onClose, nav }) => {
     return (
         <View style={S.modalOverlay}>
             <View style={S.modalBox}>
-                {/* Header */}
                 <View style={S.modalHeader}>
                     <View style={S.modalAvatar}>
                         <Text style={S.modalAvatarText}>
@@ -99,7 +89,6 @@ const PatientDetailModal = ({ patient, onClose, nav }) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Patient Info */}
                 <View style={S.patientInfo}>
                     {[
                         { icon: "phone",             label: "Điện thoại",    value: patient.phone },
@@ -117,7 +106,6 @@ const PatientDetailModal = ({ patient, onClose, nav }) => {
                     ))}
                 </View>
 
-                {/* Appointment history */}
                 <Text style={S.historyTitle}>
                     Lịch sử khám ({appointments.length} lần)
                 </Text>
@@ -202,7 +190,6 @@ const StaffFindPatient = () => {
 
     return (
         <View style={S.container}>
-            {/* Search bar */}
             <View style={S.searchBox}>
                 <Searchbar
                     placeholder="Nhập tên, SĐT hoặc số BHYT..."
@@ -248,7 +235,6 @@ const StaffFindPatient = () => {
                 />
             )}
 
-            {/* Patient detail modal */}
             {selected && (
                 <PatientDetailModal
                     patient={selected}

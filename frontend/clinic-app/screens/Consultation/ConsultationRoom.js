@@ -1,5 +1,5 @@
 import {
-    View, ScrollView, StyleSheet, TextInput, TouchableOpacity,
+    View, ScrollView, TextInput, TouchableOpacity,
     FlatList, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from "react-native";
 import { Text } from "react-native-paper";
@@ -10,6 +10,7 @@ import { WebView } from "react-native-webview";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS } from "../../styles/Styles";
+import { consultationRoomStyles as styles } from "./Styles";
 
 const buildRTMHtml = (appId, token, channel, uid) => `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/></head><body>
@@ -73,16 +74,14 @@ const ConsultationRoom = () => {
     const flatListRef  = useRef(null);
     const pollRef      = useRef(null);
     const rtmRef       = useRef(null);
-    const seenIdsRef   = useRef(new Set()); // dedup RTM vs. DB messages
+    const seenIdsRef   = useRef(new Set());
 
-    // ── Load consultation + messages (initial + status poll) ─────────
     const loadConsultation = useCallback(async () => {
         try {
             const res = await authApis(user.token).get(endpoints["consultation-detail"](consultationId));
             const data = res.data;
             setConsultation(data);
             if (data.messages) {
-                // On initial load, seed seenIds and set messages
                 data.messages.forEach(m => seenIdsRef.current.add(String(m.id)));
                 setMessages(data.messages);
             }
@@ -92,7 +91,6 @@ const ConsultationRoom = () => {
         }
     }, [consultationId, user.token]);
 
-    // ── Fetch RTM config ─────────────────────────────────────────────
     const loadRTMConfig = useCallback(async () => {
         try {
             const res = await authApis(user.token).get(endpoints["consultation-rtm-token"](consultationId));
@@ -102,7 +100,6 @@ const ConsultationRoom = () => {
         }
     }, [consultationId, user.token]);
 
-    // ── Start polling (status only, every 5s) ────────────────────────
     const startPoll = useCallback(() => {
         clearInterval(pollRef.current);
         pollRef.current = setInterval(async () => {
@@ -114,7 +111,6 @@ const ConsultationRoom = () => {
         }, 5000);
     }, [consultationId, user.token]);
 
-    // ── Init ─────────────────────────────────────────────────────────
     useEffect(() => {
         loadConsultation().finally(() => setLoading(false));
         loadRTMConfig();
@@ -122,7 +118,6 @@ const ConsultationRoom = () => {
         return () => clearInterval(pollRef.current);
     }, []);
 
-    // ── Actions ──────────────────────────────────────────────────────
     const enterRoom = async () => {
         setActionLoading(true);
         try {
@@ -194,7 +189,6 @@ const ConsultationRoom = () => {
         });
     };
 
-    // ── Nhận tin nhắn từ RTM WebView ────────────────────────────────
     const handleRTMMessage = useCallback((e) => {
         try {
             const msg = JSON.parse(e.nativeEvent.data);
@@ -205,7 +199,7 @@ const ConsultationRoom = () => {
             } else if (msg.type === "MSG" && msg.data) {
                 const d = msg.data;
                 const id = String(d.id || `rtm_${Date.now()}`);
-                if (seenIdsRef.current.has(id)) return; // dedup
+                if (seenIdsRef.current.has(id)) return;
                 seenIdsRef.current.add(id);
                 setMessages(prev => [...prev, d]);
                 setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
@@ -213,7 +207,6 @@ const ConsultationRoom = () => {
         } catch {}
     }, []);
 
-    // ── Gửi tin nhắn ────────────────────────────────────────────────
     const sendMessage = async () => {
         const text = message.trim();
         if (!text) return;
@@ -221,19 +214,16 @@ const ConsultationRoom = () => {
         setMessage("");
 
         try {
-            // 1. Save to DB
             const res = await authApis(user.token).post(
                 endpoints["consultation-messages"](consultationId),
                 { message: text }
             );
             const saved = res.data;
 
-            // 2. Add to local state immediately
             seenIdsRef.current.add(String(saved.id));
             setMessages(prev => [...prev, saved]);
             setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
 
-            // 3. Broadcast to other participant via RTM
             if (rtmReady && rtmRef.current) {
                 const payload = JSON.stringify(saved);
                 rtmRef.current.injectJavaScript(`window.rtmSend(${JSON.stringify(payload)}); void(0);`);
@@ -245,7 +235,6 @@ const ConsultationRoom = () => {
         }
     };
 
-    // ── Loading ──────────────────────────────────────────────────────
     if (loading) {
         return (
             <View style={[Styles.center, { flex: 1 }]}>
@@ -269,7 +258,6 @@ const ConsultationRoom = () => {
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
 
-            {/* ── RTM hidden WebView ── */}
             {rtmConfig && (
                 <WebView
                     ref={rtmRef}
@@ -280,7 +268,6 @@ const ConsultationRoom = () => {
                 />
             )}
 
-            {/* ── Status banner ── */}
             <View style={[styles.statusBar, { backgroundColor: STATUS_COLOR[consultation.status] || "#9e9e9e" }]}>
                 <MaterialCommunityIcons
                     name={isActive ? "video" : isEnded ? "check-circle-outline" : "clock-outline"}
@@ -291,7 +278,6 @@ const ConsultationRoom = () => {
             </View>
 
             <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 8 }}>
-                {/* ── Thông tin phòng ── */}
                 <View style={[Styles.card, { margin: 16, marginBottom: 8 }]}>
                     <Text style={Styles.sectionHeader}>Phòng tư vấn</Text>
                     <Text style={Styles.text}>Mã phòng: {consultation.room_id || "—"}</Text>
@@ -302,9 +288,7 @@ const ConsultationRoom = () => {
                     )}
                 </View>
 
-                {/* ── Hành động theo role + trạng thái ── */}
                 <View style={[Styles.card, { marginHorizontal: 16, marginBottom: 8 }]}>
-                    {/* PATIENT */}
                     {!isDoctor && !isEnded && (
                         <>
                             {!entered && !isActive && (
@@ -349,7 +333,6 @@ const ConsultationRoom = () => {
                         </>
                     )}
 
-                    {/* DOCTOR */}
                     {isDoctor && !isEnded && (
                         <>
                             {isWaiting && (
@@ -409,7 +392,6 @@ const ConsultationRoom = () => {
                     )}
                 </View>
 
-                {/* ── Chat ── */}
                 <View style={[Styles.card, { marginHorizontal: 16 }]}>
                     <Text style={[Styles.sectionHeader, { marginBottom: 8 }]}>Tin nhắn</Text>
 
@@ -445,7 +427,6 @@ const ConsultationRoom = () => {
                 </View>
             </ScrollView>
 
-            {/* ── Chat input ── */}
             {!isEnded && (
                 <View style={styles.inputRow}>
                     <TextInput
@@ -472,87 +453,5 @@ const ConsultationRoom = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    statusBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 10,
-        gap: 6,
-    },
-    statusText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-
-    actionBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 12,
-        paddingVertical: 14,
-        gap: 8,
-    },
-    actionBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-
-    waitingBox: {
-        alignItems: "center",
-        paddingVertical: 16,
-        gap: 8,
-    },
-    waitingText:    { fontSize: 15, fontWeight: "600", color: COLORS.text, marginTop: 4 },
-    waitingSubText: { fontSize: 12, color: COLORS.textMuted },
-
-    endedBox:  { alignItems: "center", paddingVertical: 12, gap: 6 },
-    endedText: { fontSize: 15, fontWeight: "600", color: COLORS.green },
-
-    bubble: {
-        maxWidth: "78%",
-        borderRadius: 14,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        marginBottom: 8,
-    },
-    bubbleMe: {
-        backgroundColor: COLORS.primary,
-        alignSelf: "flex-end",
-        borderBottomRightRadius: 4,
-    },
-    bubbleThem: {
-        backgroundColor: "#f0f4ff",
-        alignSelf: "flex-start",
-        borderBottomLeftRadius: 4,
-    },
-    bubbleSender: { fontSize: 11, fontWeight: "700", color: COLORS.primary, marginBottom: 2 },
-    bubbleText:   { fontSize: 14, color: COLORS.text },
-    bubbleTime:   { fontSize: 10, color: COLORS.textMuted, marginTop: 3, textAlign: "right" },
-
-    inputRow: {
-        flexDirection: "row",
-        alignItems: "flex-end",
-        padding: 10,
-        paddingBottom: Platform.OS === "ios" ? 24 : 10,
-        backgroundColor: "#fff",
-        borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-        gap: 8,
-    },
-    input: {
-        flex: 1,
-        backgroundColor: "#f5f7fa",
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        fontSize: 14,
-        maxHeight: 100,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    sendBtn: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: COLORS.primary,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-});
 
 export default ConsultationRoom;

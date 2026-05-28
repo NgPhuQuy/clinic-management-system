@@ -1,10 +1,6 @@
-/**
- * screens/Staff/StaffDashboard.js
- * Dashboard chính cho nhân viên y tế – gọi backend, fallback mock nếu lỗi
- */
 import {
     View, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, StatusBar, StyleSheet,
+    ActivityIndicator, RefreshControl, StatusBar,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
@@ -14,9 +10,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, STATUS_CONFIG } from "../../styles/Styles";
+import { staffDashboardStyles as styles } from "./Styles";
 
 
-// ── Sub-components ────────────────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, color, badge, onPress }) => (
     <TouchableOpacity
         style={[Styles.statCard, { borderLeftColor: color }]}
@@ -67,7 +63,6 @@ const AppointmentItem = ({ item, onPress }) => {
     );
 };
 
-// ── Main screen ───────────────────────────────────────────────────────────────
 const StaffDashboard = () => {
     const nav  = useNavigation();
     const user = useContext(MyUserContext);
@@ -85,8 +80,7 @@ const StaffDashboard = () => {
             const res = await authApis(user.token).get(endpoints["staff-dashboard"]);
             setData(res.data);
         } catch (e) {
-            console.warn("StaffDashboard: dùng mock data –", e?.response?.status || e.message);
-            setData(MOCK_DASHBOARD);
+            console.warn("StaffDashboard lỗi:", e?.response?.status || e.message);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -101,11 +95,10 @@ const StaffDashboard = () => {
         </View>
     );
 
-    const appts        = data?.appointments   || {};
-    const payments     = data?.payments       || {};
-    const inventory    = data?.inventory      || {};
-    const prescriptions= data?.prescriptions  || {};
-    const todayAppts   = data?.todays_appointments || [];
+    const appts         = data?.appointments  || {};
+    const inventory     = data?.inventory    || {};
+    const prescriptions = data?.prescriptions || {};
+    const todayAppts    = data?.todays_appointments || [];
 
     return (
         <ScrollView
@@ -120,11 +113,10 @@ const StaffDashboard = () => {
         >
             <StatusBar backgroundColor={COLORS.teal} barStyle="light-content" />
 
-            {/* Header */}
             <View style={[styles.header, { paddingTop: top + 16 }]}>
                 <View>
                     <Text style={styles.greeting}>
-                        Xin chào, {user?.first_name || user?.username}!
+                        Xin chào, {[user?.last_name, user?.first_name].filter(Boolean).join(" ") || user?.username}!
                     </Text>
                     <Text style={styles.dateText}>{today}</Text>
                 </View>
@@ -133,7 +125,6 @@ const StaffDashboard = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Stats */}
             <View style={Styles.section}>
                 <Text style={Styles.sectionTitle}>Công việc cần xử lý</Text>
                 <View style={{ gap: 10 }}>
@@ -166,19 +157,27 @@ const StaffDashboard = () => {
                         value={inventory.alerts ?? 0}
                         color={COLORS.red}
                         badge={inventory.alerts > 0 ? "!" : null}
-                        onPress={() => nav.navigate("staff-inventory")}
+                        onPress={() => nav.navigate("staff-inventory", { tab: "alerts" })}
                     />
                     <StatCard
                         icon="package-variant-closed"
                         label="Thuốc sắp hết hàng"
                         value={inventory.low_stock ?? 0}
                         color={COLORS.orange}
-                        onPress={() => nav.navigate("staff-inventory")}
+                        badge={inventory.low_stock > 0 ? "!" : null}
+                        onPress={() => nav.navigate("staff-inventory", { tab: "low_stock" })}
+                    />
+                    <StatCard
+                        icon="calendar-alert"
+                        label="Lô thuốc sắp hết hạn"
+                        value={inventory.near_expiry ?? 0}
+                        color={COLORS.purple}
+                        badge={inventory.near_expiry > 0 ? "!" : null}
+                        onPress={() => nav.navigate("staff-inventory", { tab: "near_expiry" })}
                     />
                 </View>
             </View>
 
-            {/* Quick Actions */}
             <View style={Styles.section}>
                 <Text style={Styles.sectionTitle}>Chức năng nhanh</Text>
                 <View style={Styles.actionsGrid}>
@@ -205,7 +204,6 @@ const StaffDashboard = () => {
                 </View>
             </View>
 
-            {/* Today's Appointments */}
             {todayAppts.length > 0 && (
                 <View style={Styles.section}>
                     <View style={Styles.sectionRow}>
@@ -229,14 +227,5 @@ const StaffDashboard = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: COLORS.teal,
-        paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24,
-        flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    },
-    greeting: { fontSize: 20, fontWeight: "800", color: "#fff" },
-    dateText:  { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
-});
 
 export default StaffDashboard;

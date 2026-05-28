@@ -597,7 +597,7 @@ class Command(BaseCommand):
                 import_date=today - timedelta(days=30),
                 import_price=med.price * Decimal("0.6"),
                 supplier=suppliers[sup_idx],
-                warning_threshold=10,
+                warning_threshold=50,
             )
 
             if qty <= 10:

@@ -1,7 +1,3 @@
-/**
- * screens/Staff/StaffAppointments.js
- * Nhân viên y tế quản lý lịch hẹn – kết nối backend, fallback mock
- */
 import {
     View, FlatList, TouchableOpacity,
     ActivityIndicator, Alert, RefreshControl,
@@ -27,15 +23,6 @@ const TRANSITION_ICONS = {
     no_show:     "account-off-outline",
 };
 
-const MOCK_APPOINTMENTS = [
-    { id:1, patient_info:{full_name:"Nguyễn Thị Mai"}, doctor_info:{full_name:"Nguyễn Văn An", specialty_name:"Tim mạch"}, appointment_date: new Date(Date.now()+0.5*3600*1000).toISOString(), status:"pending",     reason:"Đau ngực, khó thở khi gắng sức" },
-    { id:2, patient_info:{full_name:"Trần Văn Bảo"},   doctor_info:{full_name:"Lê Minh Cường",  specialty_name:"Nội tiêu hóa"}, appointment_date: new Date(Date.now()+1.5*3600*1000).toISOString(), status:"confirmed",   reason:"Kiểm tra sức khỏe định kỳ" },
-    { id:3, patient_info:{full_name:"Lê Thị Cúc"},     doctor_info:{full_name:"Phạm Thị Dung",  specialty_name:"Thần kinh"},    appointment_date: new Date(Date.now()+2*3600*1000).toISOString(),   status:"in_progress", reason:"Đau đầu dữ dội, chóng mặt" },
-    { id:4, patient_info:{full_name:"Phạm Minh Đức"},  doctor_info:{full_name:"Hoàng Văn Em",   specialty_name:"Da liễu"},      appointment_date: new Date(Date.now()-1*3600*1000).toISOString(),   status:"completed",   reason:"Nổi mẩn đỏ toàn thân" },
-    { id:5, patient_info:{full_name:"Hoàng Thị Em"},   doctor_info:{full_name:"Vũ Thị Phương",  specialty_name:"Nhi khoa"},     appointment_date: new Date(Date.now()-2*3600*1000).toISOString(),   status:"cancelled",   reason:"Trẻ sốt cao liên tục" },
-    { id:6, patient_info:{full_name:"Vũ Văn Phúc"},    doctor_info:{full_name:"Đặng Minh Quân", specialty_name:"Sản phụ khoa"}, appointment_date: new Date(Date.now()+3*3600*1000).toISOString(),   status:"confirmed",   reason:"Đau lưng dưới lan xuống chân" },
-    { id:7, patient_info:{full_name:"Đặng Thị Giang"}, doctor_info:{full_name:"Bùi Thị Hoa",    specialty_name:"Chấn thương"},  appointment_date: new Date(Date.now()+4*3600*1000).toISOString(),   status:"pending",     reason:"Đau khớp gối phải" },
-];
 
 const AppointmentCard = ({ item, onUpdateStatus, onPress }) => {
     const date    = new Date(item.appointment_date);
@@ -123,11 +110,7 @@ const StaffAppointments = () => {
             const res = await authApis(user.token).get(endpoints["appointments"], { params });
             setAppointments(res.data.results || res.data);
         } catch (e) {
-            console.warn("StaffAppointments: dùng mock –", e?.response?.status || e.message);
-            const filtered = activeFilter === "all"
-                ? MOCK_APPOINTMENTS
-                : MOCK_APPOINTMENTS.filter(a => a.status === activeFilter);
-            setAppointments(filtered);
+            console.warn("StaffAppointments load error:", e?.response?.status || e.message);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -152,7 +135,6 @@ const StaffAppointments = () => {
                                 endpoints["appointment-status"](id), { status: newStatus }
                             );
                         } catch (e) {
-                            // fallback – vẫn cập nhật UI
                         }
                         setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
                     },

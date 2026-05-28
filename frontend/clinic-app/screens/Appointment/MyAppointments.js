@@ -1,4 +1,4 @@
-import { View, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Text, Chip } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
 import { useNavigation } from "@react-navigation/native";

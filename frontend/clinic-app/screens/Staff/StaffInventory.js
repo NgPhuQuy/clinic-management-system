@@ -1,32 +1,16 @@
-/**
- * screens/Staff/StaffInventory.js
- * Nhân viên dược/kho quản lý tồn kho thuốc:
- *   - Xem tồn kho toàn bộ
- *   - Xem thuốc sắp hết / sắp hết hạn
- *   - Xem và giải quyết cảnh báo kho
- *   - Nhập kho mới (thêm lô)
- */
 import {
-    View, FlatList, StyleSheet, TouchableOpacity,
+    View, FlatList, TouchableOpacity,
     ActivityIndicator, Alert, RefreshControl, ScrollView, Modal,
 } from "react-native";
 import { Text, Button, TextInput, HelperText } from "react-native-paper";
 import { useState, useEffect, useContext } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRoute } from "@react-navigation/native";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, staffInventoryStyles as S } from "../../styles/Styles";
 import { DatePickerField } from "../../components/DatePickerField";
 
-
-const MOCK_INVENTORY = [
-    { id:1, medicine:{ name:"Amlodipine 5mg",   code:"MED001", unit:"viên" }, batch_number:"LOT001", quantity:250,  expiry_date:"2026-12-31", supplier:"Dược Hậu Giang", warning_threshold:20, is_low:false },
-    { id:2, medicine:{ name:"Amoxicillin 500mg", code:"MED006", unit:"viên" }, batch_number:"LOT006", quantity:8,    expiry_date:"2026-08-15", supplier:"Pymepharco",     warning_threshold:20, is_low:true  },
-    { id:3, medicine:{ name:"Paracetamol 500mg", code:"MED011", unit:"viên" }, batch_number:"LOT011", quantity:500,  expiry_date:"2027-03-01", supplier:"OPC Pharma",     warning_threshold:50, is_low:false },
-    { id:4, medicine:{ name:"Vitamin C 500mg",   code:"MED021", unit:"viên" }, batch_number:"LOT021", quantity:5,    expiry_date:"2025-10-01", supplier:"Traphaco",       warning_threshold:20, is_low:true  },
-    { id:5, medicine:{ name:"Omeprazole 20mg",   code:"MED016", unit:"viên" }, batch_number:"LOT016", quantity:180,  expiry_date:"2026-06-30", supplier:"Imexpharm",      warning_threshold:30, is_low:false },
-    { id:6, medicine:{ name:"Metformin 500mg",   code:"MED026", unit:"viên" }, batch_number:"LOT026", quantity:12,   expiry_date:"2026-04-20", supplier:"Pymepharco",     warning_threshold:20, is_low:true  },
-];
 
 
 const TAB_CONFIG = [
@@ -47,42 +31,73 @@ const ALERT_TYPE_LABELS = {
     expired:     "Đã hết hạn",
 };
 
-const InventoryCard = ({ item }) => {
-    const isLow    = item.quantity <= item.warning_threshold;
+const MedicineCard = ({ item }) => {
+    const total   = item.total_stock ?? 0;
+    const isLow   = item.is_low_stock || total <= item.warning_threshold;
+    const color   = isLow ? COLORS.orange : COLORS.green;
+
+    return (
+        <View style={[S.card, { borderLeftColor: color, borderLeftWidth: 4 }]}>
+            <View style={S.cardTop}>
+                <View style={{ flex: 1 }}>
+                    <Text style={S.medicineName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={S.medicineCode}>
+                        {item.code} • {item.unit} • {item.category_name || ""}
+                    </Text>
+                </View>
+                <View style={[S.qtyBadge, { backgroundColor: isLow ? COLORS.orangePale : COLORS.greenPale }]}>
+                    <Text style={[S.qtyText, { color }]}>{total}</Text>
+                    <Text style={S.qtyLabel}>tổng còn</Text>
+                </View>
+            </View>
+
+            <View style={S.infoRow}>
+                <MaterialCommunityIcons name="alert-outline" size={13} color={COLORS.textMuted} />
+                <Text style={S.infoText}>Ngưỡng cảnh báo: {item.warning_threshold} {item.unit}</Text>
+            </View>
+
+            {isLow && (
+                <View style={[S.warningBadge, { backgroundColor: COLORS.orange + "15" }]}>
+                    <MaterialCommunityIcons name="alert" size={13} color={COLORS.orange} />
+                    <Text style={[S.warningText, { color: COLORS.orange }]}>
+                        Tồn kho thấp — cần nhập thêm hàng!
+                    </Text>
+                </View>
+            )}
+        </View>
+    );
+};
+
+const BatchCard = ({ item, onDispose }) => {
     const today    = new Date();
     const expiry   = new Date(item.expiry_date);
     const daysLeft = Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
-    const isNearExpiry = daysLeft <= 30 && daysLeft > 0;
     const isExpired    = daysLeft <= 0;
+    const isNearExpiry = daysLeft > 0 && daysLeft <= 30;
+    const borderColor  = isExpired ? COLORS.red : COLORS.purple;
 
-    let borderColor = COLORS.border;
-    if (isExpired)    borderColor = COLORS.red;
-    else if (isLow)   borderColor = COLORS.orange;
-    else if (isNearExpiry) borderColor = COLORS.purple;
+    const confirmDispose = () => {
+        Alert.alert(
+            "Xác nhận xuất hủy",
+            `Lô ${item.batch_number} (${item.medicine_name}) — ${item.quantity} ${item.medicine_unit || "đơn vị"}\n\nThao tác này không thể hoàn tác!`,
+            [
+                { text: "Hủy bỏ", style: "cancel" },
+                { text: "Xuất hủy", style: "destructive", onPress: () => onDispose(item.id) },
+            ]
+        );
+    };
 
     return (
         <View style={[S.card, { borderLeftColor: borderColor, borderLeftWidth: 4 }]}>
             <View style={S.cardTop}>
                 <View style={{ flex: 1 }}>
                     <Text style={S.medicineName} numberOfLines={1}>
-                        {item.medicine_name || item.medicine?.name || `Thuốc #${item.medicine}`}
+                        {item.medicine_name || `Thuốc #${item.medicine}`}
                     </Text>
-                    <Text style={S.medicineCode}>
-                        Lô: {item.batch_number} • {item.medicine?.unit || ""}
-                    </Text>
+                    <Text style={S.medicineCode}>Lô: {item.batch_number}</Text>
                 </View>
-                <View style={[
-                    S.qtyBadge,
-                    {
-                        backgroundColor: isLow ? COLORS.orangePale : COLORS.greenPale,
-                    }
-                ]}>
-                    <Text style={[
-                        S.qtyText,
-                        { color: isLow ? COLORS.orange : COLORS.green }
-                    ]}>
-                        {item.quantity}
-                    </Text>
+                <View style={[S.qtyBadge, { backgroundColor: COLORS.purplePale || "#ede7f6" }]}>
+                    <Text style={[S.qtyText, { color: borderColor }]}>{item.quantity}</Text>
                     <Text style={S.qtyLabel}>còn lại</Text>
                 </View>
             </View>
@@ -91,62 +106,94 @@ const InventoryCard = ({ item }) => {
                 <MaterialCommunityIcons name="calendar-range" size={13} color={COLORS.textMuted} />
                 <Text style={S.infoText}>
                     Hạn: {new Date(item.expiry_date).toLocaleDateString("vi-VN")}
-                    {isExpired    && " — ⛔ ĐÃ HẾT HẠN"}
-                    {isNearExpiry && ` — ⚠️ còn ${daysLeft} ngày`}
+                    {isExpired    && "  — ĐÃ HẾT HẠN"}
+                    {isNearExpiry && `  — còn ${daysLeft} ngày`}
                 </Text>
             </View>
 
-            <View style={S.infoRow}>
-                <MaterialCommunityIcons name="alert-outline" size={13} color={COLORS.textMuted} />
-                <Text style={S.infoText}>
-                    Ngưỡng cảnh báo: {item.warning_threshold} | Nhà cung cấp: {item.supplier || "—"}
+            <View style={[S.warningBadge, { backgroundColor: borderColor + "15" }]}>
+                <MaterialCommunityIcons name="alert" size={13} color={borderColor} />
+                <Text style={[S.warningText, { color: borderColor }]}>
+                    {isExpired ? "Đã hết hạn — cần xử lý ngay!" : `Sắp hết hạn trong ${daysLeft} ngày`}
                 </Text>
             </View>
 
-            {(isLow || isNearExpiry || isExpired) && (
-                <View style={[S.warningBadge, { backgroundColor: borderColor + "15" }]}>
-                    <MaterialCommunityIcons name="alert" size={13} color={borderColor} />
-                    <Text style={[S.warningText, { color: borderColor }]}>
-                        {isExpired    ? "Đã hết hạn — cần xử lý ngay!"    :
-                         isLow        ? `Tồn kho thấp (ngưỡng: ${item.warning_threshold})` :
-                         isNearExpiry ? `Sắp hết hạn trong ${daysLeft} ngày` : ""}
-                    </Text>
-                </View>
-            )}
+            <TouchableOpacity style={S.disposeBtn} onPress={confirmDispose}>
+                <MaterialCommunityIcons name="delete-forever-outline" size={15} color={COLORS.red} />
+                <Text style={[S.disposeBtnText, { color: COLORS.red }]}>Xuất hủy lô này</Text>
+            </TouchableOpacity>
         </View>
     );
 };
 
 const AlertCard = ({ item, onResolve }) => {
-    const color = ALERT_TYPE_COLORS[item.alert_type] || COLORS.textMuted;
+    const color    = ALERT_TYPE_COLORS[item.alert_type] || COLORS.textMuted;
+    const isExpiry = item.alert_type === "near_expiry" || item.alert_type === "expired";
+
+    const expiryStr = item.expiry_date
+        ? new Date(item.expiry_date).toLocaleDateString("vi-VN")
+        : null;
+    const daysLeft = item.expiry_date
+        ? Math.floor((new Date(item.expiry_date) - new Date()) / (1000 * 60 * 60 * 24))
+        : null;
+
     return (
         <View style={[S.card, { borderLeftColor: color, borderLeftWidth: 4 }]}>
             <View style={S.cardTop}>
                 <MaterialCommunityIcons name="alert-circle" size={22} color={color} />
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={S.medicineName}>{item.medicine_name || item.medicine?.name || `Thuốc #${item.medicine}`}</Text>
+                    <Text style={S.medicineName} numberOfLines={1}>
+                        {item.medicine_name || `Thuốc #${item.medicine}`}
+                    </Text>
                     <View style={[S.alertTypeBadge, { backgroundColor: color + "20" }]}>
                         <Text style={[S.alertTypeText, { color }]}>
                             {ALERT_TYPE_LABELS[item.alert_type] || item.alert_type}
                         </Text>
                     </View>
                 </View>
-                <TouchableOpacity
-                    style={S.resolveBtn}
-                    onPress={() => onResolve(item.id)}
-                >
-                    <MaterialCommunityIcons name="check" size={18} color={COLORS.green} />
+                <TouchableOpacity style={S.resolveBtn} onPress={() => onResolve(item.id)}>
+                    <MaterialCommunityIcons name="check-circle-outline" size={22} color={COLORS.green} />
                 </TouchableOpacity>
             </View>
-            <Text style={S.alertMsg}>{item.message}</Text>
-            <Text style={S.dateText}>
+
+            {item.alert_type === "low_stock" && (
+                <View style={S.infoRow}>
+                    <MaterialCommunityIcons name="package-variant-closed" size={13} color={COLORS.textMuted} />
+                    <Text style={S.infoText}>{item.message}</Text>
+                </View>
+            )}
+
+            {isExpiry && item.batch_number && (
+                <View style={S.infoRow}>
+                    <MaterialCommunityIcons name="barcode" size={13} color={COLORS.textMuted} />
+                    <Text style={S.infoText}>
+                        Lô: {item.batch_number}
+                        {item.batch_quantity != null && ` · Còn ${item.batch_quantity} ${item.medicine_unit || ""}`}
+                    </Text>
+                </View>
+            )}
+
+            {isExpiry && expiryStr && (
+                <View style={S.infoRow}>
+                    <MaterialCommunityIcons name="calendar-range" size={13} color={COLORS.textMuted} />
+                    <Text style={S.infoText}>
+                        Hạn sử dụng: {expiryStr}
+                        {daysLeft !== null && (
+                            daysLeft <= 0
+                                ? "  — ĐÃ HẾT HẠN"
+                                : `  — còn ${daysLeft} ngày`
+                        )}
+                    </Text>
+                </View>
+            )}
+
+            <Text style={[S.dateText, { marginTop: 6 }]}>
                 {new Date(item.created_at).toLocaleString("vi-VN")}
             </Text>
         </View>
     );
 };
 
-// Modal nhập kho mới
 const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
     const user = useContext(MyUserContext);
     const [form, setForm] = useState({
@@ -183,6 +230,7 @@ const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
             onClose();
             setForm({ medicine: "", batch_number: "", quantity: "", expiry_date: "", import_price: "", supplier: "", warning_threshold: "10" });
             setSearch("");
+            Alert.alert("Nhập kho thành công", `Đã thêm lô ${form.batch_number} vào kho.`);
         } catch (e) {
             setErr(
                 e?.response?.data?.non_field_errors?.[0] ||
@@ -206,7 +254,6 @@ const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
             <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ padding: 16 }}>
                 <HelperText type="error" visible={!!err}>{err}</HelperText>
 
-                {/* Chọn thuốc */}
                 <Text style={S.fieldLabel}>Thuốc *</Text>
                 <TouchableOpacity
                     style={S.picker}
@@ -223,7 +270,6 @@ const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
 
                 {showPicker && (
                     <View style={S.dropdown}>
-                        {/* Search box */}
                         <View style={S.searchRow}>
                             <MaterialCommunityIcons name="magnify" size={16} color={COLORS.textMuted} />
                             <TextInput
@@ -318,9 +364,10 @@ const ImportInventoryModal = ({ visible, onClose, medicines, onSuccess }) => {
 };
 
 const StaffInventory = () => {
-    const user = useContext(MyUserContext);
+    const user  = useContext(MyUserContext);
+    const route = useRoute();
 
-    const [activeTab,  setActiveTab]  = useState("all");
+    const [activeTab,  setActiveTab]  = useState(route.params?.tab || "all");
     const [inventory,  setInventory]  = useState([]);
     const [alerts,     setAlerts]     = useState([]);
     const [medicines,  setMedicines]  = useState([]);
@@ -330,24 +377,27 @@ const StaffInventory = () => {
 
     const load = async () => {
         try {
-            const [invRes, alertRes, medRes] = await Promise.all([
-                authApis(user.token).get(
-                    activeTab === "low_stock"   ? endpoints["inventory-low-stock"]  :
-                    activeTab === "near_expiry" ? endpoints["inventory-near-expiry"] :
-                    endpoints["inventory"]
-                ),
+            const mainUrl =
+                activeTab === "low_stock"    ? endpoints["inventory-low-stock"]   :
+                activeTab === "near_expiry"  ? endpoints["inventory-near-expiry"] :
+                activeTab === "all"          ? endpoints["medicines"]             :
+                null;
+
+            const [mainRes, alertRes, medRes] = await Promise.all([
+                mainUrl
+                    ? authApis(user.token).get(mainUrl)
+                    : Promise.resolve({ data: [] }),
                 activeTab === "alerts"
                     ? authApis(user.token).get(endpoints["staff-inventory-alerts"])
                     : Promise.resolve({ data: [] }),
                 authApis(user.token).get(endpoints["medicines"]),
             ]);
 
-            setInventory(invRes.data.results || invRes.data);
+            setInventory(mainRes.data.results || mainRes.data);
             setAlerts(alertRes.data.results || alertRes.data);
             setMedicines(medRes.data.results || medRes.data);
         } catch (e) {
-            console.warn("StaffInventory mock:", e?.response?.status);
-            setInventory(MOCK_INVENTORY);
+            console.warn("StaffInventory error:", e?.response?.status, e?.message);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -368,16 +418,26 @@ const StaffInventory = () => {
         }
     };
 
-    const renderItem = ({ item }) =>
-        activeTab === "alerts"
-            ? <AlertCard item={item} onResolve={resolveAlert} />
-            : <InventoryCard item={item} />;
+    const disposeInventory = async (batchId) => {
+        try {
+            await authApis(user.token).patch(endpoints["inventory-dispose"](batchId));
+            setInventory((prev) => prev.filter((b) => b.id !== batchId));
+            Alert.alert("Đã xuất hủy", "Lô thuốc đã được ghi nhận xuất hủy.");
+        } catch (e) {
+            Alert.alert("Lỗi", "Không thể xuất hủy lô thuốc này!");
+        }
+    };
+
+    const renderItem = ({ item }) => {
+        if (activeTab === "alerts")      return <AlertCard item={item} onResolve={resolveAlert} />;
+        if (activeTab === "near_expiry") return <BatchCard item={item} onDispose={disposeInventory} />;
+        return <MedicineCard item={item} />;
+    };
 
     const data = activeTab === "alerts" ? alerts : inventory;
 
     return (
         <View style={S.container}>
-            {/* Tab bar */}
             <View style={S.tabBar}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View style={{ flexDirection: "row", gap: 6, padding: 10 }}>
@@ -405,7 +465,6 @@ const StaffInventory = () => {
                     </View>
                 </ScrollView>
 
-                {/* Import button */}
                 <TouchableOpacity
                     style={S.importBtn}
                     onPress={() => setShowImport(true)}
@@ -439,10 +498,10 @@ const StaffInventory = () => {
                                 color={COLORS.border}
                             />
                             <Text style={S.emptyText}>
-                                {activeTab === "alerts"    ? "Không có cảnh báo nào" :
-                                 activeTab === "low_stock"  ? "Không có thuốc nào sắp hết" :
-                                 activeTab === "near_expiry"? "Không có thuốc nào sắp hết hạn" :
-                                 "Kho thuốc trống"}
+                                {activeTab === "alerts"     ? "Không có cảnh báo nào" :
+                                 activeTab === "low_stock"   ? "Tất cả thuốc đều đủ hàng" :
+                                 activeTab === "near_expiry" ? "Không có lô nào sắp hết hạn" :
+                                 "Chưa có thuốc nào trong kho"}
                             </Text>
                         </View>
                     }

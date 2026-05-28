@@ -1,8 +1,3 @@
-/**
- * screens/Staff/StaffPayments.js
- * Nhân viên xem lịch sử thanh toán online (MoMo, VNPay, thẻ, chuyển khoản).
- * Thanh toán tiền mặt đã bỏ — bệnh nhân thanh toán online trước khi cấp thuốc.
- */
 import {
     View, FlatList, TouchableOpacity,
     ActivityIndicator, RefreshControl,
@@ -96,7 +91,6 @@ const StaffPayments = () => {
     return (
         <View style={Styles.container}>
 
-            {/* Filter */}
             <View style={SP.filterBar}>
                 <FlatList
                     horizontal

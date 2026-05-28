@@ -1,12 +1,5 @@
-/**
- * screens/Staff/StaffPrescriptions.js
- * Nhân viên dược/điều dưỡng quản lý đơn thuốc:
- *   - Danh sách đơn thuốc chờ cấp phát / đã cấp
- *   - Cấp phát thuốc (trừ kho tự động FEFO)
- *   - Xem chi tiết đơn thuốc
- */
 import {
-    View, FlatList, StyleSheet, TouchableOpacity,
+    View, FlatList, TouchableOpacity,
     ActivityIndicator, Alert, RefreshControl, ScrollView,
 } from "react-native";
 import { Text } from "react-native-paper";
@@ -30,7 +23,6 @@ const PrescriptionCard = ({ item, onDispense, onPress }) => {
 
     return (
         <TouchableOpacity style={S.card} onPress={onPress} activeOpacity={0.85}>
-            {/* Header */}
             <View style={S.cardTop}>
                 <MaterialCommunityIcons
                     name={isPending ? "pill" : "pill-multiple"}
@@ -50,7 +42,6 @@ const PrescriptionCard = ({ item, onDispense, onPress }) => {
                 </View>
             </View>
 
-            {/* Medicines summary */}
             {item.details?.length > 0 && (
                 <View style={S.medList}>
                     {item.details.slice(0, 3).map((d, i) => (
@@ -67,7 +58,6 @@ const PrescriptionCard = ({ item, onDispense, onPress }) => {
                 </View>
             )}
 
-            {/* Footer */}
             <View style={S.cardBottom}>
                 <Text style={S.dateText}>
                     {new Date(item.created_at).toLocaleDateString("vi-VN")}
@@ -79,7 +69,6 @@ const PrescriptionCard = ({ item, onDispense, onPress }) => {
                 )}
             </View>
 
-            {/* Cấp phát button */}
             {isPending && (
                 <TouchableOpacity
                     style={S.dispenseBtn}
@@ -94,7 +83,6 @@ const PrescriptionCard = ({ item, onDispense, onPress }) => {
     );
 };
 
-// Detail popup - xem toàn bộ đơn thuốc
 const PrescriptionDetail = ({ item, onClose, onDispense }) => {
     if (!item) return null;
     const isPending = item.status === "pending";
@@ -203,7 +191,6 @@ const StaffPrescriptions = () => {
                             const res = await authApis(user.token).post(
                                 endpoints["prescription-dispense"](item.id)
                             );
-                            // Cập nhật trực tiếp trong list
                             setPrescriptions((prev) =>
                                 prev.map((p) =>
                                     p.id === item.id ? { ...p, status: "dispensed" } : p
@@ -231,7 +218,6 @@ const StaffPrescriptions = () => {
 
     return (
         <View style={S.container}>
-            {/* Filter tabs */}
             <View style={S.filterBar}>
                 <FlatList
                     horizontal
@@ -294,7 +280,6 @@ const StaffPrescriptions = () => {
                 />
             )}
 
-            {/* Detail overlay */}
             {selectedItem && (
                 <PrescriptionDetail
                     item={selectedItem}

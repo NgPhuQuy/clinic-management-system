@@ -83,7 +83,6 @@ const Home = () => {
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
             <ScrollView showsVerticalScrollIndicator={false}>
 
-                {/* ── HEADER ── */}
                 <View style={[homeStyles.header, { paddingTop: top + 16 }]}>
                     <View style={homeStyles.headerTop}>
                         <View style={homeStyles.logoRow}>
@@ -108,7 +107,6 @@ const Home = () => {
                     <Text style={homeStyles.tagLine}>Chúc bạn một ngày tốt lành!</Text>
                 </View>
 
-                {/* ── SEARCH ── */}
                 <View style={homeStyles.searchWrap}>
                     <View style={homeStyles.searchBar}>
                         <MaterialCommunityIcons name="magnify" size={20} color={COLORS.textLight} />
@@ -127,7 +125,6 @@ const Home = () => {
                     </View>
                 </View>
 
-                {/* ── QUICK ACTIONS ── */}
                 <View style={homeStyles.section}>
                     <View style={homeStyles.sectionHeader}>
                         <Text style={homeStyles.sectionTitle}>Chức năng</Text>
@@ -158,7 +155,6 @@ const Home = () => {
                     </View>
                 </View>
 
-                {/* ── LỊCH HẸN SẮP TỚI ── */}
                 {upcomingAppts.length > 0 && (
                     <View style={homeStyles.section}>
                         <View style={homeStyles.sectionHeader}>
@@ -195,7 +191,6 @@ const Home = () => {
                     </View>
                 )}
 
-                {/* ── CHUYÊN KHOA ── */}
                 <View style={homeStyles.section}>
                     <View style={homeStyles.sectionHeader}>
                         <Text style={homeStyles.sectionTitle}>Chuyên khoa</Text>
@@ -225,7 +220,6 @@ const Home = () => {
                     )}
                 </View>
 
-                {/* ── BÁC SĨ NỔI BẬT ── */}
                 <View style={homeStyles.section}>
                     <View style={homeStyles.sectionHeader}>
                         <Text style={homeStyles.sectionTitle}>Bác sĩ nổi bật</Text>
@@ -280,7 +274,6 @@ const Home = () => {
                     )}
                 </View>
 
-                {/* ── BANNER: THEO DÕI SỨC KHOẺ ── */}
                 <View style={homeStyles.bannerWrap}>
                     <TouchableOpacity style={homeStyles.healthBanner} activeOpacity={0.85}>
                         <Text style={homeStyles.bannerEmoji}>📊</Text>

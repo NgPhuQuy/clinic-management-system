@@ -1,6 +1,6 @@
 import {
     View, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert, StyleSheet
+    ActivityIndicator, Alert,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { useState, useContext } from "react";
@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authApis, endpoints } from "../../configs/Apis";
 import { MyUserContext } from "../../contexts/MyContext";
 import Styles, { COLORS, paymentScreenStyles as PS } from "../../styles/Styles";
+import { paymentScreenStyles as styles } from "./Styles";
 
 const ALL_METHODS = [
     {
@@ -42,7 +43,6 @@ const PaymentScreen = () => {
     const route = useRoute();
     const user = useContext(MyUserContext);
 
-    // fromBooking = true khi đến từ BookAppointment, false khi đến từ AppointmentDetail
     const { invoiceId, appointmentId, doctorName, appointmentDate, amount, fromBooking = false } = route.params;
 
     const METHODS = fromBooking
@@ -72,7 +72,6 @@ const PaymentScreen = () => {
 
             const { payment_url, payment_id, message } = res.data;
 
-            // Tiền mặt → chuyển thẳng tới màn kết quả
             if (selectedMethod === "cash") {
                 nav.replace("payment-result", {
                     success: false,
@@ -90,7 +89,6 @@ const PaymentScreen = () => {
                 return;
             }
 
-            // MoMo / VNPay → mở WebView
             nav.navigate("payment-webview", {
                 paymentUrl: payment_url,
                 paymentId: payment_id,
@@ -111,7 +109,6 @@ const PaymentScreen = () => {
     return (
         <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
 
-            {/* Custom header thay cho navigation header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => nav.goBack()} style={styles.backBtn}>
                     <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
@@ -183,7 +180,6 @@ const PaymentScreen = () => {
                 );
             })}
 
-            {/* Nút thanh toán */}
             <View style={{ marginHorizontal: 16, marginTop: 20 }}>
                 <TouchableOpacity
                     style={[Styles.btnPrimary, (!selectedMethod || loading) && { opacity: 0.5 }]}
@@ -212,28 +208,5 @@ const PaymentScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    header: {
-        backgroundColor: COLORS.primary,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 12,
-        paddingVertical: 14,
-    },
-    backBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-    headerTitle: { fontSize: 17, fontWeight: "700", color: "#fff" },
-    onlineNote: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#e3f2fd",
-        marginHorizontal: 16,
-        marginBottom: 10,
-        borderRadius: 8,
-        padding: 10,
-        gap: 6,
-    },
-    onlineNoteText: { fontSize: 12, color: "#1565c0", flex: 1 },
-});
 
 export default PaymentScreen;

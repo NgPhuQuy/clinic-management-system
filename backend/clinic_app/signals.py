@@ -53,41 +53,64 @@ def _cache_old_status(sender, instance, **kwargs):
 
 @receiver(post_save, sender="clinic_app.Inventory")
 def check_inventory_alerts(sender, instance, **kwargs):
+    from django.db.models import Sum, Q
     from .models import InventoryAlert
 
     today         = timezone.now().date()
-    medicine_name = instance.medicine.name
+    medicine      = instance.medicine
+    medicine_name = medicine.name
     batch         = instance.batch_number
-    alert_cases   = []
 
-    if instance.is_low_stock():
-        alert_cases.append((
-            InventoryAlert.AlertType.LOW_STOCK,
-            (
-                f"Thuốc '{medicine_name}' (lô {batch}) còn {instance.quantity} "
-                f"{instance.medicine.unit} — dưới ngưỡng {instance.warning_threshold}."
-            ),
-        ))
+    # ── Tổng tồn kho còn hạn của toàn bộ lô thuốc này ──
+    total_valid = (
+        medicine.inventory_batches
+        .filter(expiry_date__gt=today)
+        .aggregate(total=Sum("quantity"))["total"]
+        or 0
+    )
 
+    # LOW_STOCK — dựa trên TỔNG thuốc còn hạn, không phải từng lô
+    if total_valid <= medicine.warning_threshold:
+        msg = (
+            f"Thuốc '{medicine_name}' còn tổng {total_valid} {medicine.unit} "
+            f"— dưới ngưỡng {medicine.warning_threshold}."
+        )
+        InventoryAlert.objects.get_or_create(
+            medicine=medicine,
+            inventory=None,            # alert ở cấp thuốc, không gắn lô cụ thể
+            alert_type=InventoryAlert.AlertType.LOW_STOCK,
+            is_resolved=False,
+            defaults={"message": msg},
+        )
+    else:
+        # Nếu vừa nhập thêm và tổng đã vượt ngưỡng → tự resolve alert cũ
+        InventoryAlert.objects.filter(
+            medicine=medicine,
+            alert_type=InventoryAlert.AlertType.LOW_STOCK,
+            is_resolved=False,
+        ).update(is_resolved=True, resolved_at=timezone.now())
+
+    # EXPIRED / NEAR_EXPIRY — vẫn ở cấp lô vì hạn sử dụng là thuộc tính của lô
     if instance.expiry_date < today:
-        alert_cases.append((
-            InventoryAlert.AlertType.EXPIRED,
-            f"Thuốc '{medicine_name}' (lô {batch}) đã hết hạn từ {instance.expiry_date}. Cần xử lý ngay!",
-        ))
+        InventoryAlert.objects.get_or_create(
+            medicine=medicine,
+            inventory=instance,
+            alert_type=InventoryAlert.AlertType.EXPIRED,
+            is_resolved=False,
+            defaults={
+                "message": f"Thuốc '{medicine_name}' (lô {batch}) đã hết hạn từ {instance.expiry_date}. Cần xử lý ngay!",
+            },
+        )
     elif instance.is_near_expiry(days=30):
         days_left = (instance.expiry_date - today).days
-        alert_cases.append((
-            InventoryAlert.AlertType.NEAR_EXPIRY,
-            f"Thuốc '{medicine_name}' (lô {batch}) hết hạn vào {instance.expiry_date} — còn {days_left} ngày.",
-        ))
-
-    for alert_type, message in alert_cases:
         InventoryAlert.objects.get_or_create(
-            medicine=instance.medicine,
+            medicine=medicine,
             inventory=instance,
-            alert_type=alert_type,
+            alert_type=InventoryAlert.AlertType.NEAR_EXPIRY,
             is_resolved=False,
-            defaults={"message": message},
+            defaults={
+                "message": f"Thuốc '{medicine_name}' (lô {batch}) hết hạn vào {instance.expiry_date} — còn {days_left} ngày.",
+            },
         )
 
 
