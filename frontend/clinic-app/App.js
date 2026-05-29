@@ -128,11 +128,11 @@ const HomeStack = () => (
 
 const BookingStack = () => (
     <Stack.Navigator screenOptions={HS}>
+        <Stack.Screen name="my-appointments" component={MyAppointments} options={{ title: "Lịch hẹn của tôi" }} />
         <Stack.Screen name="booking-main" component={SpecialtySelect} options={{ title: "Chọn chuyên khoa" }} />
         <Stack.Screen name="date-select" component={DateSelect} options={{ title: "Chọn ngày khám" }} />
         <Stack.Screen name="slot-select" component={SlotSelect} options={{ title: "Chọn ca khám" }} />
         <Stack.Screen name="book-appointment" component={BookAppointment} options={{ title: "Đặt lịch khám" }} />
-        <Stack.Screen name="my-appointments" component={MyAppointments} options={{ title: "Lịch hẹn của tôi" }} />
         <Stack.Screen name="appointment-detail" component={AppointmentDetail} options={{ title: "Chi tiết lịch hẹn" }} />
         <Stack.Screen name="payment-screen" component={PaymentScreen} options={{ headerShown: false }} />
         <Stack.Screen name="payment-webview" component={PaymentWebView} options={{ headerShown: false }} />
@@ -185,9 +185,9 @@ const AppTabs = () => {
             name="booking-tab"
             component={BookingStack}
             options={{
-                title: "Đặt khám",
+                title: "Lịch hẹn",
                 tabBarIcon: ({ color, size }) => (
-                    <MaterialCommunityIcons name="calendar-plus" size={size ?? 24} color={color} />
+                    <MaterialCommunityIcons name="calendar-check-outline" size={size ?? 24} color={color} />
                 ),
             }}
         />
@@ -535,10 +535,8 @@ const App = () => {
                     projectId: Constants.expoConfig?.extra?.eas?.projectId,
                 });
                 const pushToken = tokenData?.data;
-                console.log("[Push] Token:", pushToken);
                 if (pushToken) {
                     await authApis(user.token).patch(endpoints["current-user"], { push_token: pushToken });
-                    console.log("[Push] Token saved to backend");
                 }
             } catch (e) {
                 console.warn("Push setup:", e?.message);

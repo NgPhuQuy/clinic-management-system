@@ -1,5 +1,5 @@
 import {
-    View, ScrollView, TextInput, TouchableOpacity,
+    View, ScrollView, TextInput, TouchableOpacity, StatusBar,
     FlatList, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from "react-native";
 import { Text } from "react-native-paper";
@@ -42,39 +42,38 @@ init();
 
 const STATUS_COLOR = {
     waiting: "#ff9800",
-    active:  "#4caf50",
-    ended:   "#9e9e9e",
+    active: "#4caf50",
+    ended: "#9e9e9e",
 };
 const STATUS_LABEL = {
     waiting: "Chờ kết nối",
-    active:  "Đang khám",
-    ended:   "Đã kết thúc",
+    active: "Đang khám",
+    ended: "Đã kết thúc",
 };
 
-const POLL_INTERVAL = 3000;
-
 const ConsultationRoom = () => {
-    const nav    = useNavigation();
-    const route  = useRoute();
-    const user   = useContext(MyUserContext);
+    const nav = useNavigation();
+    const route = useRoute();
+    const user = useContext(MyUserContext);
     const isDoctor = user.role === "doctor";
 
     const { consultationId } = route.params;
 
-    const [consultation, setConsultation]   = useState(null);
-    const [loading, setLoading]             = useState(true);
+    const [consultation, setConsultation] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
-    const [entered, setEntered]             = useState(false);
-    const [message, setMessage]             = useState("");
-    const [sendingMsg, setSendingMsg]        = useState(false);
-    const [messages, setMessages]           = useState([]);
-    const [rtmReady, setRtmReady]           = useState(false);
-    const [rtmConfig, setRtmConfig]         = useState(null);
+    const [entered, setEntered] = useState(false);
+    const [message, setMessage] = useState("");
+    const [sendingMsg, setSendingMsg] = useState(false);
+    const [messages, setMessages] = useState([]);
+    const [rtmReady, setRtmReady] = useState(false);
+    const [rtmConfig, setRtmConfig] = useState(null);
 
-    const flatListRef  = useRef(null);
-    const pollRef      = useRef(null);
-    const rtmRef       = useRef(null);
-    const seenIdsRef   = useRef(new Set());
+    const flatListRef = useRef(null);
+    const pollRef = useRef(null);
+    const msgPollRef = useRef(null);
+    const rtmRef = useRef(null);
+    const seenIdsRef = useRef(new Set());
 
     const loadConsultation = useCallback(async () => {
         try {
@@ -106,16 +105,36 @@ const ConsultationRoom = () => {
             try {
                 const res = await authApis(user.token).get(endpoints["consultation-detail"](consultationId));
                 setConsultation(res.data);
-                if (res.data?.status === "ended") clearInterval(pollRef.current);
-            } catch {}
+                if (res.data?.status === "ended") {
+                    clearInterval(pollRef.current);
+                    clearInterval(msgPollRef.current);
+                }
+            } catch { }
         }, 5000);
+
+        clearInterval(msgPollRef.current);
+        msgPollRef.current = setInterval(async () => {
+            try {
+                const res = await authApis(user.token).get(endpoints["consultation-detail"](consultationId));
+                const incoming = res.data?.messages || [];
+                const newMsgs = incoming.filter(m => !seenIdsRef.current.has(String(m.id)));
+                if (newMsgs.length > 0) {
+                    newMsgs.forEach(m => seenIdsRef.current.add(String(m.id)));
+                    setMessages(prev => [...prev, ...newMsgs]);
+                    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+                }
+            } catch { }
+        }, 3000);
     }, [consultationId, user.token]);
 
     useEffect(() => {
         loadConsultation().finally(() => setLoading(false));
         loadRTMConfig();
         startPoll();
-        return () => clearInterval(pollRef.current);
+        return () => {
+            clearInterval(pollRef.current);
+            clearInterval(msgPollRef.current);
+        };
     }, []);
 
     const enterRoom = async () => {
@@ -181,10 +200,10 @@ const ConsultationRoom = () => {
 
     const joinVideoCall = (data) => {
         nav.navigate("video-call", {
-            agoraAppId:    data.agora_app_id  || "",
-            agoraToken:    data.agora_token   || "",
-            channelName:   data.channel_name  || "",
-            uid:           data.uid           || 0,
+            agoraAppId: data.agora_app_id || "",
+            agoraToken: data.agora_token || "",
+            channelName: data.channel_name || "",
+            uid: data.uid || 0,
             consultationId,
         });
     };
@@ -195,7 +214,6 @@ const ConsultationRoom = () => {
             if (msg.type === "READY") {
                 setRtmReady(true);
             } else if (msg.type === "ERROR") {
-                console.warn("RTM Error:", msg.error);
             } else if (msg.type === "MSG" && msg.data) {
                 const d = msg.data;
                 const id = String(d.id || `rtm_${Date.now()}`);
@@ -204,7 +222,7 @@ const ConsultationRoom = () => {
                 setMessages(prev => [...prev, d]);
                 setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
             }
-        } catch {}
+        } catch { }
     }, []);
 
     const sendMessage = async () => {
@@ -251,22 +269,25 @@ const ConsultationRoom = () => {
         );
     }
 
-    const isEnded   = consultation.status === "ended";
-    const isActive  = consultation.status === "active";
+    const isEnded = consultation.status === "ended";
+    const isActive = consultation.status === "active";
     const isWaiting = consultation.status === "waiting";
 
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+            <StatusBar backgroundColor={STATUS_COLOR[consultation.status] || "#9e9e9e"} barStyle="light-content" />
 
-            {rtmConfig && (
-                <WebView
-                    ref={rtmRef}
-                    source={{ html: buildRTMHtml(rtmConfig.agora_app_id, rtmConfig.rtm_token, rtmConfig.channel_name, rtmConfig.uid) }}
-                    style={{ width: 0, height: 0, position: "absolute" }}
-                    javaScriptEnabled
-                    onMessage={handleRTMMessage}
-                />
-            )}
+            <View style={{ height: 0, overflow: "hidden" }}>
+                {rtmConfig && (
+                    <WebView
+                        ref={rtmRef}
+                        source={{ html: buildRTMHtml(rtmConfig.agora_app_id, rtmConfig.rtm_token, rtmConfig.channel_name, rtmConfig.uid) }}
+                        style={{ height: 1 }}
+                        javaScriptEnabled
+                        onMessage={handleRTMMessage}
+                    />
+                )}
+            </View>
 
             <View style={[styles.statusBar, { backgroundColor: STATUS_COLOR[consultation.status] || "#9e9e9e" }]}>
                 <MaterialCommunityIcons

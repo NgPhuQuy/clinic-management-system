@@ -5,7 +5,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 export const endpoints = {
     'register': '/auth/register/',
     'login': '/auth/login/',
-    'google-oauth-url': 'auth/google/',
+    'google-oauth-url': '/auth/google/',
     'current-user': '/auth/me/',
     'change-password': '/auth/change-password/',
 

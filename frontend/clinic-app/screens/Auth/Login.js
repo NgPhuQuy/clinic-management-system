@@ -16,9 +16,10 @@ const Login = () => {
     const [err, setErr]           = useState(null);
     const [loading, setLoading]   = useState(false);
     const [showPass, setShowPass] = useState(false);
-    const nav      = useNavigation();
-    const dispatch = useContext(MyDispatchContext);
-    const passwordRef = useRef(null);
+    const nav           = useNavigation();
+    const dispatch      = useContext(MyDispatchContext);
+    const passwordRef   = useRef(null);
+    const redirectUrlRef = useRef(null);
 
     useEffect(() => {
         const sub = Linking.addEventListener("url", handleDeepLink);
@@ -26,8 +27,10 @@ const Login = () => {
     }, []);
 
     const handleDeepLink = async ({ url }) => {
-        if (!url?.startsWith("com.clinic.app://auth")) return;
+        const base = redirectUrlRef.current;
+        if (!url || (base && !url.startsWith(base)) || (!base && !url.includes("/auth"))) return;
         const { queryParams } = Linking.parse(url);
+
         if (queryParams?.error) {
             setErr("Đăng nhập Google thất bại: " + queryParams.error);
             setLoading(false);
@@ -52,10 +55,12 @@ const Login = () => {
         try {
             setLoading(true);
             setErr(null);
-            const res = await Apis.get(endpoints["google-oauth-url"]);
+            const redirectUrl = Linking.createURL("auth");
+            redirectUrlRef.current = redirectUrl;
+            const res = await Apis.get(endpoints["google-oauth-url"], { params: { redirect_url: redirectUrl } });
             const googleUrl = res.data?.url;
             if (!googleUrl) throw new Error("Không lấy được URL Google.");
-            const result = await WebBrowser.openAuthSessionAsync(googleUrl, "com.clinic.app://auth");
+            const result = await WebBrowser.openAuthSessionAsync(googleUrl, redirectUrl);
             if (result?.type === "success" && result?.url) {
                 await handleDeepLink({ url: result.url });
             } else {

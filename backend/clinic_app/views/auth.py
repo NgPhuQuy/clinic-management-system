@@ -1,3 +1,5 @@
+import base64
+import json
 import secrets
 import urllib.parse
 from datetime import timedelta
@@ -115,12 +117,17 @@ class GoogleOAuthRedirectView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        redirect_url = request.query_params.get("redirect_url", "com.clinic.app://auth")
+        state = base64.urlsafe_b64encode(
+            json.dumps({"redirect_url": redirect_url}).encode()
+        ).decode().rstrip("=")
         params = urllib.parse.urlencode({
             "client_id":     settings.GOOGLE_CLIENT_ID,
             "redirect_uri":  settings.GOOGLE_REDIRECT_URI,
             "response_type": "code",
             "scope":         "openid email profile",
             "prompt":        "select_account",
+            "state":         state,
         })
         return Response({"url": f"https://accounts.google.com/o/oauth2/v2/auth?{params}"})
 
@@ -128,12 +135,22 @@ class GoogleOAuthRedirectView(APIView):
 class GoogleOAuthCallbackView(APIView):
     permission_classes = [AllowAny]
 
+    def _app_redirect(self, request):
+        state = request.query_params.get("state", "")
+        try:
+            padded = state + "=" * (-len(state) % 4)
+            data = json.loads(base64.urlsafe_b64decode(padded).decode())
+            return data.get("redirect_url", "com.clinic.app://auth")
+        except Exception:
+            return "com.clinic.app://auth"
+
     def get(self, request):
-        code  = request.query_params.get("code")
-        error = request.query_params.get("error")
+        code         = request.query_params.get("code")
+        error        = request.query_params.get("error")
+        app_redirect = self._app_redirect(request)
 
         if error or not code:
-            return _deep_link("com.clinic.app://auth?error=access_denied")
+            return _deep_link(f"{app_redirect}?error=access_denied")
 
         try:
             token_res = requests.post(
@@ -148,7 +165,7 @@ class GoogleOAuthCallbackView(APIView):
                 timeout=10,
             )
             if token_res.status_code != 200:
-                return _deep_link("com.clinic.app://auth?error=token_exchange_failed")
+                return _deep_link(f"{app_redirect}?error=token_exchange_failed")
 
             id_token = token_res.json().get("id_token")
             info_res = requests.get(
@@ -157,7 +174,7 @@ class GoogleOAuthCallbackView(APIView):
                 timeout=10,
             )
             if info_res.status_code != 200:
-                return _deep_link("com.clinic.app://auth?error=invalid_token")
+                return _deep_link(f"{app_redirect}?error=invalid_token")
 
             info       = info_res.json()
             email      = info.get("email")
@@ -165,10 +182,10 @@ class GoogleOAuthCallbackView(APIView):
             last_name  = info.get("family_name", "")
 
             if not email:
-                return _deep_link("com.clinic.app://auth?error=no_email")
+                return _deep_link(f"{app_redirect}?error=no_email")
 
         except requests.RequestException:
-            return _deep_link("com.clinic.app://auth?error=network_error")
+            return _deep_link(f"{app_redirect}?error=network_error")
 
         user, created = User.objects.get_or_create(
             email=email,
@@ -191,7 +208,7 @@ class GoogleOAuthCallbackView(APIView):
             )
 
         if not user.is_active:
-            return _deep_link("com.clinic.app://auth?error=account_disabled")
+            return _deep_link(f"{app_redirect}?error=account_disabled")
 
         app = Application.objects.filter(client_id=settings.CLIENT_ID).first()
         access_token = AccessToken.objects.create(
@@ -206,7 +223,7 @@ class GoogleOAuthCallbackView(APIView):
             "token": access_token.token,
             "scope": user.role,
         })
-        return _deep_link(f"com.clinic.app://auth?{params}")
+        return _deep_link(f"{app_redirect}?{params}")
 
 
 

@@ -75,9 +75,9 @@ const Home = () => {
             .catch(console.error);
     }, [user]);
 
-    const handleSearch = () => {
-        if (search.trim()) nav.navigate("doctor-list", { search });
-    };
+    const filteredActions = search.trim()
+        ? QUICK_ACTIONS.filter(a => a.label.toLowerCase().includes(search.trim().toLowerCase()))
+        : QUICK_ACTIONS;
 
     return (
         <View style={Styles.container}>
@@ -117,24 +117,28 @@ const Home = () => {
                             placeholderTextColor={COLORS.textLight}
                             value={search}
                             onChangeText={setSearch}
-                            onSubmitEditing={handleSearch}
+                            onSubmitEditing={() => {}}
                             returnKeyType="search"
                         />
-                        <TouchableOpacity style={homeStyles.searchBtn} onPress={handleSearch}>
-                            <Text style={homeStyles.searchBtnText}>Tìm</Text>
-                        </TouchableOpacity>
+                        {search.trim() ? (
+                            <TouchableOpacity style={homeStyles.searchBtn} onPress={() => setSearch("")}>
+                                <Text style={homeStyles.searchBtnText}>✕</Text>
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
                 </View>
 
                 <View style={homeStyles.section}>
                     <View style={homeStyles.sectionHeader}>
-                        <Text style={homeStyles.sectionTitle}>Chức năng</Text>
-                        <TouchableOpacity onPress={() => nav.navigate("doctor-list")}>
-                            <Text style={homeStyles.sectionLink}>Xem tất cả</Text>
-                        </TouchableOpacity>
+                        <Text style={homeStyles.sectionTitle}>
+                            {search.trim() ? `Kết quả: "${search.trim()}"` : "Chức năng"}
+                        </Text>
                     </View>
                     <View style={homeStyles.quickGrid}>
-                        {QUICK_ACTIONS.map((a, i) => (
+                        {filteredActions.length === 0 && (
+                            <Text style={{ color: COLORS.textMuted, padding: 12 }}>Không tìm thấy chức năng nào.</Text>
+                        )}
+                        {filteredActions.map((a, i) => (
                             <TouchableOpacity
                                 key={i}
                                 style={homeStyles.quickItem}
@@ -195,7 +199,7 @@ const Home = () => {
                 <View style={homeStyles.section}>
                     <View style={homeStyles.sectionHeader}>
                         <Text style={homeStyles.sectionTitle}>Chuyên khoa</Text>
-                        <TouchableOpacity onPress={() => nav.navigate("doctor-list")}>
+                        <TouchableOpacity onPress={() => nav.navigate("specialty-select")}>
                             <Text style={homeStyles.sectionLink}>Xem thêm</Text>
                         </TouchableOpacity>
                     </View>

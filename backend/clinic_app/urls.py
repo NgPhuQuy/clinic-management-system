@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .views.consultation import VideoCallPageView
 from .views.staff_doctor import (
     DoctorDashboardView,
     StaffDashboardView,
@@ -31,8 +32,7 @@ router.register(r"consultations",       views.ConsultationViewSet,      basename
 router.register(r"notifications",       views.NotificationViewSet,      basename="notification")
 
 urlpatterns = [
-
-    # ── Auth ─────────────────────────────────────────────────────────────
+    path("video-call/",            VideoCallPageView.as_view(),        name="video-call-page"),
     path("auth/login/",           views.LoginView.as_view(),          name="login"),
     path("auth/google/",           views.GoogleOAuthRedirectView.as_view(), name="google-oauth"),
     path("auth/google/callback/",  views.GoogleOAuthCallbackView.as_view(), name="google-callback"),
@@ -42,49 +42,15 @@ urlpatterns = [
 
     path("admin/dashboard/", views.DashboardView.as_view(), name="dashboard"),
 
-    # ── Doctor Dashboard & Tools ─────────────────────────────────────────
     path("doctor/dashboard/",           DoctorDashboardView.as_view(),        name="doctor-dashboard"),
     path("doctor/my-schedules/",        DoctorMyScheduleView.as_view(),       name="doctor-my-schedules"),
     path("doctor/today-appointments/",  DoctorTodayAppointmentsView.as_view(), name="doctor-today"),
 
-    # ── Staff Dashboard & Tools ──────────────────────────────────────────
     path("staff/dashboard/",            StaffDashboardView.as_view(),         name="staff-dashboard"),
     path("staff/patients/",             StaffPatientListView.as_view(),       name="staff-patients"),
     path("staff/patients/<int:pk>/",    StaffPatientDetailView.as_view(),     name="staff-patient-detail"),
     path("staff/payments/",             StaffPaymentListView.as_view(),       name="staff-payments"),
     path("staff/inventory-alerts/",     StaffInventoryAlertView.as_view(),    name="staff-inventory-alerts"),
 
-    # ── Router (CRUD) ────────────────────────────────────────────────────
     path("", include(router.urls)),
 ]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SCOPES & ROLES
-# ─────────────────────────────────────────────────────────────────────────────
-#
-#  Role       Scope    Chức năng chính
-#  ─────────  ───────  ──────────────────────────────────────────────────
-#  patient    patient  Đặt lịch, xem hồ sơ, thanh toán, xem đơn thuốc
-#  doctor     doctor   Khám bệnh, ghi hồ sơ, kê đơn, tư vấn video/chat
-#  staff      staff    Confirm lịch, nhập kết quả CLS, cấp thuốc, thu tiền
-#  admin      admin    Toàn quyền + báo cáo thống kê
-#
-# ─────────────────────────────────────────────────────────────────────────────
-# CLINIC WORKFLOW 
-# ─────────────────────────────────────────────────────────────────────────────
-#
-#  1. Patient đặt lịch      → POST /appointments/               [patient]
-#  2. Staff xác nhận lịch   → PATCH /appointments/{id}/status/  [staff]
-#  3. Patient check-in      → Appointment.status = confirmed
-#  4. Doctor bắt đầu khám   → PATCH /appointments/{id}/status/  [doctor]
-#                              status: confirmed → in_progress
-#  5. Doctor ghi hồ sơ      → POST /medical-records/            [doctor]
-#  6. Doctor chỉ định CLS   → POST /appointments/{id}/add_service/ [doctor]
-#     (xét nghiệm/chụp phim)
-#  7. Staff nhập kết quả    → POST /medical-records/{id}/test-results/ [staff|doctor]
-#  8. Doctor kê đơn         → POST /prescriptions/              [doctor]
-#  9. Doctor kết thúc khám  → PATCH /appointments/{id}/status/  [doctor]
-#                              status: in_progress → completed
-# 10. Staff cấp thuốc       → POST /prescriptions/{id}/dispense/ [staff]
-# 11. Staff thu tiền         → POST /payments/{id}/confirm/      [staff]
-#

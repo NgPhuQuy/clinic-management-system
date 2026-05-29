@@ -62,23 +62,10 @@ const APP_ID="${appId}", TOKEN="${token}", CHANNEL="${channel}", UID=${uid};
 let client,audioTrack,videoTrack,micMuted=false,camMuted=false;
 const $=id=>document.getElementById(id);
 const info=msg=>$('info').textContent=msg;
-
-if(!navigator.mediaDevices) navigator.mediaDevices={};
-if(!navigator.mediaDevices.getUserMedia){
-  const legacy=navigator.getUserMedia||navigator.webkitGetUserMedia||navigator.mozGetUserMedia;
-  if(legacy) navigator.mediaDevices.getUserMedia=legacy.bind(navigator);
-}
+const post=d=>window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify(d));
 
 async function init(){
   if(!APP_ID||APP_ID==='undefined'){info('Agora chưa được cấu hình');return;}
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-    stream.getTracks().forEach(t=>t.stop());
-  }catch(e){
-    info('Lỗi quyền camera/mic: '+e.name);
-    window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({type:'PERM_ERROR',error:e.name}));
-    return;
-  }
   try{
     client=AgoraRTC.createClient({mode:'rtc',codec:'vp8'});
     client.on('user-published',async(user,type)=>{
@@ -97,7 +84,10 @@ async function init(){
     videoTrack.play('local-player');
     await client.publish([audioTrack,videoTrack]);
     info('Đang khám — '+CHANNEL);
-  }catch(e){info('Lỗi: '+e.message);}
+  }catch(e){
+    info('Lỗi: '+e.message);
+    post({type:'CALL_ERROR',error:e.message});
+  }
 }
 
 $('btn-mic').onclick=async()=>{
@@ -164,8 +154,8 @@ const VideoCallScreen = () => {
             const msg = JSON.parse(e.nativeEvent.data);
             if (msg.type === "END_CALL") {
                 nav.goBack();
-            } else if (msg.type === "PERM_ERROR") {
-                Alert.alert("Lỗi camera/micro", `Không thể truy cập camera/micro: ${msg.error}.\nVui lòng kiểm tra lại quyền trong Settings.`);
+            } else if (msg.type === "CALL_ERROR") {
+                Alert.alert("Lỗi kết nối", msg.error || "Không thể vào phòng khám.");
             }
         } catch {}
     };
@@ -203,6 +193,5 @@ const VideoCallScreen = () => {
         </View>
     );
 };
-
 
 export default VideoCallScreen;
