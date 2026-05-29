@@ -32,7 +32,10 @@ const Notifications = () => {
     const [loading,       setLoading]       = useState(true);
     const [tab,           setTab]           = useState("all");
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => {
+        setNotifications([]);
+        if (user?.token) load();
+    }, [user?.token]);
 
     const load = async () => {
         try {
