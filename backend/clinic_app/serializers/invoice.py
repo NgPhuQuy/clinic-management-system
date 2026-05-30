@@ -29,7 +29,6 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class InvoiceSummarySerializer(serializers.ModelSerializer):
-    """Dùng inline trong AppointmentSerializer."""
     total_amount = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
     total_paid   = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
     remaining    = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
